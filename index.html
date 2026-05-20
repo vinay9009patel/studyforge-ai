@@ -2697,11 +2697,11 @@ const stopWords = new Set([
 
 function cleanNodeText(value,maxWords = 5){
 return String(value || "")
-.replace(/[#*`>_-]/g," ")
-.replace(/[^\w\s()/,&-]/g," ")
+.replace(/[#*`>_]/g," ")
+.replace(/[{}[\]"'\\]/g,"")
 .replace(/\s+/g," ")
 .trim()
-.split(" ")
+.split(/\s+/)
 .slice(0,maxWords)
 .join(" ");
 }
@@ -2818,7 +2818,7 @@ return [
 ].join("\n");
 }
 
-function normalizeMindMapCode(rawCode,topic,sourceText = ""){
+function normalizeMindMapCode(rawCode,topic,sourceText = "",lang = "english"){
 const code =
 String(rawCode || "")
 .replace(/```mermaid/g,"")
@@ -2826,7 +2826,7 @@ String(rawCode || "")
 .trim();
 
 if(!code){
-return buildFallbackMindMap(topic,sourceText);
+return buildFallbackMindMap(topic,sourceText,lang);
 }
 
 const lines = code
@@ -2835,11 +2835,11 @@ const lines = code
 .filter(line=>line.trim());
 
 if(!lines.length){
-return buildFallbackMindMap(topic,sourceText);
+return buildFallbackMindMap(topic,sourceText,lang);
 }
 
 if(!/^mindmap\b/i.test(lines[0].trim())){
-return buildFallbackMindMap(topic,sourceText);
+return buildFallbackMindMap(topic,sourceText,lang);
 }
 
 const cleaned = lines.map((line,index)=>{
@@ -2853,7 +2853,7 @@ const leadingSpaces =
 const content =
 line
 .trim()
-.replace(/["'`]/g,"")
+.replace(/[""'']/g,"")
 .replace(/[{}\[\]]/g,"")
 .replace(/\s+/g," ");
 
@@ -2867,9 +2867,12 @@ cleaned.splice(1,0,`  root((${String(topic || "Topic").replace(/[()]/g,"")}))`);
 return cleaned.join("\n");
 }
 
-async function generateDetailedMindMap(topic,sourceText = ""){
+async function generateDetailedMindMap(topic,sourceText = "",lang = "english"){
+const langInstr = lang === "hinglish" ? "Hinglish (Hindi + English mixed)"
+: lang === "hindi" ? "Hindi (Devanagari script)"
+: "English";
 const prompt = `
-Create ONLY a detailed Mermaid mindmap for study notes.
+Create a detailed Mermaid mindmap for study notes.
 
 Topic:
 ${topic}
@@ -2881,12 +2884,13 @@ Rules:
 1. Return ONLY Mermaid code.
 2. The first line must be exactly: mindmap
 3. Use one root node only.
-4. Create at least 4 main branches.
-5. Each main branch must have 2 to 4 sub-points.
-6. Keep labels short and clean.
+4. Create at least 6 main branches covering all key aspects.
+5. Each main branch must have 3 to 5 sub-points going 2-3 levels deep.
+6. Keep labels short but descriptive.
 7. Use ONLY valid Mermaid mindmap syntax.
 8. No markdown fences.
 9. No explanation text.
+10. LANGUAGE: Write ALL node labels in ${langInstr}.
 `;
 
 const result =
@@ -2895,7 +2899,8 @@ await askAI(prompt);
 return normalizeMindMapCode(
 result,
 topic,
-sourceText
+sourceText,
+lang
 );
 }
 
@@ -3239,6 +3244,8 @@ Facial expression analysis per answer (confident/nervous/neutral/mixed):
 ${JSON.stringify(facialScores)}
 
 Consider the facial expressions when evaluating confidence and giving strengths/weaknesses.
+
+LANGUAGE: Write the entire evaluation in ${currentLanguage === "hinglish" ? "Hinglish (Hindi + English mixed)" : currentLanguage === "hindi" ? "Hindi (Devanagari script)" : "English"}.
 `;
 
 const response =
@@ -4087,7 +4094,8 @@ await askAI(prompt,"",8192);
 let mermaidCode =
 await generateDetailedMindMap(
 topic,
-`${topic}\n${extractedText}\n${result}`
+`${topic}\n${extractedText}\n${result}`,
+currentLanguage
 );
 
 let cleanedResult = result
@@ -5581,7 +5589,7 @@ chatHistory.innerHTML += `
 `;
 
 const response =
-await askAI(input);
+await askAI(input,`You are a helpful AI study mentor. Always respond in ${currentLanguage === "hinglish" ? "Hinglish (Hindi + English mixed)" : currentLanguage === "hindi" ? "Hindi (Devanagari script)" : "English"}.`);
 
 chatHistory.innerHTML += `
 
