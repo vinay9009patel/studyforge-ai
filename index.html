@@ -2491,7 +2491,7 @@ photoEl.style.opacity = "1";
     utterance.voice = selectedVoice;
     utterance.lang = targetLang;
     utterance.rate = isHindi ? 0.85 : 0.95;
-    utterance.pitch = interviewerGender === "female" ? 1.2 : 0.85;
+    utterance.pitch = interviewerGender === "female" ? 1.15 : 0.6;
 
 utterance.onstart = ()=>{
 if(interviewerGender !== "own") setInterviewerTalking(true);
