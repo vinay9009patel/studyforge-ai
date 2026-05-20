@@ -4833,20 +4833,15 @@ document.querySelectorAll("#langEnglish,#langHinglish,#langHindi").forEach(b=>{b
 const styles={english:["rgba(139,92,246,0.3)","#8b5cf6","white"],hinglish:["rgba(234,179,8,0.2)","#eab308","#eab308"],hindi:["rgba(239,68,68,0.2)","#ef4444","#ef4444"]};
 const s=styles[lang];const b=document.getElementById("lang"+lang.charAt(0).toUpperCase()+lang.slice(1));
 if(b){b.style.background=s[0];b.style.borderColor=s[1];b.style.color=s[2];}
+syncLanguageUI();
 }
 function setQuizLanguage(lang){
 currentLanguage = lang;
-document.querySelectorAll("#qlangEnglish,#qlangHinglish,#qlangHindi").forEach(b=>{b.style.background="rgba(255,255,255,0.05)";b.style.borderColor="rgba(255,255,255,0.08)";b.style.color="#cbd5e1";});
-const styles={english:["rgba(139,92,246,0.3)","#8b5cf6","white"],hinglish:["rgba(234,179,8,0.2)","#eab308","#eab308"],hindi:["rgba(239,68,68,0.2)","#ef4444","#ef4444"]};
-const s=styles[lang];const b=document.getElementById("qlang"+lang.charAt(0).toUpperCase()+lang.slice(1));
-if(b){b.style.background=s[0];b.style.borderColor=s[1];b.style.color=s[2];}
+syncLanguageUI();
 }
 function setInterviewLanguage(lang){
 currentLanguage = lang;
-document.querySelectorAll("#ilangEnglish,#ilangHinglish,#ilangHindi").forEach(b=>{b.style.background="rgba(255,255,255,0.05)";b.style.borderColor="rgba(255,255,255,0.08)";b.style.color="#cbd5e1";});
-const styles={english:["rgba(139,92,246,0.3)","#8b5cf6","white"],hinglish:["rgba(234,179,8,0.2)","#eab308","#eab308"],hindi:["rgba(239,68,68,0.2)","#ef4444","#ef4444"]};
-const s=styles[lang];const b=document.getElementById("ilang"+lang.charAt(0).toUpperCase()+lang.slice(1));
-if(b){b.style.background=s[0];b.style.borderColor=s[1];b.style.color=s[2];}
+syncLanguageUI();
 }
 function syncLanguageUI(){
 const styles={english:["rgba(139,92,246,0.3)","#8b5cf6","white"],hinglish:["rgba(234,179,8,0.2)","#eab308","#eab308"],hindi:["rgba(239,68,68,0.2)","#ef4444","#ef4444"]};
