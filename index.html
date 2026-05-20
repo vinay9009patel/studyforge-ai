@@ -1744,11 +1744,7 @@ id="notesFile"
 class="input"
 accept=".pdf,image/*,.txt">
 
-<div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;">
-<button class="btn" id="langEnglish" style="flex:1;background:rgba(139,92,246,0.3);color:white;border:2px solid #8b5cf6;" onclick="setLanguage('english')">🇬🇧 English</button>
-<button class="btn" id="langHinglish" style="flex:1;background:rgba(234,179,8,0.2);color:#eab308;border:2px solid rgba(234,179,8,0.3);" onclick="setLanguage('hinglish')">🔀 Hinglish</button>
-<button class="btn" id="langHindi" style="flex:1;background:rgba(239,68,68,0.2);color:#ef4444;border:2px solid rgba(239,68,68,0.3);" onclick="setLanguage('hindi')">🇮🇳 Hindi</button>
-</div>
+
 
 <button
 class="btn primary"
@@ -1877,11 +1873,7 @@ Hard
 </button>
 </div>
 
-<div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
-<button class="btn" id="qlangEnglish" style="flex:1;background:rgba(139,92,246,0.3);color:white;border:2px solid #8b5cf6;" onclick="setQuizLanguage('english')">🇬🇧 English</button>
-<button class="btn" id="qlangHinglish" style="flex:1;background:rgba(234,179,8,0.2);color:#eab308;border:2px solid rgba(234,179,8,0.3);" onclick="setQuizLanguage('hinglish')">🔀 Hinglish</button>
-<button class="btn" id="qlangHindi" style="flex:1;background:rgba(239,68,68,0.2);color:#ef4444;border:2px solid rgba(239,68,68,0.3);" onclick="setQuizLanguage('hindi')">🇮🇳 Hindi</button>
-</div>
+
 
 <button
 class="btn primary"
@@ -1959,11 +1951,7 @@ class="input dark-select">
 </button>
 </div>
 
-<div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
-<button class="btn" id="ilangEnglish" style="flex:1;background:rgba(139,92,246,0.3);color:white;border:2px solid #8b5cf6;" onclick="setInterviewLanguage('english')">🇬🇧 English</button>
-<button class="btn" id="ilangHinglish" style="flex:1;background:rgba(234,179,8,0.2);color:#eab308;border:2px solid rgba(234,179,8,0.3);" onclick="setInterviewLanguage('hinglish')">🔀 Hinglish</button>
-<button class="btn" id="ilangHindi" style="flex:1;background:rgba(239,68,68,0.2);color:#ef4444;border:2px solid rgba(239,68,68,0.3);" onclick="setInterviewLanguage('hindi')">🇮🇳 Hindi</button>
-</div>
+
 
 <button
 class="btn primary"
@@ -2237,7 +2225,6 @@ let currentQuizCorrect = 0;
 let currentQuizWrong = 0;
 let currentQuizMissed = [];
 let currentDifficulty = "medium";
-let currentLanguage = "english";
 let interviewQuestions = [];
 let interviewResponses = [];
 let interviewTranscript = [];
@@ -2449,21 +2436,13 @@ const speech = window.speechSynthesis;
 
     speech.cancel();
 
-    const langMap = {english:"en-US",hinglish:"hi-IN",hindi:"hi-IN"};
-    const targetLang = langMap[currentLanguage] || "en-US";
-
     let voices = speech.getVoices();
 if(!voices.length){
 speech.getVoices();
 voices = speech.getVoices();
 }
 let selectedVoice = null;
-const isHindi = targetLang === "hi-IN";
-if(isHindi){
-selectedVoice = voices.find(v=>v.lang.startsWith("hi")) ||
-voices.find(v=>/hindi/i.test(v.name)) ||
-voices.find(v=>v.lang.startsWith("en") && /female/i.test(v.name));
-}else if(interviewerGender === "female"){
+if(interviewerGender === "female"){
 selectedVoice = voices.find(v=>/female/i.test(v.name)) ||
 voices.find(v=>/zira|samantha|google us english/i.test(v.name)) ||
 voices.find(v=>v.lang.startsWith("en") && !/male|david|mark/i.test(v.name));
@@ -2472,7 +2451,7 @@ selectedVoice = voices.find(v=>/male/i.test(v.name)) ||
 voices.find(v=>/david|google uk english male|microsoft mark/i.test(v.name)) ||
 voices.find(v=>v.lang.startsWith("en") && !/female|zira|samantha/i.test(v.name));
 }
-if(!selectedVoice) selectedVoice = voices.find(v=>v.lang.startsWith(targetLang.slice(0,2))) || voices.find(v=>v.lang.startsWith("en")) || voices[0];
+if(!selectedVoice) selectedVoice = voices.find(v=>v.lang.startsWith("en")) || voices[0];
 
 // Refresh avatar with a new expression for dynamic feel
 const photoEl = document.querySelector(".interviewer-photo");
@@ -2489,8 +2468,8 @@ photoEl.style.opacity = "1";
     const utterance = new SpeechSynthesisUtterance(text);
 
     utterance.voice = selectedVoice;
-    utterance.lang = targetLang;
-    utterance.rate = isHindi ? 0.85 : 0.95;
+    utterance.lang = "en-US";
+    utterance.rate = 0.95;
     utterance.pitch = interviewerGender === "female" ? 1.15 : 0.6;
 
 utterance.onstart = ()=>{
@@ -2606,11 +2585,11 @@ Rules:
 10. NEVER repeat a question.
 11. No markdown, no extra text, pure JSON only.
 12. STRICT: If the question does not specifically mention or relate to ${currentInterviewTopic}, it is WRONG. Stay on topic.
-13. LANGUAGE: Ask questions and write ideal_answer in ${currentLanguage === "hinglish" ? "Hinglish (Hindi + English mixed, casual style)" : currentLanguage === "hindi" ? "Hindi (Devanagari script)" : "English only"}. The interview conversation must be entirely in ${currentLanguage === "hinglish" ? "Hinglish" : currentLanguage === "hindi" ? "Hindi" : "English"}.`;
+13. Write questions and ideal_answer in English only.`;
 
 try{
 const raw =
-await askAI(prompt,`You are a strict technical interviewer. Your ONLY job is to ask questions about "${currentInterviewTopic}". Never deviate to other topics. Every question must directly test knowledge of ${currentInterviewTopic}. Stay focused. LANGUAGE: Conduct the entire interview in ${currentLanguage === "hinglish" ? "Hinglish" : currentLanguage === "hindi" ? "Hindi" : "English"}.`);
+await askAI(prompt,`You are a strict technical interviewer. Your ONLY job is to ask questions about "${currentInterviewTopic}". Never deviate to other topics. Every question must directly test knowledge of ${currentInterviewTopic}. Stay focused. Conduct the entire interview in English.`);
 
 const cleaned = String(raw ?? "")
 .replace(/```json/g,"")
@@ -2811,7 +2790,7 @@ return [
 ].join("\n");
 }
 
-function normalizeMindMapCode(rawCode,topic,sourceText = "",lang = "english"){
+function normalizeMindMapCode(rawCode,topic,sourceText = ""){
 const code =
 String(rawCode || "")
 .replace(/```mermaid/g,"")
@@ -2819,7 +2798,7 @@ String(rawCode || "")
 .trim();
 
 if(!code){
-return buildFallbackMindMap(topic,sourceText,lang);
+return buildFallbackMindMap(topic,sourceText);
 }
 
 const lines = code
@@ -2828,11 +2807,11 @@ const lines = code
 .filter(line=>line.trim());
 
 if(!lines.length){
-return buildFallbackMindMap(topic,sourceText,lang);
+return buildFallbackMindMap(topic,sourceText);
 }
 
 if(!/^mindmap\b/i.test(lines[0].trim())){
-return buildFallbackMindMap(topic,sourceText,lang);
+return buildFallbackMindMap(topic,sourceText);
 }
 
 const cleaned = lines.map((line,index)=>{
@@ -2860,11 +2839,7 @@ cleaned.splice(1,0,`  root((${String(topic || "Topic").replace(/[()]/g,"")}))`);
 return cleaned.join("\n");
 }
 
-async function generateDetailedMindMap(topic,sourceText = "",lang = "english"){
-const langInstr = lang === "hinglish" ? "Hinglish (Hindi + English mixed)"
-: lang === "hindi" ? "Hindi (Devanagari script)"
-: "English";
-const sysLang = `CRITICAL: Write ALL mindmap labels in ${langInstr}. ONLY use ${lang === "english" ? "English" : lang === "hindi" ? "Hindi" : "Hinglish"}. Never use English.`;
+async function generateDetailedMindMap(topic,sourceText = ""){
 const prompt = `
 Create a detailed Mermaid mindmap for study notes.
 
@@ -2884,17 +2859,16 @@ Rules:
 7. Use ONLY valid Mermaid mindmap syntax.
 8. No markdown fences.
 9. No explanation text.
-10. LANGUAGE: Write ALL node labels in ${langInstr}.
+10. Write ALL node labels in English.
 `;
 
 const result =
-await askAI(prompt,sysLang);
+await askAI(prompt,"You are a mindmap generator. Write in English.");
 
 return normalizeMindMapCode(
 result,
 topic,
-sourceText,
-lang
+sourceText
 );
 }
 
@@ -3238,8 +3212,6 @@ Facial expression analysis per answer (confident/nervous/neutral/mixed):
 ${JSON.stringify(facialScores)}
 
 Consider the facial expressions when evaluating confidence and giving strengths/weaknesses.
-
-LANGUAGE: Write the entire evaluation in ${currentLanguage === "hinglish" ? "Hinglish (Hindi + English mixed)" : currentLanguage === "hindi" ? "Hindi (Devanagari script)" : "English"}.
 `;
 
 const response =
@@ -3687,13 +3659,14 @@ navigator.mediaDevices.getUserMedia({audio:true})
 micStream = stream;
 
 voiceRecognition = new SpeechRecognition();
-voiceRecognition.lang = currentLanguage === "english" ? "en-US" : "hi-IN";
+voiceRecognition.lang = "en-US";
 voiceRecognition.continuous = true;
 voiceRecognition.interimResults = true;
 
 voiceRecognition.onstart = ()=>{
 isListening = true;
 btn.style.background = "rgba(239,68,68,0.3)";
+// ... existing code after this
 btn.style.borderColor = "#ef4444";
 btnText.innerText = "Listening...";
 showMicStatus("🎤 Listening... Speak now","active");
@@ -3786,7 +3759,7 @@ function startOwnAutoMic(stream){
     const textarea = document.getElementById("interviewAnswer");
     if(voiceRecognition) try{ voiceRecognition.stop(); }catch(e){}
     voiceRecognition = new SpeechRecognition();
-    voiceRecognition.lang = currentLanguage === "english" ? "en-US" : "hi-IN";
+    voiceRecognition.lang = "en-US";
     voiceRecognition.continuous = true;
     voiceRecognition.interimResults = true;
     voiceRecognition.onresult = function(event){
@@ -4054,14 +4027,7 @@ notesOutput.innerHTML =
 const extractedText =
 await extractFileText(file);
 
-const langName = currentLanguage === "hinglish" ? "Hinglish (Hindi + English mixed)"
-: currentLanguage === "hindi" ? "Hindi (Devanagari script)" : "English";
-
-const prompt = `LANGUAGE: You MUST write the ENTIRE response in ${langName}. Every heading, point, example, and explanation must be in ${
-currentLanguage === "hinglish" ? "Hinglish" : currentLanguage === "hindi" ? "Hindi" : "English"
-}.
-
-Create PROFESSIONAL and HIGH QUALITY study notes on:
+const prompt = `Create PROFESSIONAL and HIGH QUALITY study notes in English on:
 ${topic}
 
 Extra content:
@@ -4088,13 +4054,12 @@ STRICT RULES:
 `;
 
 const result =
-await askAI(prompt,`You are a study note generator. CRITICAL: Always write in ${langName}. Never use English unless ${currentLanguage} is "english".`,8192);
+await askAI(prompt,`You are a study note generator. Write in English only.`,8192);
 
 let mermaidCode =
 await generateDetailedMindMap(
 topic,
-`${topic}\n${extractedText}\n${result}`,
-currentLanguage
+`${topic}\n${extractedText}\n${result}`
 );
 
 let cleanedResult = result
@@ -4827,31 +4792,6 @@ btn.style.boxShadow = "0 0 20px rgba(255,255,255,0.15)";
 }
 }
 
-function setLanguage(lang){
-currentLanguage = lang;
-document.querySelectorAll("#langEnglish,#langHinglish,#langHindi").forEach(b=>{b.style.background="rgba(255,255,255,0.05)";b.style.borderColor="rgba(255,255,255,0.08)";b.style.color="#cbd5e1";});
-const styles={english:["rgba(139,92,246,0.3)","#8b5cf6","white"],hinglish:["rgba(234,179,8,0.2)","#eab308","#eab308"],hindi:["rgba(239,68,68,0.2)","#ef4444","#ef4444"]};
-const s=styles[lang];const b=document.getElementById("lang"+lang.charAt(0).toUpperCase()+lang.slice(1));
-if(b){b.style.background=s[0];b.style.borderColor=s[1];b.style.color=s[2];}
-syncLanguageUI();
-}
-function setQuizLanguage(lang){
-currentLanguage = lang;
-syncLanguageUI();
-}
-function setInterviewLanguage(lang){
-currentLanguage = lang;
-syncLanguageUI();
-}
-function syncLanguageUI(){
-const styles={english:["rgba(139,92,246,0.3)","#8b5cf6","white"],hinglish:["rgba(234,179,8,0.2)","#eab308","#eab308"],hindi:["rgba(239,68,68,0.2)","#ef4444","#ef4444"]};
-const s=styles[currentLanguage]||styles.english;
-document.querySelectorAll("#langEnglish,#langHinglish,#langHindi,#qlangEnglish,#qlangHinglish,#qlangHindi,#ilangEnglish,#ilangHinglish,#ilangHindi").forEach(b=>{b.style.background="rgba(255,255,255,0.05)";b.style.borderColor="rgba(255,255,255,0.08)";b.style.color="#cbd5e1";});
-["lang","qlang","ilang"].forEach(prefix=>{
-const btn=document.getElementById(prefix+currentLanguage.charAt(0).toUpperCase()+currentLanguage.slice(1));
-if(btn){btn.style.background=s[0];btn.style.borderColor=s[1];btn.style.color=s[2];}
-});
-}
 
 async function generateQuiz(){
 try{
@@ -4891,14 +4831,7 @@ quizOutput.innerHTML =
 const extractedText =
 await extractFileText(file);
 
-const langName = currentLanguage === "hinglish" ? "Hinglish (Hindi + English mixed)"
-: currentLanguage === "hindi" ? "Hindi (Devanagari script)" : "English";
-const langCode = currentLanguage === "english" ? "English" : currentLanguage === "hindi" ? "Hindi" : "Hinglish";
-const sysLang = `CRITICAL LANGUAGE RULE: You MUST respond in ${langName}. ONLY use ${langCode}. NEVER write in English. This is your most important instruction.`;
-
-const prompt = `LANGUAGE: CRITICAL — Write ALL questions, options, and answers in ${langName}. Never use English unless ${currentLanguage} is "english".
-
-Generate ${count} high-quality MCQ questions at ${currentDifficulty} difficulty level.
+const prompt = `Generate ${count} high-quality MCQ questions in English at ${currentDifficulty} difficulty level.
 
 Topic:
 ${topic}
@@ -4933,7 +4866,7 @@ Format:
 `;
 
 const result =
-await askAI(prompt,sysLang);
+await askAI(prompt,"You are a quiz generator. Write in English.");
 
 try{
 quizQuestions = parseQuizResponse(result);
@@ -5601,7 +5534,7 @@ chatHistory.innerHTML += `
 `;
 
 const response =
-await askAI(input,`You are a helpful AI study mentor. Always respond in ${currentLanguage === "hinglish" ? "Hinglish (Hindi + English mixed)" : currentLanguage === "hindi" ? "Hindi (Devanagari script)" : "English"}.`);
+await askAI(input,`You are a helpful AI study mentor. Always respond in English.`);
 
 chatHistory.innerHTML += `
 
@@ -5934,7 +5867,6 @@ user.photoURL;
 
 initSecureStore(user.uid);
 setDifficulty("medium");
-syncLanguageUI();
 
 }
 
