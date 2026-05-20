@@ -5200,29 +5200,44 @@ const provider =
 new GoogleAuthProvider();
 
 window.googleLogin =
-async function(){
+  async function(){
 
-const result =
-await signInWithPopup(
-auth,
-provider
-);
+  try {
+    const result =
+    await signInWithPopup(
+      auth,
+      provider
+    );
 
-const user =
-result.user;
+    const user =
+    result.user;
 
-localStorage.setItem(
-"user",
-JSON.stringify({
+    localStorage.setItem(
+      "user",
+      JSON.stringify({
 
-name:user.displayName,
-email:user.email,
-photo:user.photoURL
+        name:user.displayName,
+        email:user.email,
+        photo:user.photoURL
 
-})
-);
+      })
+    );
 
-location.reload();
+    location.reload();
+  } catch(error) {
+    console.error("Google login error:", error);
+    let msg = "Google login failed.";
+    if(error.code === "auth/popup-blocked") {
+      msg = "Popup was blocked. Please allow popups for this site and try again.";
+    } else if(error.code === "auth/unauthorized-domain") {
+      msg = "This domain is not authorized in Firebase Console. Add 'vinay9009patel.github.io' in Authentication > Settings > Authorized domains.";
+    } else if(error.code === "auth/popup-closed-by-user") {
+      msg = "Login popup was closed. Please try again and complete the sign-in.";
+    } else {
+      msg = `Error: ${error.message || error.code || error}`;
+    }
+    alert(msg);
+  }
 
 };
 
