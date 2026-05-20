@@ -2943,37 +2943,7 @@ function retryOwnCamera(){
         if(camMsg) camMsg.style.display = "none";
         const retryBtn = document.getElementById("ownCamRetry");
         if(retryBtn) retryBtn.style.display = "none";
-        if(SpeechRecognition){
-            const audioTrack = stream.getAudioTracks()[0];
-            if(audioTrack && audioTrack.enabled){
-                micStream = stream;
-                const textarea = document.getElementById("interviewAnswer");
-                voiceRecognition = new SpeechRecognition();
-                voiceRecognition.lang = "en-US";
-                voiceRecognition.continuous = true;
-                voiceRecognition.interimResults = true;
-                voiceRecognition.onresult = function(event){
-                    let final = "";
-                    for(let i=event.resultIndex;i<event.results.length;i++){
-                        if(event.results[i].isFinal) final += event.results[i][0].transcript + " ";
-                    }
-                    if(final && textarea){
-                        textarea.value += final;
-                        textarea.scrollTop = textarea.scrollHeight;
-                    }
-                };
-                voiceRecognition.onerror = function(){ stopVoiceInput(); };
-                voiceRecognition.onend = function(){
-                    if(isListening){ try{ voiceRecognition.start(); }catch(e){} }
-                };
-                voiceRecognition.start();
-                isListening = true;
-                const btn = document.getElementById("voiceBtn");
-                const btnText = document.getElementById("voiceBtnText");
-                if(btnText) btnText.innerText = "Auto Mic";
-                if(btn){ btn.style.background = "rgba(239,68,68,0.3)"; btn.style.borderColor = "#ef4444"; }
-            }
-        }
+        startOwnAutoMic(stream);
     })
     .catch(err=>{
         console.log("Camera retry error:",err);
@@ -3055,37 +3025,7 @@ renderInterviewScreen();
                 if(camMsg) camMsg.style.display = "none";
                 const retryBtn = document.getElementById("ownCamRetry");
                 if(retryBtn) retryBtn.style.display = "none";
-                if(SpeechRecognition){
-                    const audioTrack = stream.getAudioTracks()[0];
-                    if(audioTrack && audioTrack.enabled){
-                        micStream = stream;
-                        const textarea = document.getElementById("interviewAnswer");
-                        voiceRecognition = new SpeechRecognition();
-                        voiceRecognition.lang = "en-US";
-                        voiceRecognition.continuous = true;
-                        voiceRecognition.interimResults = true;
-                        voiceRecognition.onresult = function(event){
-                            let final = "";
-                            for(let i=event.resultIndex;i<event.results.length;i++){
-                                if(event.results[i].isFinal) final += event.results[i][0].transcript + " ";
-                            }
-                            if(final && textarea){
-                                textarea.value += final;
-                                textarea.scrollTop = textarea.scrollHeight;
-                            }
-                        };
-                        voiceRecognition.onerror = function(){ stopVoiceInput(); };
-                        voiceRecognition.onend = function(){
-                            if(isListening){ try{ voiceRecognition.start(); }catch(e){} }
-                        };
-                        voiceRecognition.start();
-                        isListening = true;
-                        const btn = document.getElementById("voiceBtn");
-                        const btnText = document.getElementById("voiceBtnText");
-                        if(btnText) btnText.innerText = "Auto Mic";
-                        if(btn){ btn.style.background = "rgba(239,68,68,0.3)"; btn.style.borderColor = "#ef4444"; }
-                    }
-                }
+                startOwnAutoMic(stream);
             })
             .catch(err=>{
                 console.log("Camera error:",err);
@@ -3129,7 +3069,16 @@ renderInterviewScreen();
 }
 
 async function submitInterviewAnswer(){
+if(interviewerGender === "own"){
+isListening = false;
+if(voiceRecognition){
+try{ voiceRecognition.stop(); }catch(e){}
+voiceRecognition = null;
+}
+} else {
 stopVoiceInput();
+}
+
 const answerEl =
 document.getElementById("interviewAnswer");
 
@@ -3138,6 +3087,7 @@ if(!answerEl) return;
 const answer = answerEl.value.trim();
 
 if(!answer){
+if(interviewerGender === "own") setTimeout(() => startOwnAutoMic(), 100);
 alert("Type your answer");
 return;
 }
@@ -3174,6 +3124,12 @@ return;
 }
 
 await askCurrentInterviewQuestion();
+
+if(answerEl) answerEl.value = "";
+
+if(interviewerGender === "own" && !interviewEnding){
+setTimeout(() => startOwnAutoMic(), 500);
+}
 }
 
 let voiceRecognition = null;
@@ -3308,6 +3264,42 @@ function stopVoiceInput(){
         btn.style.borderColor = "rgba(139,92,246,0.3)";
     }
     if(btnText) btnText.innerText = "Speak Answer";
+}
+
+function startOwnAutoMic(stream){
+    stream = stream || ownCamStream;
+    if(!stream) return;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if(!SpeechRecognition) return;
+    const audioTrack = stream.getAudioTracks()[0];
+    if(!audioTrack || !audioTrack.enabled) return;
+    micStream = stream;
+    const textarea = document.getElementById("interviewAnswer");
+    if(voiceRecognition) try{ voiceRecognition.stop(); }catch(e){}
+    voiceRecognition = new SpeechRecognition();
+    voiceRecognition.lang = "en-US";
+    voiceRecognition.continuous = true;
+    voiceRecognition.interimResults = true;
+    voiceRecognition.onresult = function(event){
+        let final = "";
+        for(let i=event.resultIndex;i<event.results.length;i++){
+            if(event.results[i].isFinal) final += event.results[i][0].transcript + " ";
+        }
+        if(final && textarea){
+            textarea.value += final;
+            textarea.scrollTop = textarea.scrollHeight;
+        }
+    };
+    voiceRecognition.onerror = function(){ stopVoiceInput(); };
+    voiceRecognition.onend = function(){
+        if(isListening){ try{ voiceRecognition.start(); }catch(e){} }
+    };
+    try { voiceRecognition.start(); } catch(e){}
+    isListening = true;
+    const btn = document.getElementById("voiceBtn");
+    const btnText = document.getElementById("voiceBtnText");
+    if(btnText) btnText.innerText = "Auto Mic";
+    if(btn){ btn.style.background = "rgba(239,68,68,0.3)"; btn.style.borderColor = "#ef4444"; }
 }
 
 function showPage(id,element){
