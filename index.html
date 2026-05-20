@@ -2864,6 +2864,7 @@ async function generateDetailedMindMap(topic,sourceText = "",lang = "english"){
 const langInstr = lang === "hinglish" ? "Hinglish (Hindi + English mixed)"
 : lang === "hindi" ? "Hindi (Devanagari script)"
 : "English";
+const sysLang = `CRITICAL: Write ALL mindmap labels in ${langInstr}. ONLY use ${lang === "english" ? "English" : lang === "hindi" ? "Hindi" : "Hinglish"}. Never use English.`;
 const prompt = `
 Create a detailed Mermaid mindmap for study notes.
 
@@ -2887,7 +2888,7 @@ Rules:
 `;
 
 const result =
-await askAI(prompt);
+await askAI(prompt,sysLang);
 
 return normalizeMindMapCode(
 result,
@@ -4897,6 +4898,8 @@ await extractFileText(file);
 
 const langName = currentLanguage === "hinglish" ? "Hinglish (Hindi + English mixed)"
 : currentLanguage === "hindi" ? "Hindi (Devanagari script)" : "English";
+const langCode = currentLanguage === "english" ? "English" : currentLanguage === "hindi" ? "Hindi" : "Hinglish";
+const sysLang = `CRITICAL LANGUAGE RULE: You MUST respond in ${langName}. ONLY use ${langCode}. NEVER write in English. This is your most important instruction.`;
 
 const prompt = `LANGUAGE: CRITICAL — Write ALL questions, options, and answers in ${langName}. Never use English unless ${currentLanguage} is "english".
 
@@ -4931,11 +4934,12 @@ Format:
 "answer":""
 }
 ]
-
-`;
-
-const result =
-await askAI(prompt);
+4936: 
+4937: `;
+4938: 
+4939: const result =
+4940: await askAI(prompt,sysLang);
+4941: 
 
 try{
 quizQuestions = parseQuizResponse(result);
