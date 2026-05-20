@@ -96,6 +96,7 @@ background:white;
 border-top:1px solid #e8ecf0;
 }
 .light-mode .bottom-nav button{color:#4a4a6a;}
+.light-mode .bottom-nav button.active{color:#6d28d9;}
 
 .light-mode .notes-content{
 background:white;
@@ -673,6 +674,10 @@ border:none;
 color:white;
 font-size:24px;
 }
+.bottom-nav button.active{
+color:#8b5cf6;
+transform:scale(1.15);
+}
 
 
 .notes-content ul,
@@ -719,8 +724,8 @@ display:none;
 
 .main{
 margin-left:0;
-padding:20px;
-padding-bottom:120px;
+padding:16px;
+padding-bottom:100px;
 }
 
 .stats{
@@ -728,17 +733,165 @@ grid-template-columns:1fr;
 }
 
 .topbar h1{
-font-size:30px;
+font-size:26px;
 }
+
+.topbar{
+flex-direction:column;
+align-items:stretch;
+gap:12px;
+}
+.topbar .btn{width:100%;}
 
 .bottom-nav{
 display:flex;
+}
+.bottom-nav button{
+font-size:20px;
+padding:8px 12px;
+}
+.bottom-nav button.active{
+color:#8b5cf6;
+}
+
+.card{
+padding:20px;
+border-radius:20px;
+}
+
+.auth-box{
+padding:28px 20px;
+margin:10px;
+border-radius:24px;
+}
+.auth-title{
+font-size:30px !important;
+}
+.auth-sub{
+font-size:14px !important;
+}
+.auth-box .input{
+padding:16px;
+font-size:15px;
+}
+
+.option{
+padding:16px 18px;
+border-radius:18px;
+font-size:15px;
+}
+
+.notes-content{
+padding:16px !important;
+font-size:15px !important;
+}
+.notes-content h1{
+font-size:28px !important;
+}
+.notes-content h2{
+font-size:24px !important;
+}
+
+#quizOutput .card h2{
+font-size:26px !important;
+}
+#quizOutput .card h3{
+font-size:20px !important;
 }
 
 .interview-shell{
 grid-template-columns:1fr;
 }
+.interviewer-face{
+width:180px;
+height:220px;
+}
+.interview-metrics{
+grid-template-columns:1fr 1fr;
+}
 
+.profile-box{
+flex-direction:column;
+text-align:center;
+}
+.profile-box img{
+width:80px;
+height:80px;
+}
+
+.mermaid{
+padding:16px !important;
+min-height:200px !important;
+}
+
+.ai-diagram-card{
+min-height:auto !important;
+}
+
+.loader{
+width:36px;
+height:36px;
+}
+
+#aiDiagramContainer{
+grid-template-columns:1fr !important;
+}
+
+}
+@media(max-width:480px){
+
+.auth-box{
+padding:20px 16px;
+}
+.auth-title{
+font-size:24px !important;
+}
+.main{
+padding:12px;
+padding-bottom:90px;
+}
+.card{
+padding:16px;
+}
+.topbar h1{
+font-size:22px;
+}
+.btn{
+padding:14px 18px;
+font-size:14px;
+border-radius:16px;
+}
+.input{
+padding:14px;
+font-size:14px;
+}
+.notes-content h1{
+font-size:22px !important;
+}
+.notes-content h2{
+font-size:20px !important;
+}
+.notes-content{
+padding:12px !important;
+font-size:14px !important;
+}
+#quizOutput .card h2{
+font-size:22px !important;
+}
+#quizOutput .card h3{
+font-size:18px !important;
+}
+.option{
+padding:14px;
+font-size:14px;
+}
+.interview-metrics{
+grid-template-columns:1fr;
+}
+.interviewer-face{
+width:150px;
+height:190px;
+}
 }
 
 
@@ -1839,6 +1992,16 @@ Toggle Theme
 
 </div>
 
+</div>
+
+<div class="bottom-nav">
+<button onclick="showPage('dashboard',document.querySelector('.nav-item'))">🏠</button>
+<button onclick="showPage('notes',document.querySelectorAll('.nav-item')[1])">🧠</button>
+<button onclick="showPage('quiz',document.querySelectorAll('.nav-item')[2])">🧪</button>
+<button onclick="showPage('mentor',document.querySelectorAll('.nav-item')[3])">🤖</button>
+<button onclick="showPage('interview',document.querySelectorAll('.nav-item')[4])">👨</button>
+<button onclick="showPage('profile',document.querySelectorAll('.nav-item')[5])">👤</button>
+<button onclick="showPage('settings',document.querySelectorAll('.nav-item')[6])">⚙️</button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -3510,6 +3673,12 @@ if(element){
 element.classList.add("active");
 
 }
+
+document.querySelectorAll(".bottom-nav button").forEach(btn=>btn.classList.remove("active"));
+const btns = document.querySelectorAll(".bottom-nav button");
+const pages = ["dashboard","notes","quiz","mentor","interview","profile","settings"];
+const idx = pages.indexOf(id);
+if(idx>=0 && btns[idx]) btns[idx].classList.add("active");
 
 }
 
