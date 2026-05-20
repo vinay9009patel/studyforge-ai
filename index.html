@@ -3642,16 +3642,32 @@ alert("Generate notes first");
 return;
 }
 
+let fileName = prompt("Enter file name for the PDF:", topic.replace(/[^\w\s-]/g,"").replace(/\s+/g,"_") || "notes");
+
+if(!fileName || !fileName.trim()) return;
+
+fileName = fileName.trim().replace(/\.pdf$/i,"") + ".pdf";
+
+const btn = document.querySelector(".btn.dark") || document.querySelector(".btn");
+const origText = btn?.innerText || "";
+if(btn) btn.innerText = "⏳ Downloading...";
+
 html2pdf()
 .set({
 margin:0.5,
-filename:`${topic.replace(/[^\w\s-]/g,"").replace(/\s+/g,"_") || "notes"}.pdf`,
+filename:fileName,
 image:{ type:"jpeg", quality:0.98 },
 html2canvas:{ scale:2, useCORS:true },
 jsPDF:{ unit:"in", format:"a4", orientation:"portrait" }
 })
 .from(notesEl)
-.save();
+.save()
+.catch(() => {
+alert("Download failed. Please try again.");
+})
+.finally(() => {
+if(btn) btn.innerText = origText;
+});
 }
 
 
