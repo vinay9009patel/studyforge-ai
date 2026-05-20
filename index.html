@@ -19,15 +19,311 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
 <style>
-
 *{
 margin:0;
 padding:0;
 box-sizing:border-box;
 }
+:root{
+--font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+body{
+font-family:var(--font);
+background:#020617;
+color:white;
+transition:0.3s;
+}
+.light-mode{
+background:#f8fafc;
+color:#0f172a;
+}
+.light-mode .sidebar{
+background:#ffffff;
+border-right:1px solid #e2e8f0;
+box-shadow:0 1px 3px rgba(0,0,0,0.04);
+}
+.light-mode .sidebar .nav-item{
+color:#475569;
+font-weight:500;
+}
+.light-mode .sidebar .nav-item:hover{
+background:#f1f5f9;
+}
+.light-mode .sidebar .nav-item.active{
+background:#f5f3ff;
+color:#7c3aed;
+font-weight:600;
+}
+
+.light-mode .card{
+background:#ffffff;
+border:1px solid #e2e8f0;
+box-shadow:0 1px 3px rgba(0,0,0,0.04);
+border-radius:16px;
+padding:28px;
+}
+.light-mode .card:hover{
+box-shadow:0 4px 12px rgba(0,0,0,0.06);
+transform:translateY(-1px);
+}
+
+.light-mode .option{
+background:#f8fafc;
+border:1px solid #e2e8f0;
+color:#0f172a;
+border-radius:14px;
+padding:18px 22px;
+font-size:16px;
+font-weight:500;
+}
+.light-mode .option:hover{
+background:#f1f5f9;
+border-color:#7c3aed;
+}
+
+.light-mode .input{
+background:#ffffff;
+border:1px solid #d1d5db;
+color:#0f172a;
+border-radius:12px;
+padding:14px 18px;
+font-size:15px;
+}
+.light-mode .input:focus{
+border-color:#7c3aed;
+box-shadow:0 0 0 3px rgba(124,58,237,0.1);
+}
+
+.light-mode .bottom-nav{
+background:#ffffff;
+border-top:1px solid #e2e8f0;
+}
+.light-mode .bottom-nav button{color:#64748b;font-size:22px;}
+.light-mode .bottom-nav button.active{color:#7c3aed;}
+
+.light-mode .notes-content{
+background:#ffffff;
+border:1px solid #e2e8f0;
+border-radius:16px;
+padding:28px 32px;
+line-height:1.9;
+font-size:16px;
+color:#1e293b;
+}
+.light-mode .notes-content p{
+background:transparent;
+border-left:3px solid #7c3aed;
+color:#334155;
+padding:8px 16px;
+margin-bottom:20px;
+font-size:16px;
+}
+.light-mode .notes-content h1{
+font-size:32px;
+font-weight:700;
+margin:40px 0 20px;
+color:#0f172a;
+-webkit-text-fill-color:#0f172a;
+background:none;
+}
+.light-mode .notes-content h2{
+font-size:24px;
+font-weight:600;
+margin:32px 0 16px;
+color:#1e293b;
+border-bottom:1px solid #e2e8f0;
+padding-bottom:8px;
+}
+.light-mode .notes-content h3{
+font-size:20px;
+font-weight:600;
+margin:24px 0 12px;
+color:#334155;
+}
+.light-mode .notes-content ul,
+.light-mode .notes-content ol{
+padding-left:24px;
+margin-bottom:20px;
+}
+.light-mode .notes-content li{
+color:#475569;
+margin-bottom:8px;
+font-size:15px;
+}
+.light-mode .notes-content table{
+border-radius:12px;
+overflow:hidden;
+margin:24px 0;
+}
+.light-mode .notes-content th{
+background:#f1f5f9;
+color:#0f172a;
+font-weight:600;
+padding:14px 18px;
+}
+.light-mode .notes-content td{
+background:#f8fafc;
+color:#334155;
+padding:14px 18px;
+}
+
+.light-mode .topbar h1{color:#0f172a;font-size:28px;font-weight:700;}
+.light-mode .topbar h1 span{font-weight:700;}
+
+.light-mode .stat-title{color:#64748b;font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;}
+.light-mode .stat-value{color:#0f172a;font-size:32px;font-weight:700;}
+
+.light-mode .btn.dark{
+background:#0f172a;
+color:#ffffff;
+}
+.light-mode .btn.dark:hover{
+background:#1e293b;
+}
+
+.light-mode .auth-box{
+background:rgba(255,255,255,0.95);
+border:1px solid #e2e8f0;
+backdrop-filter:blur(20px);
+border-radius:24px;
+}
+.light-mode .auth-title{
+background:linear-gradient(to right,#7c3aed,#3b82f6);
+-webkit-background-clip:text;
+-webkit-text-fill-color:transparent;
+font-size:36px;
+}
+.light-mode .auth-sub{color:#64748b;}
+.light-mode #authScreen{background:#f8fafc;}
+.light-mode #authScreen .auth-box{
+background:#ffffff;
+border:1px solid #e2e8f0;
+box-shadow:0 4px 24px rgba(0,0,0,0.06);
+}
+
+.light-mode .mermaid{
+background:#ffffff !important;
+border:1px solid #e2e8f0 !important;
+border-radius:16px !important;
+}
+.light-mode .ai-diagram-card{
+background:#ffffff;
+border:1px solid #e2e8f0;
+border-radius:16px;
+}
+.light-mode .ai-diagram-title{
+background:#f8fafc;
+border-bottom:1px solid #e2e8f0;
+padding:16px 20px;
+font-weight:600;
+color:#0f172a;
+}
+
+.light-mode .interviewer-stage{
+background:#ffffff;
+border:1px solid #e2e8f0;
+border-radius:16px;
+}
+.light-mode .interview-chat{
+background:#f8fafc;
+border:1px solid #e2e8f0;
+border-radius:16px;
+padding:20px;
+}
+.light-mode .interview-line.ai{
+background:#f1f5f9;
+border:1px solid #e2e8f0;
+border-radius:12px;
+padding:14px 18px;
+color:#1e293b;
+}
+.light-mode .interview-line.user{
+background:#f5f3ff;
+border:1px solid #e2e8f0;
+border-radius:12px;
+padding:14px 18px;
+color:#1e293b;
+}
+.light-mode .interview-metric{
+background:#f8fafc;
+border:1px solid #e2e8f0;
+border-radius:12px;
+padding:14px 18px;
+}
+.light-mode .interview-metric div:last-child{
+color:#0f172a;
+font-weight:600;
+}
+
+.light-mode .mic-status{color:#64748b;font-size:13px;}
+.light-mode .mic-status.active{color:#16a34a;}
+.light-mode .mic-status.warning{color:#d97706;}
+.light-mode .mic-status.error{color:#dc2626;}
+
+.light-mode .profile-box img{border-color:#7c3aed;}
+.light-mode .weak-topics{color:#0f172a;}
+.light-mode .weak-topics span{background:#f1f5f9;padding:4px 12px;border-radius:20px;font-size:13px;color:#475569;display:inline-block;margin:4px 4px 0 0;}
+
+.light-mode .mindmap-fallback{
+background:#ffffff;
+border:1px solid #e2e8f0;
+border-radius:16px;
+}
+.light-mode .mindmap-fallback-node{
+background:#f8fafc;
+border:1px solid #e2e8f0;
+border-radius:12px;
+padding:10px 16px;
+}
+
+.light-mode .loader{
+border-color:#e2e8f0;
+border-top-color:#7c3aed;
+}
+
+.light-mode .dark-select{
+background:#ffffff !important;
+color:#0f172a !important;
+border:1px solid #d1d5db !important;
+border-radius:10px !important;
+padding:10px 14px !important;
+font-size:14px !important;
+}
+.light-mode .dark-select option{
+background:#ffffff;
+color:#0f172a;
+}
+
+.light-mode .card::before,
+.light-mode .interviewer-stage::before{display:none;}
+.light-mode .interviewer-stage [style*="color:#94a3b8"]{color:#64748b !important;}
+.light-mode .interviewer-stage [style*="background:rgba(255,255,255,0.05)"]{background:#f8fafc !important;border-color:#e2e8f0 !important;}
+.light-mode .interviewer-stage [style*="border:1px solid rgba(255,255,255,0.08)"]{border-color:#e2e8f0 !important;}
+.light-mode .interviewer-face{border-color:#e2e8f0 !important;background:#f1f5f9 !important;}
+
+.light-mode .notes-content blockquote{
+border-left:3px solid #7c3aed;
+background:#f8fafc;
+padding:12px 18px;
+margin:20px 0;
+border-radius:0 10px 10px 0;
+color:#475569;
+}
+
+.light-mode ::selection{
+background:rgba(124,58,237,0.15);
+color:#0f172a;
+}
+
+.light-mode [style*="color:#dbeafe"]{color:#334155 !important;}
+.light-mode [style*="color:#c4b5fd"]{color:#7c3aed !important;}
+.light-mode [style*="color:#cbd5e1"]{color:#475569 !important;}
+.light-mode [style*="background:linear-gradient(145deg,rgba(139,92,246,0.22),rgba(59,130,246,0.14))"],
+.light-mode [style*="background:linear-gradient(145deg,rgba(139,92,246,0.18),rgba(59,130,246,0.1))"]{background:#f5f3ff !important;border-color:#e2e8f0 !important;}
+.light-mode [style*="background:rgba(255,255,255,0.05)"]{background:#f8fafc !important;border-color:#e2e8f0 !important;}
 
 body{
-font-family:'Inter',sans-serif;
+font-family:var(--font),'Inter',sans-serif;
 
 background:
 radial-gradient(circle at top left,#1e293b,#020617 45%),
@@ -37,176 +333,6 @@ color:white;
 overflow-x:hidden;
 transition:0.3s;
 }
-
-img{
-max-width:100%;
-}
-
-.light-mode{
-background:#f4f5f8;
-color:#1a1a2e;
-}
-
-.light-mode .sidebar{
-background:white;
-border-right:1px solid #e8ecf0;
-box-shadow:2px 0 12px rgba(0,0,0,0.04);
-}
-.light-mode .sidebar .nav-item{
-color:#4a4a6a;
-}
-.light-mode .sidebar .nav-item:hover{
-background:#f0f2f8;
-transform:translateX(5px);
-}
-.light-mode .sidebar .nav-item.active{
-background:linear-gradient(135deg,rgba(139,92,246,0.12),rgba(59,130,246,0.08));
-color:#6d28d9;
-}
-
-.light-mode .card{
-background:white;
-border:1px solid #e8ecf0;
-box-shadow:0 2px 8px rgba(0,0,0,0.04);
-}
-.light-mode .card:hover{
-box-shadow:0 8px 24px rgba(0,0,0,0.08);
-}
-
-.light-mode .option{
-background:#f8f9fc;
-border:1px solid #e8ecf0;
-color:#1a1a2e;
-}
-.light-mode .option:hover{
-background:linear-gradient(145deg,rgba(139,92,246,0.08),rgba(59,130,246,0.04));
-border-color:#8b5cf6;
-}
-
-.light-mode .input{
-background:white;
-border:1px solid #e0e4ea;
-color:#1a1a2e;
-}
-.light-mode .input:focus{
-border-color:#8b5cf6;
-box-shadow:0 0 0 3px rgba(139,92,246,0.12);
-}
-
-.light-mode .bottom-nav{
-background:white;
-border-top:1px solid #e8ecf0;
-}
-.light-mode .bottom-nav button{color:#4a4a6a;}
-.light-mode .bottom-nav button.active{color:#6d28d9;}
-
-.light-mode .notes-content{
-background:white;
-border:1px solid #e8ecf0;
-}
-.light-mode .notes-content p{
-background:#f8f9fc;
-border-left-color:#8b5cf6;
-color:#2d2d44;
-}
-.light-mode .notes-content h1{
--webkit-text-fill-color:#8b5cf6;
-}
-.light-mode .notes-content h2{
-color:#1a1a2e;
-border-bottom-color:#e8ecf0;
-}
-
-.light-mode .topbar h1{color:#1a1a2e;}
-
-.light-mode .stat-title{color:#6b7280;}
-.light-mode .stat-value{color:#1a1a2e;}
-
-.light-mode .btn.dark{
-background:#1a1a2e;
-color:white;
-}
-
-.light-mode .auth-box{
-background:rgba(255,255,255,0.9);
-border:1px solid rgba(0,0,0,0.06);
-backdrop-filter:blur(20px);
-}
-.light-mode .auth-title{
--webkit-text-fill-color:transparent;
-}
-.light-mode .auth-sub{color:#6b7280;}
-
-.light-mode .mermaid{
-background:white !important;
-border:1px solid #e8ecf0 !important;
-}
-.light-mode .ai-diagram-card{
-background:white;
-border:1px solid #e8ecf0;
-}
-.light-mode .ai-diagram-title{
-background:linear-gradient(to right,rgba(139,92,246,0.06),rgba(59,130,246,0.04));
-border-bottom:1px solid #e8ecf0;
-}
-
-.light-mode .interviewer-stage{
-background:white;
-border:1px solid #e8ecf0;
-}
-.light-mode .interview-chat{
-background:#f8f9fc;
-border:1px solid #e8ecf0;
-}
-.light-mode .interview-line.ai{
-background:rgba(59,130,246,0.06);
-border-color:rgba(96,165,250,0.12);
-}
-.light-mode .interview-line.user{
-background:rgba(139,92,246,0.06);
-border-color:rgba(196,181,253,0.12);
-}
-.light-mode .interview-metric{
-background:#f8f9fc;
-border:1px solid #e8ecf0;
-}
-
-.light-mode .profile-box img{border-color:#8b5cf6;}
-
-.light-mode .weak-topics{color:#1a1a2e;}
-.light-mode .stat-title{color:#6b7280;}
-.light-mode .stat-value{color:#1a1a2e;}
-
-.light-mode .mindmap-fallback{
-background:white;
-border:1px solid #e8ecf0;
-}
-.light-mode .mindmap-fallback-node{
-background:#f8f9fc;
-border:1px solid #e8ecf0;
-}
-
-.light-mode .loader{
-border-color:#e8ecf0;
-border-top-color:#8b5cf6;
-}
-
-.light-mode .dark-select{
-background:white !important;
-color:#1a1a2e !important;
-border:1px solid #e0e4ea !important;
-}
-.light-mode .dark-select option{
-background:white;
-color:#1a1a2e;
-}
-
-.light-mode #authScreen{
-background:#f4f5f8;
-}
-.light-mode #authScreen .auth-box{
-background:white;
-border:1px solid #e8ecf0;
 }
 
 /* AUTH */
@@ -1299,6 +1425,10 @@ border-radius:30px;
 background:linear-gradient(145deg,rgba(15,23,42,0.92),rgba(30,41,59,0.82));
 border:1px solid rgba(255,255,255,0.08);
 }
+.mic-status{color:#94a3b8;font-weight:500;}
+.mic-status.active{color:#22c55e;}
+.mic-status.warning{color:#f59e0b;}
+.mic-status.error{color:#ef4444;}
 
 .interview-transcript{
 max-height:420px;
@@ -2326,27 +2456,30 @@ const speech = window.speechSynthesis;
 
     speech.cancel();
 
+    const langMap = {english:"en-US",hinglish:"hi-IN",hindi:"hi-IN"};
+    const targetLang = langMap[currentLanguage] || "en-US";
+
     let voices = speech.getVoices();
 if(!voices.length){
-// Force load voices and try again
 speech.getVoices();
 voices = speech.getVoices();
 }
 let selectedVoice = null;
-if(interviewerGender === "female"){
+const isHindi = targetLang === "hi-IN";
+if(isHindi){
+selectedVoice = voices.find(v=>v.lang.startsWith("hi")) ||
+voices.find(v=>/hindi/i.test(v.name)) ||
+voices.find(v=>v.lang.startsWith("en") && /female/i.test(v.name));
+}else if(interviewerGender === "female"){
 selectedVoice = voices.find(v=>/female/i.test(v.name)) ||
 voices.find(v=>/zira|samantha|google us english/i.test(v.name)) ||
 voices.find(v=>v.lang.startsWith("en") && !/male|david|mark/i.test(v.name));
-}else if(interviewerGender === "male"){
-selectedVoice = voices.find(v=>/male/i.test(v.name)) ||
-voices.find(v=>/david|google uk english male|microsoft mark/i.test(v.name)) ||
-voices.find(v=>v.lang.startsWith("en") && !/female|zira|samantha/i.test(v.name));
 }else{
 selectedVoice = voices.find(v=>/male/i.test(v.name)) ||
 voices.find(v=>/david|google uk english male|microsoft mark/i.test(v.name)) ||
 voices.find(v=>v.lang.startsWith("en") && !/female|zira|samantha/i.test(v.name));
 }
-if(!selectedVoice) selectedVoice = voices.find(v=>v.lang.startsWith("en")) || voices[0];
+if(!selectedVoice) selectedVoice = voices.find(v=>v.lang.startsWith(targetLang.slice(0,2))) || voices.find(v=>v.lang.startsWith("en")) || voices[0];
 
 // Refresh avatar with a new expression for dynamic feel
 const photoEl = document.querySelector(".interviewer-photo");
@@ -2363,7 +2496,8 @@ photoEl.style.opacity = "1";
     const utterance = new SpeechSynthesisUtterance(text);
 
     utterance.voice = selectedVoice;
-    utterance.rate = 0.95;
+    utterance.lang = targetLang;
+    utterance.rate = isHindi ? 0.85 : 0.95;
     utterance.pitch = interviewerGender === "female" ? 1.2 : 0.85;
 
 utterance.onstart = ()=>{
@@ -2917,6 +3051,7 @@ id="interviewAnswer"
 class="input"
 style="min-height:150px;margin-top:20px;margin-bottom:14px;"
 placeholder="Type your answer here..."></textarea>
+<div id="micStatus" class="mic-status" style="margin:-10px 0 10px;font-size:13px;min-height:18px;transition:all 0.2s;"></div>
 <div style="display:flex;gap:14px;flex-wrap:wrap;">
 <button
 class="btn primary"
@@ -3551,7 +3686,7 @@ navigator.mediaDevices.getUserMedia({audio:true})
 micStream = stream;
 
 voiceRecognition = new SpeechRecognition();
-voiceRecognition.lang = "en-US";
+voiceRecognition.lang = currentLanguage === "english" ? "en-US" : "hi-IN";
 voiceRecognition.continuous = true;
 voiceRecognition.interimResults = true;
 
@@ -3560,21 +3695,19 @@ isListening = true;
 btn.style.background = "rgba(239,68,68,0.3)";
 btn.style.borderColor = "#ef4444";
 btnText.innerText = "Listening...";
+showMicStatus("🎤 Listening... Speak now","active");
 };
 
 voiceRecognition.onresult = (event)=>{
-let interim = "";
 let final = "";
 for(let i=event.resultIndex;i<event.results.length;i++){
 const transcript = event.results[i][0].transcript;
 if(event.results[i].isFinal){
 final += transcript + " ";
-}else{
-interim += transcript;
 }
 }
 if(final){
-textarea.value += final;
+textarea.value += final.charAt(0).toUpperCase() + final.slice(1);
 }
 textarea.scrollTop = textarea.scrollHeight;
 };
@@ -3629,20 +3762,30 @@ function stopVoiceInput(){
         btn.style.borderColor = "rgba(139,92,246,0.3)";
     }
     if(btnText) btnText.innerText = "Speak Answer";
+    showMicStatus("","");
 }
 
 function startOwnAutoMic(stream){
     stream = stream || ownCamStream;
-    if(!stream) return;
+    if(!stream){
+        showMicStatus("No mic stream available. Tap 🎤 to speak.","warning");
+        return;
+    }
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if(!SpeechRecognition) return;
+    if(!SpeechRecognition){
+        showMicStatus("Voice typing not supported on this browser. Tap 🎤 to record manually.","error");
+        return;
+    }
     const audioTrack = stream.getAudioTracks()[0];
-    if(!audioTrack || !audioTrack.enabled) return;
+    if(!audioTrack || !audioTrack.enabled){
+        showMicStatus("Microphone not available. Tap 🎤 to speak.","warning");
+        return;
+    }
     micStream = stream;
     const textarea = document.getElementById("interviewAnswer");
     if(voiceRecognition) try{ voiceRecognition.stop(); }catch(e){}
     voiceRecognition = new SpeechRecognition();
-    voiceRecognition.lang = "en-US";
+    voiceRecognition.lang = currentLanguage === "english" ? "en-US" : "hi-IN";
     voiceRecognition.continuous = true;
     voiceRecognition.interimResults = true;
     voiceRecognition.onresult = function(event){
@@ -3651,21 +3794,50 @@ function startOwnAutoMic(stream){
             if(event.results[i].isFinal) final += event.results[i][0].transcript + " ";
         }
         if(final && textarea){
-            textarea.value += final;
+            textarea.value += final.charAt(0).toUpperCase() + final.slice(1);
             textarea.scrollTop = textarea.scrollHeight;
         }
     };
-    voiceRecognition.onerror = function(){ stopVoiceInput(); };
-    voiceRecognition.onend = function(){
-        if(isListening){ try{ voiceRecognition.start(); }catch(e){} }
+    voiceRecognition.onerror = function(event){
+        console.error("SpeechRecognition error:", event.error);
+        if(event.error === "not-allowed" || event.error === "service-not-allowed"){
+            showMicStatus("Mic access denied. Tap 🎤 to try again.","error");
+        } else if(event.error === "no-speech"){
+            showMicStatus("No speech detected. Speak louder or tap 🎤.","warning");
+        } else if(event.error === "aborted"){
+            showMicStatus("");
+        } else {
+            showMicStatus("Voice error. Tap 🎤 to retry.","warning");
+        }
+        stopVoiceInput();
     };
-    try { voiceRecognition.start(); } catch(e){}
+    voiceRecognition.onend = function(){
+        if(isListening){
+            try{ voiceRecognition.start(); }catch(e){
+                showMicStatus("Auto mic failed. Tap 🎤 to speak.","error");
+            }
+        }
+    };
+    try {
+        voiceRecognition.start();
+        showMicStatus("🎤 Listening... Speak now","active");
+    } catch(e){
+        showMicStatus("Auto mic failed. Tap 🎤 to speak.","error");
+    }
     isListening = true;
     const btn = document.getElementById("voiceBtn");
     const btnText = document.getElementById("voiceBtnText");
     if(btnText) btnText.innerText = "Auto Mic";
     if(btn){ btn.style.background = "rgba(239,68,68,0.3)"; btn.style.borderColor = "#ef4444"; }
 }
+
+function showMicStatus(msg,type=""){
+    const el = document.getElementById("micStatus");
+    if(!el) return;
+    el.textContent = msg;
+    el.className = "mic-status " + type;
+}
+
 
 function showPage(id,element){
 
@@ -3703,9 +3875,9 @@ if(idx>=0 && btns[idx]) btns[idx].classList.add("active");
 
 }
 
-async function askAI(prompt,systemMsg){
+async function askAI(prompt,systemMsg,maxTok){
 try{
-
+if(!maxTok) maxTok = 4096;
 const messages = systemMsg ? [
 {role:"system",content:systemMsg},
 {role:"user",content:prompt}
@@ -3733,8 +3905,7 @@ model:"llama-3.1-8b-instant",
 messages,
 
 temperature:0.3,
-
-max_tokens:4096
+max_tokens:maxTok,
 
 })
 
@@ -3898,12 +4069,12 @@ STRICT RULES:
 5. Add examples.
 6. Add real world applications.
 7. Add short summary.
-8. Generate LONG detailed notes.
+8. Generate VERY LONG detailed notes — at least 1500-2000 words. Cover every important aspect. Do NOT be brief.
 9. Do NOT generate random text.
 10. Do NOT include Mermaid code inside the notes body.
 11. Focus on detailed explanations, examples, and structure.
 12. The topic can belong to any field: science, coding, history, geography, politics, business, culture, medicine, sports, or general knowledge.
-13. If the topic is broad, break it into definition, types, working, examples, uses, advantages, limitations, and important facts.
+13. If the topic is broad, break it into definition, types, working, examples, uses, advantages, limitations, important facts, and comparison with related concepts.
 14. If the topic is a person, place, event, object, theory, or concept, adapt the notes structure naturally instead of forcing technical language.
 15. Write notes so that even an unfamiliar learner can understand the topic clearly.
 16. LANGUAGE: Write the ENTIRE notes in ${currentLanguage === "hinglish" ? "Hinglish (Hindi + English mixed, casual style)" : currentLanguage === "hindi" ? "Hindi (pure Hindi, Devanagari script)" : "English only"}. Every heading, point, example, and explanation must be in ${currentLanguage === "hinglish" ? "Hinglish" : currentLanguage === "hindi" ? "Hindi" : "English"}.
@@ -3911,7 +4082,7 @@ STRICT RULES:
 `;
 
 const result =
-await askAI(prompt);
+await askAI(prompt,"",8192);
 
 let mermaidCode =
 await generateDetailedMindMap(
@@ -4647,22 +4818,28 @@ btn.style.boxShadow = "0 0 20px rgba(255,255,255,0.15)";
 
 function setLanguage(lang){
 currentLanguage = lang;
-document.querySelectorAll("#langEnglish,#langHinglish,#langHindi").forEach(b=>{b.style.background="rgba(255,255,255,0.05)";b.style.borderColor="rgba(255,255,255,0.08)";b.style.color="#cbd5e1";});
-const styles={english:["rgba(139,92,246,0.3)","#8b5cf6","white"],hinglish:["rgba(234,179,8,0.2)","#eab308","#eab308"],hindi:["rgba(239,68,68,0.2)","#ef4444","#ef4444"]};
-const s=styles[lang];const b=document.getElementById("lang"+lang.charAt(0).toUpperCase()+lang.slice(1));
-if(b){b.style.background=s[0];b.style.borderColor=s[1];b.style.color=s[2];}
+syncLanguageUI();
 }
 function setQuizLanguage(lang){
+currentLanguage = lang;
 document.querySelectorAll("#qlangEnglish,#qlangHinglish,#qlangHindi").forEach(b=>{b.style.background="rgba(255,255,255,0.05)";b.style.borderColor="rgba(255,255,255,0.08)";b.style.color="#cbd5e1";});
 const styles={english:["rgba(139,92,246,0.3)","#8b5cf6","white"],hinglish:["rgba(234,179,8,0.2)","#eab308","#eab308"],hindi:["rgba(239,68,68,0.2)","#ef4444","#ef4444"]};
 const s=styles[lang];const b=document.getElementById("qlang"+lang.charAt(0).toUpperCase()+lang.slice(1));
 if(b){b.style.background=s[0];b.style.borderColor=s[1];b.style.color=s[2];}
+syncLanguageUI();
 }
 function setInterviewLanguage(lang){
+currentLanguage = lang;
 document.querySelectorAll("#ilangEnglish,#ilangHinglish,#ilangHindi").forEach(b=>{b.style.background="rgba(255,255,255,0.05)";b.style.borderColor="rgba(255,255,255,0.08)";b.style.color="#cbd5e1";});
 const styles={english:["rgba(139,92,246,0.3)","#8b5cf6","white"],hinglish:["rgba(234,179,8,0.2)","#eab308","#eab308"],hindi:["rgba(239,68,68,0.2)","#ef4444","#ef4444"]};
 const s=styles[lang];const b=document.getElementById("ilang"+lang.charAt(0).toUpperCase()+lang.slice(1));
 if(b){b.style.background=s[0];b.style.borderColor=s[1];b.style.color=s[2];}
+syncLanguageUI();
+}
+function syncLanguageUI(){
+setLanguage(currentLanguage);
+setQuizLanguage(currentLanguage);
+setInterviewLanguage(currentLanguage);
 }
 
 async function generateQuiz(){
@@ -5737,6 +5914,7 @@ user.photoURL;
 
 initSecureStore(user.uid);
 setDifficulty("medium");
+syncLanguageUI();
 
 }
 
