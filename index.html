@@ -1621,6 +1621,12 @@ id="notesFile"
 class="input"
 accept=".pdf,image/*,.txt">
 
+<div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;">
+<button class="btn" id="langEnglish" style="flex:1;background:rgba(139,92,246,0.3);color:white;border:2px solid #8b5cf6;" onclick="setLanguage('english')">🇬🇧 English</button>
+<button class="btn" id="langHinglish" style="flex:1;background:rgba(234,179,8,0.2);color:#eab308;border:2px solid rgba(234,179,8,0.3);" onclick="setLanguage('hinglish')">🔀 Hinglish</button>
+<button class="btn" id="langHindi" style="flex:1;background:rgba(239,68,68,0.2);color:#ef4444;border:2px solid rgba(239,68,68,0.3);" onclick="setLanguage('hindi')">🇮🇳 Hindi</button>
+</div>
+
 <button
 class="btn primary"
 onclick="generateNotes()">
@@ -1748,6 +1754,12 @@ Hard
 </button>
 </div>
 
+<div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+<button class="btn" id="qlangEnglish" style="flex:1;background:rgba(139,92,246,0.3);color:white;border:2px solid #8b5cf6;" onclick="setQuizLanguage('english')">🇬🇧 English</button>
+<button class="btn" id="qlangHinglish" style="flex:1;background:rgba(234,179,8,0.2);color:#eab308;border:2px solid rgba(234,179,8,0.3);" onclick="setQuizLanguage('hinglish')">🔀 Hinglish</button>
+<button class="btn" id="qlangHindi" style="flex:1;background:rgba(239,68,68,0.2);color:#ef4444;border:2px solid rgba(239,68,68,0.3);" onclick="setQuizLanguage('hindi')">🇮🇳 Hindi</button>
+</div>
+
 <button
 class="btn primary"
 onclick="generateQuiz()">
@@ -1822,6 +1834,12 @@ class="input dark-select">
 <button class="btn" id="genderOwn" style="flex:1;background:rgba(34,197,94,0.2);color:#4ade80;border:2px solid rgba(34,197,94,0.3);" onclick="setInterviewerGender('own')">
 📷 Own Camera
 </button>
+</div>
+
+<div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+<button class="btn" id="ilangEnglish" style="flex:1;background:rgba(139,92,246,0.3);color:white;border:2px solid #8b5cf6;" onclick="setInterviewLanguage('english')">🇬🇧 English</button>
+<button class="btn" id="ilangHinglish" style="flex:1;background:rgba(234,179,8,0.2);color:#eab308;border:2px solid rgba(234,179,8,0.3);" onclick="setInterviewLanguage('hinglish')">🔀 Hinglish</button>
+<button class="btn" id="ilangHindi" style="flex:1;background:rgba(239,68,68,0.2);color:#ef4444;border:2px solid rgba(239,68,68,0.3);" onclick="setInterviewLanguage('hindi')">🇮🇳 Hindi</button>
 </div>
 
 <button
@@ -2096,6 +2114,7 @@ let currentQuizCorrect = 0;
 let currentQuizWrong = 0;
 let currentQuizMissed = [];
 let currentDifficulty = "medium";
+let currentLanguage = "english";
 let interviewQuestions = [];
 let interviewResponses = [];
 let interviewTranscript = [];
@@ -2460,11 +2479,11 @@ Rules:
 10. NEVER repeat a question.
 11. No markdown, no extra text, pure JSON only.
 12. STRICT: If the question does not specifically mention or relate to ${currentInterviewTopic}, it is WRONG. Stay on topic.
-`;
+13. LANGUAGE: Ask questions and write ideal_answer in ${currentLanguage === "hinglish" ? "Hinglish (Hindi + English mixed, casual style)" : currentLanguage === "hindi" ? "Hindi (Devanagari script)" : "English only"}. The interview conversation must be entirely in ${currentLanguage === "hinglish" ? "Hinglish" : currentLanguage === "hindi" ? "Hindi" : "English"}.`;
 
 try{
 const raw =
-await askAI(prompt,`You are a strict technical interviewer. Your ONLY job is to ask questions about "${currentInterviewTopic}". Never deviate to other topics. Every question must directly test knowledge of ${currentInterviewTopic}. Stay focused.`);
+await askAI(prompt,`You are a strict technical interviewer. Your ONLY job is to ask questions about "${currentInterviewTopic}". Never deviate to other topics. Every question must directly test knowledge of ${currentInterviewTopic}. Stay focused. LANGUAGE: Conduct the entire interview in ${currentLanguage === "hinglish" ? "Hinglish" : currentLanguage === "hindi" ? "Hindi" : "English"}.`);
 
 const cleaned = String(raw ?? "")
 .replace(/```json/g,"")
@@ -3887,6 +3906,7 @@ STRICT RULES:
 13. If the topic is broad, break it into definition, types, working, examples, uses, advantages, limitations, and important facts.
 14. If the topic is a person, place, event, object, theory, or concept, adapt the notes structure naturally instead of forcing technical language.
 15. Write notes so that even an unfamiliar learner can understand the topic clearly.
+16. LANGUAGE: Write the ENTIRE notes in ${currentLanguage === "hinglish" ? "Hinglish (Hindi + English mixed, casual style)" : currentLanguage === "hindi" ? "Hindi (pure Hindi, Devanagari script)" : "English only"}. Every heading, point, example, and explanation must be in ${currentLanguage === "hinglish" ? "Hinglish" : currentLanguage === "hindi" ? "Hindi" : "English"}.
 
 `;
 
@@ -4625,6 +4645,26 @@ btn.style.boxShadow = "0 0 20px rgba(255,255,255,0.15)";
 }
 }
 
+function setLanguage(lang){
+currentLanguage = lang;
+document.querySelectorAll("#langEnglish,#langHinglish,#langHindi").forEach(b=>{b.style.background="rgba(255,255,255,0.05)";b.style.borderColor="rgba(255,255,255,0.08)";b.style.color="#cbd5e1";});
+const styles={english:["rgba(139,92,246,0.3)","#8b5cf6","white"],hinglish:["rgba(234,179,8,0.2)","#eab308","#eab308"],hindi:["rgba(239,68,68,0.2)","#ef4444","#ef4444"]};
+const s=styles[lang];const b=document.getElementById("lang"+lang.charAt(0).toUpperCase()+lang.slice(1));
+if(b){b.style.background=s[0];b.style.borderColor=s[1];b.style.color=s[2];}
+}
+function setQuizLanguage(lang){
+document.querySelectorAll("#qlangEnglish,#qlangHinglish,#qlangHindi").forEach(b=>{b.style.background="rgba(255,255,255,0.05)";b.style.borderColor="rgba(255,255,255,0.08)";b.style.color="#cbd5e1";});
+const styles={english:["rgba(139,92,246,0.3)","#8b5cf6","white"],hinglish:["rgba(234,179,8,0.2)","#eab308","#eab308"],hindi:["rgba(239,68,68,0.2)","#ef4444","#ef4444"]};
+const s=styles[lang];const b=document.getElementById("qlang"+lang.charAt(0).toUpperCase()+lang.slice(1));
+if(b){b.style.background=s[0];b.style.borderColor=s[1];b.style.color=s[2];}
+}
+function setInterviewLanguage(lang){
+document.querySelectorAll("#ilangEnglish,#ilangHinglish,#ilangHindi").forEach(b=>{b.style.background="rgba(255,255,255,0.05)";b.style.borderColor="rgba(255,255,255,0.08)";b.style.color="#cbd5e1";});
+const styles={english:["rgba(139,92,246,0.3)","#8b5cf6","white"],hinglish:["rgba(234,179,8,0.2)","#eab308","#eab308"],hindi:["rgba(239,68,68,0.2)","#ef4444","#ef4444"]};
+const s=styles[lang];const b=document.getElementById("ilang"+lang.charAt(0).toUpperCase()+lang.slice(1));
+if(b){b.style.background=s[0];b.style.borderColor=s[1];b.style.color=s[2];}
+}
+
 async function generateQuiz(){
 
 const topic =
@@ -4683,6 +4723,7 @@ Rules:
 3. Keep answer text EXACTLY identical to the correct option (same spelling, punctuation, spacing).
 4. Avoid vague or trick questions.
 5. Make wrong options realistic but clearly incorrect on close inspection.
+6. LANGUAGE: Write questions, options, and answers in ${currentLanguage === "hinglish" ? "Hinglish (Hindi + English mixed)" : currentLanguage === "hindi" ? "Hindi (Devanagari script)" : "English only"}.
 
 Return ONLY valid JSON array.
 
