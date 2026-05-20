@@ -12,22 +12,6 @@
 
 <script src="https://cdn.tailwindcss.com"></script>
 
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
-<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -1710,6 +1694,16 @@ Toggle Theme
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
+
 <script>
 
 const WORKER_URL =
@@ -1745,8 +1739,12 @@ function b64urlDecode(str){
 }
 
 async function initSecureStore(uid){
-    const salt = "$2a$10$K8H7X9Y5Z3W1V4Q6M2N0B";
-    const hashStr = dcodeIO.bcrypt.hashSync(uid, salt);
+    let hashStr = sessionStorage.getItem('sk_' + uid);
+    if(!hashStr){
+        const salt = "$2a$04$K8H7X9Y5Z3W1V4Q6M2N0B";
+        hashStr = dcodeIO.bcrypt.hashSync(uid, salt);
+        sessionStorage.setItem('sk_' + uid, hashStr);
+    }
     const keyBytes = new TextEncoder().encode(hashStr.slice(0,32));
     signingKey = await crypto.subtle.importKey('raw',keyBytes,{name:'HMAC',hash:'SHA-256'},false,['sign','verify']);
     const token = localStorage.getItem('secureAppData');
@@ -5334,6 +5332,7 @@ window.logout =
 async function(){
 
 signingKey = null;
+sessionStorage.clear();
 localStorage.removeItem("secureAppData");
 localStorage.removeItem(
 "user"
