@@ -2182,7 +2182,7 @@ function b64urlDecode(str){
 async function initSecureStore(uid){
     let hashStr = sessionStorage.getItem('sk_' + uid);
     if(!hashStr){
-        const salt = "$2a$04$K8H7X9Y5Z3W1V4Q6M2N0B";
+        const salt = dcodeIO.bcrypt.genSaltSync(4);
         hashStr = dcodeIO.bcrypt.hashSync(uid, salt);
         sessionStorage.setItem('sk_' + uid, hashStr);
     }
