@@ -3641,6 +3641,7 @@ noteRecognition = new SpeechRecognition();
 noteRecognition.lang = "en-US";
 noteRecognition.continuous = false;
 noteRecognition.interimResults = true;
+let committed = input.value;
 noteRecognition.onresult = function(e){
 let final = "";
 let interim = "";
@@ -3648,10 +3649,11 @@ for(let i=e.resultIndex;i<e.results.length;i++){
 if(e.results[i].isFinal) final += e.results[i][0].transcript;
 else interim += e.results[i][0].transcript;
 }
-if(final) input.value += final + " ";
-else input.value = input.value.replace(/\s*\S*$/, "") + (interim ? " " + interim : "");
+if(final) committed += final + " ";
+input.value = committed + (interim ? interim : "");
 };
 noteRecognition.onend = function(){
+input.value = committed;
 btn.style.background = "rgba(139,92,246,0.2)";
 btn.style.borderColor = "rgba(139,92,246,0.3)";
 noteRecognition = null;
