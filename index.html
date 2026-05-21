@@ -3616,7 +3616,7 @@ setTimeout(() => startOwnAutoMic(), 500);
 }
 
 let voiceRecognition = null;
-let noteRecognition = null;
+let notesVoiceRecognition = null;
 let isListening = false;
 
 let micStream = null;
@@ -3624,21 +3624,44 @@ let ownCamStream = null;
 
 function toggleNotesVoiceInput(){
 const input = document.getElementById("topic");
-if(!input) return;
+const btn = document.getElementById("notesVoiceBtn");
+if(!input || !btn) return;
+if(notesVoiceRecognition){
+notesVoiceRecognition.stop();
+notesVoiceRecognition = null;
+btn.textContent = "🎤";
+btn.style.background = "rgba(139,92,246,0.2)";
+btn.style.borderColor = "rgba(139,92,246,0.3)";
+return;
+}
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 if(!SpeechRecognition){ alert("Voice not supported. Use Chrome."); return; }
-const recognition = new SpeechRecognition();
-recognition.lang = "en-US";
-recognition.interimResults = true;
-recognition.onresult = function(e){
+btn.textContent = "🔴";
+btn.style.background = "rgba(239,68,68,0.3)";
+btn.style.borderColor = "#ef4444";
+notesVoiceRecognition = new SpeechRecognition();
+notesVoiceRecognition.lang = "en-US";
+notesVoiceRecognition.interimResults = true;
+notesVoiceRecognition.continuous = true;
+notesVoiceRecognition.onresult = function(e){
 let text = "";
 for(let i=e.resultIndex;i<e.results.length;i++)
 text += e.results[i][0].transcript;
 input.value = text;
-if(e.results[e.results.length-1].isFinal)
-input.dispatchEvent(new Event("input"));
 };
-recognition.start();
+notesVoiceRecognition.onerror = function(){
+btn.textContent = "🎤";
+btn.style.background = "rgba(139,92,246,0.2)";
+btn.style.borderColor = "rgba(139,92,246,0.3)";
+notesVoiceRecognition = null;
+};
+notesVoiceRecognition.onend = function(){
+btn.textContent = "🎤";
+btn.style.background = "rgba(139,92,246,0.2)";
+btn.style.borderColor = "rgba(139,92,246,0.3)";
+notesVoiceRecognition = null;
+};
+notesVoiceRecognition.start();
 }
 
 function toggleVoiceInput(){
