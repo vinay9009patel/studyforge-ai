@@ -3629,7 +3629,7 @@ if(!isListening) return;
 let committed = textarea.value;
 const rec = new SpeechRecognition();
 rec.lang = "en-US";
-rec.continuous = true;
+rec.continuous = false;
 rec.interimResults = true;
 rec.onresult = function(e){
 let final = "";
