@@ -3889,7 +3889,7 @@ headers:{
 
 body:JSON.stringify({
 
-model:"llama3-8b-8192",
+model:"llama-3.1-8b-instant",
 
 messages,
 
@@ -4042,29 +4042,26 @@ notesOutput.innerHTML =
 const extractedText =
 await extractFileText(file);
 
-const prompt = `Create PROFESSIONAL and HIGH QUALITY study notes in English on:
-${topic}
+const prompt = `You are a EXPERT study note writer. Create VERY DETAILED, PROFESSIONAL, and HIGH QUALITY study notes in English on:
 
-Extra content:
-${extractedText}
+Topic: ${topic}
 
-STRICT RULES:
+${extractedText ? `Source content:\n${extractedText}\n` : ""}
 
-1. Use proper markdown.
-2. Add beautiful headings.
-3. Add tables where needed.
-4. Add bullet points.
-5. Add examples.
-6. Add real world applications.
-7. Add short summary.
-8. Generate VERY LONG detailed notes — at least 1500-2000 words. Cover every important aspect. Do NOT be brief.
-9. Do NOT generate random text.
-10. Do NOT include Mermaid code inside the notes body.
-11. Focus on detailed explanations, examples, and structure.
-12. The topic can belong to any field: science, coding, history, geography, politics, business, culture, medicine, sports, or general knowledge.
-13. If the topic is broad, break it into definition, types, working, examples, uses, advantages, limitations, important facts, and comparison with related concepts.
-14. If the topic is a person, place, event, object, theory, or concept, adapt the notes structure naturally instead of forcing technical language.
-15. Write notes so that even an unfamiliar learner can understand the topic clearly.
+STRICT RULES - FOLLOW EVERY ONE:
+
+1. Write at least 1500-2000 words. Be EXTREMELY detailed and thorough.
+2. Use proper markdown with headings (##, ###), tables, bullet points, and code blocks where relevant.
+3. Cover: definition, types, working mechanism, examples, applications, advantages, disadvantages, and key takeaways.
+4. Include real-world examples and practical applications.
+5. Write in a clear, educational style suitable for exam preparation.
+6. NEVER write generic templates like "What It Means" or "Key Points". Write REAL, SUBSTANCE-FILLED content.
+7. NEVER output placeholder text or summaries that say "add more detail". Write complete notes.
+8. Adapt structure naturally to the topic - don't force irrelevant sections.
+9. Include comparisons with related concepts where helpful.
+10. End with a concise summary of key points learned.
+
+FAILURE WARNING: If you write generic/template content instead of real detailed notes, you will be penalized. This is your most important task.
 
 `;
 
