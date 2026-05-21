@@ -3624,51 +3624,21 @@ let ownCamStream = null;
 
 function toggleNotesVoiceInput(){
 const input = document.getElementById("topic");
-const btn = document.getElementById("notesVoiceBtn");
 if(!input) return;
-if(noteRecognition){
-noteRecognition.stop();
-noteRecognition = null;
-btn.textContent = "🎤";
-btn.style.background = "rgba(139,92,246,0.2)";
-btn.style.borderColor = "rgba(139,92,246,0.3)";
-return;
-}
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-if(!SpeechRecognition){ alert("Voice not supported in this browser. Use Chrome."); return; }
-btn.textContent = "🔴";
-btn.style.background = "rgba(239,68,68,0.3)";
-btn.style.borderColor = "#ef4444";
-noteRecognition = new SpeechRecognition();
-noteRecognition.lang = "en-US";
-noteRecognition.continuous = true;
-noteRecognition.interimResults = true;
-let committed = input.value;
-noteRecognition.onresult = function(e){
-let final = "";
-let interim = "";
-for(let i=e.resultIndex;i<e.results.length;i++){
-const t = e.results[i][0].transcript;
-if(e.results[i].isFinal) final += t + " ";
-else interim += t;
-}
-if(final) committed += final;
-input.value = committed + interim;
+if(!SpeechRecognition){ alert("Voice not supported. Use Chrome."); return; }
+const recognition = new SpeechRecognition();
+recognition.lang = "en-US";
+recognition.interimResults = true;
+recognition.onresult = function(e){
+let text = "";
+for(let i=e.resultIndex;i<e.results.length;i++)
+text += e.results[i][0].transcript;
+input.value = text;
+if(e.results[e.results.length-1].isFinal)
+input.dispatchEvent(new Event("input"));
 };
-noteRecognition.onerror = function(){
-btn.textContent = "🎤";
-btn.style.background = "rgba(139,92,246,0.2)";
-btn.style.borderColor = "rgba(139,92,246,0.3)";
-noteRecognition = null;
-};
-noteRecognition.onend = function(){
-input.value = committed;
-btn.textContent = "🎤";
-btn.style.background = "rgba(139,92,246,0.2)";
-btn.style.borderColor = "rgba(139,92,246,0.3)";
-noteRecognition = null;
-};
-noteRecognition.start();
+recognition.start();
 }
 
 function toggleVoiceInput(){
