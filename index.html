@@ -1732,11 +1732,21 @@ margin-bottom:20px;
 AI Notes
 </h2>
 
+<div style="display:flex;gap:10px;align-items:center;">
 <input
 type="text"
 id="topic"
 class="input"
+style="flex:1;"
 placeholder="Enter Topic">
+<button
+class="btn"
+id="notesVoiceBtn"
+style="background:rgba(139,92,246,0.2);color:white;border:2px solid rgba(139,92,246,0.3);padding:10px 16px;white-space:nowrap;"
+onclick="toggleNotesVoiceInput()">
+🎤
+</button>
+</div>
 
 <input
 type="file"
@@ -3606,10 +3616,48 @@ setTimeout(() => startOwnAutoMic(), 500);
 }
 
 let voiceRecognition = null;
+let noteRecognition = null;
 let isListening = false;
 
 let micStream = null;
 let ownCamStream = null;
+
+function toggleNotesVoiceInput(){
+const input = document.getElementById("topic");
+const btn = document.getElementById("notesVoiceBtn");
+if(!input) return;
+if(noteRecognition){
+noteRecognition.stop();
+noteRecognition = null;
+btn.style.background = "rgba(139,92,246,0.2)";
+btn.style.borderColor = "rgba(139,92,246,0.3)";
+return;
+}
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+if(!SpeechRecognition){ alert("Voice not supported"); return; }
+btn.style.background = "rgba(239,68,68,0.3)";
+btn.style.borderColor = "#ef4444";
+noteRecognition = new SpeechRecognition();
+noteRecognition.lang = "en-US";
+noteRecognition.continuous = false;
+noteRecognition.interimResults = true;
+noteRecognition.onresult = function(e){
+let final = "";
+let interim = "";
+for(let i=e.resultIndex;i<e.results.length;i++){
+if(e.results[i].isFinal) final += e.results[i][0].transcript;
+else interim += e.results[i][0].transcript;
+}
+if(final) input.value += final + " ";
+else input.value = input.value.replace(/\s*\S*$/, "") + (interim ? " " + interim : "");
+};
+noteRecognition.onend = function(){
+btn.style.background = "rgba(139,92,246,0.2)";
+btn.style.borderColor = "rgba(139,92,246,0.3)";
+noteRecognition = null;
+};
+noteRecognition.start();
+}
 
 function toggleVoiceInput(){
 const btn = document.getElementById("voiceBtn");
