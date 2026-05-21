@@ -3624,12 +3624,14 @@ btnText.innerText = "Listening...";
 btn.style.background = "rgba(239,68,68,0.3)";
 btn.style.borderColor = "#ef4444";
 isListening = true;
+function startRec(){
+if(!isListening) return;
 let committed = textarea.value;
-voiceRecognition = new SpeechRecognition();
-voiceRecognition.lang = "en-US";
-voiceRecognition.continuous = true;
-voiceRecognition.interimResults = true;
-voiceRecognition.onresult = function(e){
+const rec = new SpeechRecognition();
+rec.lang = "en-US";
+rec.continuous = true;
+rec.interimResults = true;
+rec.onresult = function(e){
 let final = "";
 let interim = "";
 for(let i=e.resultIndex;i<e.results.length;i++){
@@ -3641,13 +3643,11 @@ if(final) committed += final.charAt(0).toUpperCase() + final.slice(1);
 textarea.value = committed + (interim ? interim.charAt(0).toUpperCase() + interim.slice(1) : "");
 textarea.scrollTop = textarea.scrollHeight;
 };
-voiceRecognition.onerror = function(){ stopVoiceInput(); };
-voiceRecognition.onend = function(){
-if(isListening){
-try{ voiceRecognition.start(); }catch(e){ stopVoiceInput(); }
+rec.onerror = function(){ stopVoiceInput(); };
+rec.onend = function(){ if(isListening) setTimeout(startRec, 100); };
+try { rec.start(); voiceRecognition = rec; } catch(e){ stopVoiceInput(); }
 }
-};
-try { voiceRecognition.start(); } catch(e){ stopVoiceInput(); }
+startRec();
 }
 
 function stopVoiceInput(){
@@ -3655,10 +3655,6 @@ function stopVoiceInput(){
     if(voiceRecognition){
         try{ voiceRecognition.stop(); }catch(e){}
         voiceRecognition = null;
-    }
-    if(micStream){
-        micStream.getAudioTracks().forEach(track=>track.stop());
-        micStream = null;
     }
     const btn = document.getElementById("voiceBtn");
     const btnText = document.getElementById("voiceBtnText");
