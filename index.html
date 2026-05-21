@@ -3657,6 +3657,7 @@ return;
 navigator.mediaDevices.getUserMedia({audio:true})
 .then(stream=>{
 micStream = stream;
+let voiceCommittedText = "";
 
 voiceRecognition = new SpeechRecognition();
 voiceRecognition.lang = "en-US";
@@ -3666,23 +3667,27 @@ voiceRecognition.interimResults = true;
 voiceRecognition.onstart = ()=>{
 isListening = true;
 btn.style.background = "rgba(239,68,68,0.3)";
-// ... existing code after this
 btn.style.borderColor = "#ef4444";
 btnText.innerText = "Listening...";
 showMicStatus("🎤 Listening... Speak now","active");
+voiceCommittedText = textarea.value;
 };
 
 voiceRecognition.onresult = (event)=>{
+let interim = "";
 let final = "";
 for(let i=event.resultIndex;i<event.results.length;i++){
 const transcript = event.results[i][0].transcript;
 if(event.results[i].isFinal){
 final += transcript + " ";
+} else {
+interim += transcript;
 }
 }
 if(final){
-textarea.value += final.charAt(0).toUpperCase() + final.slice(1);
+voiceCommittedText += final.charAt(0).toUpperCase() + final.slice(1);
 }
+textarea.value = voiceCommittedText + (interim ? interim.charAt(0).toUpperCase() + interim.slice(1) : "");
 textarea.scrollTop = textarea.scrollHeight;
 };
 
@@ -3758,17 +3763,27 @@ function startOwnAutoMic(stream){
     micStream = stream;
     const textarea = document.getElementById("interviewAnswer");
     if(voiceRecognition) try{ voiceRecognition.stop(); }catch(e){}
+    let voiceCommittedText = textarea ? textarea.value : "";
     voiceRecognition = new SpeechRecognition();
     voiceRecognition.lang = "en-US";
     voiceRecognition.continuous = true;
     voiceRecognition.interimResults = true;
     voiceRecognition.onresult = function(event){
+        let interim = "";
         let final = "";
         for(let i=event.resultIndex;i<event.results.length;i++){
-            if(event.results[i].isFinal) final += event.results[i][0].transcript + " ";
+            const transcript = event.results[i][0].transcript;
+            if(event.results[i].isFinal){
+                final += transcript + " ";
+            } else {
+                interim += transcript;
+            }
         }
-        if(final && textarea){
-            textarea.value += final.charAt(0).toUpperCase() + final.slice(1);
+        if(final){
+            voiceCommittedText += final.charAt(0).toUpperCase() + final.slice(1);
+        }
+        if(textarea){
+            textarea.value = voiceCommittedText + (interim ? interim.charAt(0).toUpperCase() + interim.slice(1) : "");
             textarea.scrollTop = textarea.scrollHeight;
         }
     };
