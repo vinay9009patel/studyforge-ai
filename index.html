@@ -1732,21 +1732,11 @@ margin-bottom:20px;
 AI Notes
 </h2>
 
-<div style="display:flex;gap:10px;align-items:center;">
 <input
 type="text"
 id="topic"
 class="input"
-style="flex:1;"
 placeholder="Enter Topic">
-<button
-class="btn"
-id="notesVoiceBtn"
-style="background:rgba(139,92,246,0.2);color:white;border:2px solid rgba(139,92,246,0.3);padding:10px 16px;white-space:nowrap;"
-onclick="toggleNotesVoiceInput()">
-🎤
-</button>
-</div>
 
 <input
 type="file"
@@ -3616,165 +3606,48 @@ setTimeout(() => startOwnAutoMic(), 500);
 }
 
 let voiceRecognition = null;
-let notesVoiceRecognition = null;
 let isListening = false;
 
 let micStream = null;
 let ownCamStream = null;
 
-function toggleNotesVoiceInput(){
-const input = document.getElementById("topic");
-const btn = document.getElementById("notesVoiceBtn");
-if(!input || !btn) return;
-if(notesVoiceRecognition){
-notesVoiceRecognition.stop();
-notesVoiceRecognition = null;
-btn.textContent = "🎤";
-btn.style.background = "rgba(139,92,246,0.2)";
-btn.style.borderColor = "rgba(139,92,246,0.3)";
-return;
-}
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-if(!SpeechRecognition){ alert("Voice not supported. Use Chrome."); return; }
-btn.textContent = "🔴";
-btn.style.background = "rgba(239,68,68,0.3)";
-btn.style.borderColor = "#ef4444";
-notesVoiceRecognition = new SpeechRecognition();
-notesVoiceRecognition.lang = "en-US";
-notesVoiceRecognition.interimResults = true;
-notesVoiceRecognition.continuous = true;
-notesVoiceRecognition.onresult = function(e){
-let text = "";
-for(let i=e.resultIndex;i<e.results.length;i++)
-text += e.results[i][0].transcript;
-input.value = text;
-};
-notesVoiceRecognition.onerror = function(){
-btn.textContent = "🎤";
-btn.style.background = "rgba(139,92,246,0.2)";
-btn.style.borderColor = "rgba(139,92,246,0.3)";
-notesVoiceRecognition = null;
-};
-notesVoiceRecognition.onend = function(){
-btn.textContent = "🎤";
-btn.style.background = "rgba(139,92,246,0.2)";
-btn.style.borderColor = "rgba(139,92,246,0.3)";
-notesVoiceRecognition = null;
-};
-notesVoiceRecognition.start();
-}
 
 function toggleVoiceInput(){
 const btn = document.getElementById("voiceBtn");
 const btnText = document.getElementById("voiceBtnText");
 const textarea = document.getElementById("interviewAnswer");
 if(!textarea) return;
-
-if(isListening){
-stopVoiceInput();
-return;
-}
-
+if(isListening){ stopVoiceInput(); return; }
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-if(!SpeechRecognition){
-const isMobile = /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent);
-if(isMobile){
-alert("Mobile browsers may not support voice input directly. Use Chrome on Android, or access this site via HTTPS (not file://). On iPhone, use Safari with HTTPS.");
-}else{
-alert("Voice input is not supported in this browser. Try Chrome or Edge.");
-}
-return;
-}
-
-const isFileProtocol = location.protocol === "file:";
-if(isFileProtocol){
-btnText.innerText = "Speak Answer";
+if(!SpeechRecognition){ alert("Voice not supported. Use Chrome."); return; }
+btnText.innerText = "Listening...";
 btn.style.background = "rgba(239,68,68,0.3)";
 btn.style.borderColor = "#ef4444";
-alert("Microphone access requires HTTPS. Open this website via a local server (like Live Server) instead of opening the file directly.");
-return;
-}
-
-    btnText.innerText = "Requesting mic...";
-btn.style.background = "rgba(234,179,8,0.3)";
-btn.style.borderColor = "#eab308";
-
-if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-btnText.innerText = "Speak Answer";
-btn.style.background = "rgba(239,68,68,0.3)";
-btn.style.borderColor = "#ef4444";
-alert("Your browser does not support microphone access. Use Chrome or Edge with HTTPS.");
-return;
-}
-
-navigator.mediaDevices.getUserMedia({audio:true})
-.then(stream=>{
-micStream = stream;
-let voiceCommittedText = "";
-
+isListening = true;
+let committed = textarea.value;
 voiceRecognition = new SpeechRecognition();
 voiceRecognition.lang = "en-US";
 voiceRecognition.continuous = true;
 voiceRecognition.interimResults = true;
-
-voiceRecognition.onstart = ()=>{
-isListening = true;
-btn.style.background = "rgba(239,68,68,0.3)";
-btn.style.borderColor = "#ef4444";
-btnText.innerText = "Listening...";
-showMicStatus("🎤 Listening... Speak now","active");
-voiceCommittedText = textarea.value;
-};
-
-voiceRecognition.onresult = (event)=>{
-let interim = "";
+voiceRecognition.onresult = function(e){
 let final = "";
-for(let i=event.resultIndex;i<event.results.length;i++){
-const transcript = event.results[i][0].transcript;
-if(event.results[i].isFinal){
-final += transcript + " ";
-} else {
-interim += transcript;
+let interim = "";
+for(let i=e.resultIndex;i<e.results.length;i++){
+const t = e.results[i][0].transcript;
+if(e.results[i].isFinal) final += t + " ";
+else interim += t;
 }
-}
-if(final){
-voiceCommittedText += final.charAt(0).toUpperCase() + final.slice(1);
-}
-textarea.value = voiceCommittedText + (interim ? interim.charAt(0).toUpperCase() + interim.slice(1) : "");
+if(final) committed += final.charAt(0).toUpperCase() + final.slice(1);
+textarea.value = committed + (interim ? interim.charAt(0).toUpperCase() + interim.slice(1) : "");
 textarea.scrollTop = textarea.scrollHeight;
 };
-
-voiceRecognition.onerror = (event)=>{
-console.log("Voice error:",event.error);
-stopVoiceInput();
-};
-
-voiceRecognition.onend = ()=>{
+voiceRecognition.onerror = function(){ stopVoiceInput(); };
+voiceRecognition.onend = function(){
 if(isListening){
-try{ voiceRecognition.start(); }catch(e){}
-}else{
-stopVoiceInput();
+try{ voiceRecognition.start(); }catch(e){ stopVoiceInput(); }
 }
 };
-
-voiceRecognition.start();
-})
-.catch(err=>{
-console.log("Mic permission error:",err);
-btnText.innerText = "Speak Answer";
-btn.style.background = "rgba(239,68,68,0.3)";
-btn.style.borderColor = "#ef4444";
-if(err.name === "NotAllowedError" || err.name === "PermissionDeniedError"){
-const isMobile = /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent);
-alert(isMobile ? "Microphone access denied. On mobile, go to your browser settings (usually the lock/info icon in the address bar), find Site Settings, and allow microphone. Then retry." : "Microphone access denied. Click the lock/info icon in your browser address bar and allow microphone permission, then try again.");
-} else if(err.name === "NotFoundError"){
-alert("No microphone found. Please connect a microphone and try again.");
-} else if(err.name === "NotReadableError"){
-alert("Microphone is in use by another app. Close other apps using the mic and try again.");
-} else {
-alert("Microphone access is not available. Make sure you are using HTTPS or a local server (file:// protocol does not support microphone on mobile).");
-}
-});
+try { voiceRecognition.start(); } catch(e){ stopVoiceInput(); }
 }
 
 function stopVoiceInput(){
