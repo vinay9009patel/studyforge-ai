@@ -3883,11 +3883,11 @@ method:"POST",
 
 headers:{
 
-"Content-Type":"application/json"
+"Content-Type":"text/plain"
 
 },
 
-body:JSON.stringify({
+body: JSON.stringify({
 
 model:"mixtral-8x7b-32768",
 
@@ -4000,7 +4000,7 @@ async function askAIWithImage(imageBase64,promptText){
 try{
 const response = await fetch(WORKER_URL + "/openai/v1/chat/completions",{
 method:"POST",
-headers:{"Content-Type":"application/json"},
+headers:{"Content-Type":"text/plain"},
 body:JSON.stringify({
 model:"llama-3.2-11b-vision-preview",
 messages:[
