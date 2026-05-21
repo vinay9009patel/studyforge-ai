@@ -3889,7 +3889,7 @@ headers:{
 
 body:JSON.stringify({
 
-model:"llama-3.1-8b-instant",
+model:"llama3-8b-8192",
 
 messages,
 
@@ -3910,7 +3910,7 @@ await response.text();
 console.log(errorText);
 
 throw new Error(
-"Groq API failed"
+"Groq API failed: " + errorText
 );
 
 }
