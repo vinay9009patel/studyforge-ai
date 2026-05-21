@@ -4042,31 +4042,22 @@ notesOutput.innerHTML =
 const extractedText =
 await extractFileText(file);
 
-const prompt = `You are a EXPERT study note writer. Create VERY DETAILED, PROFESSIONAL, and HIGH QUALITY study notes in English on:
+const prompt = `I am a EXPERT study note writer. I must write VERY DETAILED, PROFESSIONAL study notes entirely in English.
 
 Topic: ${topic}
+${extractedText ? `\nSource material:\n${extractedText}\n` : ""}
 
-${extractedText ? `Source content:\n${extractedText}\n` : ""}
-
-STRICT RULES - FOLLOW EVERY ONE:
-
-1. Write at least 1500-2000 words. Be EXTREMELY detailed and thorough.
-2. Use proper markdown with headings (##, ###), tables, bullet points, and code blocks where relevant.
-3. Cover: definition, types, working mechanism, examples, applications, advantages, disadvantages, and key takeaways.
-4. Include real-world examples and practical applications.
-5. Write in a clear, educational style suitable for exam preparation.
-6. NEVER write generic templates like "What It Means" or "Key Points". Write REAL, SUBSTANCE-FILLED content.
-7. NEVER output placeholder text or summaries that say "add more detail". Write complete notes.
-8. Adapt structure naturally to the topic - don't force irrelevant sections.
-9. Include comparisons with related concepts where helpful.
-10. End with a concise summary of key points learned.
-
-FAILURE WARNING: If you write generic/template content instead of real detailed notes, you will be penalized. This is your most important task.
-
+I will now write complete, detailed notes following these rules:
+- Write at least 1500-2000 words of real content
+- Use proper markdown (## headings, ### subheadings, tables, bullet points, code blocks)
+- Cover: definition, types, working, examples, applications, pros/cons
+- NEVER use templates like "What It Means" or "Key Points"
+- Write actual educational content suitable for studying
+- Start writing the notes directly without preamble
 `;
 
 const result =
-await askAI(prompt,`You are a study note generator. Write in English only.`,4096);
+await askAI(prompt,"",4096);
 
 let mermaidCode =
 await generateDetailedMindMap(
