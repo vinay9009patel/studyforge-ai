@@ -2959,73 +2959,98 @@ async function drawCanvasDiagram(topic, concepts){
   ctx.fillStyle = grad;
   ctx.fillRect(0,0,800,480);
 
-  ctx.fillStyle = "rgba(139,92,246,0.12)";
-  ctx.fillRect(0,0,800,3);
-  ctx.fillRect(0,477,800,3);
+  ctx.shadowColor = "rgba(139,92,246,0.15)";
+  ctx.shadowBlur = 60;
+  ctx.fillStyle = "rgba(139,92,246,0.06)";
+  ctx.beginPath();
+  ctx.arc(400, 100, 160, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
 
+  const centerX = 400, centerY = 82;
+  ctx.shadowColor = "rgba(139,92,246,0.4)";
+  ctx.shadowBlur = 25;
+  const cGrad = ctx.createLinearGradient(centerX-80,centerY-20,centerX+80,centerY+20);
+  cGrad.addColorStop(0,"#8b5cf6");
+  cGrad.addColorStop(1,"#3b82f6");
+  ctx.fillStyle = cGrad;
+  ctx.beginPath();
+  ctx.roundRect(centerX-90, centerY-22, 180, 44, 22);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 16px Inter, sans-serif";
   ctx.textAlign = "center";
-  const titleGrad = ctx.createLinearGradient(200,15,600,15);
-  titleGrad.addColorStop(0,"#a78bfa");
-  titleGrad.addColorStop(1,"#38bdf8");
-  ctx.fillStyle = titleGrad;
-  ctx.font = "bold 20px Inter, sans-serif";
-  ctx.fillText(topic + " — Key Concepts", 400, 35);
+  ctx.textBaseline = "middle";
+  ctx.fillText(topic, centerX, centerY);
 
-  ctx.fillStyle = "#475569";
-  ctx.font = "11px Inter, sans-serif";
-  ctx.fillText("StudyForge AI • Concept Map", 400, 52);
-
-  const colors = [
-    {bg:"rgba(139,92,246,0.2)",border:"#8b5cf6",text:"#c4b5fd",icon:"📖"},
-    {bg:"rgba(59,130,246,0.2)",border:"#3b82f6",text:"#93c5fd",icon:"⚙️"},
-    {bg:"rgba(34,197,94,0.2)",border:"#22c55e",text:"#86efac",icon:"🎯"},
-    {bg:"rgba(251,191,36,0.2)",border:"#f59e0b",text:"#fde68a",icon:"💡"},
-    {bg:"rgba(236,72,153,0.2)",border:"#ec4899",text:"#f9a8d4",icon:"📊"},
-    {bg:"rgba(168,85,247,0.2)",border:"#a855f7",text:"#d8b4fe",icon:"✅"}
-  ];
-
-  const cols = 3, cardW = 220, cardH = 110, startX = 50, startY = 75, gapX = 25, gapY = 18;
+  const radius = 170;
+  const angleStep = (2 * Math.PI) / concepts.length;
+  const startAngle = -Math.PI / 2;
 
   concepts.forEach((c, i)=>{
-    const col = i % cols, row = Math.floor(i / cols);
-    const x = startX + col * (cardW + gapX), y = startY + row * (cardH + gapY);
-    const cs = colors[i % colors.length];
+    const angle = startAngle + i * angleStep;
+    const nx = centerX + radius * Math.cos(angle);
+    const ny = centerY + radius * Math.sin(angle) + 25;
 
+    ctx.strokeStyle = "rgba(139,92,246,0.25)";
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5,4]);
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY + 22);
+    ctx.lineTo(nx, ny - 20);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    const cs = [
+      {bg:"rgba(139,92,246,0.2)",border:"#8b5cf6",text:"#c4b5fd"},
+      {bg:"rgba(59,130,246,0.2)",border:"#3b82f6",text:"#93c5fd"},
+      {bg:"rgba(34,197,94,0.2)",border:"#22c55e",text:"#86efac"},
+      {bg:"rgba(251,191,36,0.2)",border:"#f59e0b",text:"#fde68a"},
+      {bg:"rgba(236,72,153,0.2)",border:"#ec4899",text:"#f9a8d4"},
+      {bg:"rgba(168,85,247,0.2)",border:"#a855f7",text:"#d8b4fe"}
+    ][i % 6];
+
+    const bw = 170, bh = 70;
     ctx.shadowColor = "rgba(0,0,0,0.3)";
     ctx.shadowBlur = 8;
     ctx.shadowOffsetY = 3;
     ctx.fillStyle = cs.bg;
     ctx.beginPath();
-    ctx.roundRect(x, y, cardW, cardH, 12);
+    ctx.roundRect(nx - bw/2, ny - bh/2, bw, bh, 10);
     ctx.fill();
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
     ctx.strokeStyle = cs.border;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.roundRect(x, y, cardW, cardH, 12);
+    ctx.roundRect(nx - bw/2, ny - bh/2, bw, bh, 10);
     ctx.stroke();
 
     ctx.fillStyle = cs.text;
-    ctx.font = "bold 13px Inter, sans-serif";
-    ctx.textAlign = "left";
-    ctx.fillText(c.label, x + 14, y + 28);
+    ctx.font = "bold 12px Inter, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(c.label, nx, ny - 10);
 
-    ctx.fillStyle = "#cbd5e1";
-    ctx.font = "11px Inter, sans-serif";
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "10px Inter, sans-serif";
     const words = (c.desc || "").split(" ");
-    let lines = [], line = "";
+    let line1 = "", line2 = "";
     words.forEach(w=>{
-      if((line + " " + w).length > 26){ lines.push(line); line = w; }
-      else line = (line ? line + " " : "") + w;
+      if((line1 + " " + w).trim().length <= 22) line1 = (line1 + " " + w).trim();
+      else if((line2 + " " + w).trim().length <= 22) line2 = (line2 + " " + w).trim();
     });
-    if(line) lines.push(line);
-    lines.forEach((l, li)=>{ ctx.fillText(l, x + 14, y + 50 + li * 15); });
-
-    ctx.font = "16px Inter, sans-serif";
-    ctx.textAlign = "right";
-    ctx.fillText(cs.icon, x + cardW - 12, y + 28);
+    if(line1) ctx.fillText(line1, nx, ny + 10);
+    if(line2) ctx.fillText(line2, nx, ny + 24);
   });
+
+  ctx.fillStyle = "#334155";
+  ctx.font = "10px Inter, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "bottom";
+  ctx.fillText("StudyForge AI — Concept Map", 400, 475);
 
   return canvas.toDataURL("image/png", 0.9);
 }
