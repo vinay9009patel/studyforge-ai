@@ -3959,9 +3959,29 @@ if(idx>=0 && btns[idx]) btns[idx].classList.add("active");
 
 }
 
+async function askGemini(prompt, systemMsg){
+  try{
+    const fullPrompt = systemMsg ? `${systemMsg}\n\n${prompt}` : prompt;
+    const body = {
+      contents: [{ parts: [{ text: fullPrompt }] }],
+      generationConfig: { temperature: 0.3, maxOutputTokens: 3500 }
+    };
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    const data = await resp.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if(text) return text;
+    throw new Error("No response from Gemini");
+  }catch(e){
+    console.log("Gemini text error:", e);
+    return null;
+  }
+}
+
 async function askAI(prompt,systemMsg,maxTok){
-try{
-if(!maxTok) maxTok = 4096;
+if(!maxTok) maxTok = 3500;
 const messages = systemMsg ? [
 {role:"system",content:systemMsg},
 {role:"user",content:prompt}
@@ -3969,71 +3989,31 @@ const messages = systemMsg ? [
 {role:"user",content:prompt}
 ];
 
+try{
 const response =
 await fetch(
 WORKER_URL + "/openai/v1/chat/completions",
 {
-
 method:"POST",
-
-headers:{
-
-"Content-Type":"text/plain"
-
-},
-
+headers:{ "Content-Type":"text/plain" },
 body: JSON.stringify({
-
 model:"llama-3.1-8b-instant",
-
 messages,
-
 temperature:0.3,
 max_tokens:maxTok,
-
 })
-
 }
-
 );
-
-if(!response.ok){
-
-const errorText =
-await response.text();
-
-console.log(errorText);
-
-throw new Error(
-"Groq API failed: " + errorText
-);
-
-}
-
-const data =
-await response.json();
-
-console.log(data);
-
-if(
-!data ||
-!data.choices ||
-!data.choices[0]
-){
-
-throw new Error(
-"Invalid AI response"
-);
-
-}
-
-return data.choices[0]
-.message.content;
-
+if(!response.ok) throw new Error("Groq failed: " + await response.text());
+const data = await response.json();
+if(!data?.choices?.[0]) throw new Error("Invalid AI response");
+return data.choices[0].message.content;
 }catch(error){
+console.log("Groq error, trying Gemini:", error);
+const geminiResult = await askGemini(prompt, systemMsg);
+if(geminiResult) return geminiResult;
 
-console.log(error);
-
+console.log("Gemini also failed, using local fallback");
 let fallbackTopic = "";
 const topicMatch = prompt.match(/Topic:\s*(.+)/);
 if(topicMatch) fallbackTopic = topicMatch[1].trim();
@@ -4051,7 +4031,6 @@ const fallbackSections = {
 const sectionOrder = ["definition","types","working","applications","advantages","summary"];
 
 return `# ${fallbackTopic}\n\n${sectionOrder.map(key => fallbackSections[key]).join("\n\n")}`;
-
 }
 
 }
