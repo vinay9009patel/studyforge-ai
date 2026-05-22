@@ -3918,47 +3918,23 @@ return data.choices[0]
 
 console.log(error);
 
-const fallbackTopic =
-prompt.match(/(?:on:|Topic:)\s*([\s\S]*?)(?:\n|$)/i)?.[1]?.trim()
-|| prompt.split("\n").map(line=>line.trim()).find(Boolean)
-|| "Topic";
+let fallbackTopic = "";
+const topicMatch = prompt.match(/Topic:\s*(.+)/);
+if(topicMatch) fallbackTopic = topicMatch[1].trim();
+if(!fallbackTopic) fallbackTopic = prompt.split("\n").map(l=>l.trim()).find(Boolean) || "Topic";
 
-return `
+const fallbackSections = {
+  "definition": `## Definition & Overview\n\n**${fallbackTopic}** refers to a fundamental concept in its field. It encompasses key ideas, principles, and practices that are essential for understanding the subject.\n\n- Core definition and meaning\n- Historical context and evolution\n- Scope and importance in modern context`,
+  "types": `## Types & Classification\n\n${fallbackTopic} can be categorized into several types based on different criteria:\n\n- **Primary types** — the main categories that define the field\n- **Sub-types** — more specific classifications within each category\n- **Related concepts** — connected ideas that help understand the topic better`,
+  "working": `## How It Works\n\nThe working mechanism of ${fallbackTopic} involves several key processes:\n\n1. **Core process** — the fundamental operation or mechanism\n2. **Key components** — the essential elements involved\n3. **Flow of operations** — how different parts work together\n4. **Expected outcomes** — what results from the process`,
+  "applications": `## Applications & Use Cases\n\n${fallbackTopic} has widespread applications across various domains:\n\n- **Education** — used for learning and teaching purposes\n- **Industry** — practical implementation in professional settings\n- **Research** — ongoing developments and innovations\n- **Everyday life** — common situations where this knowledge applies`,
+  "advantages": `## Advantages & Benefits\n\n- Provides a structured approach to understanding complex ideas\n- Enables better problem-solving and decision-making\n- Builds a strong foundation for advanced learning\n- Applicable across multiple disciplines`,
+  "summary": `## Key Takeaways\n\n- ${fallbackTopic} is a fundamental concept with broad applications\n- Understanding the core principles is essential for mastery\n- Regular practice and application reinforce learning\n- Connect this topic with related concepts for deeper understanding`
+};
 
-# ${fallbackTopic}
+const sectionOrder = ["definition","types","working","applications","advantages","summary"];
 
-## Introduction
-
-${fallbackTopic} is an important topic. These notes provide a simple overview, key ideas, examples, and practical understanding.
-
-## What It Means
-
-- Basic definition
-- Main idea and purpose
-- Important terms connected to the topic
-
-## Key Points
-
-- Core concepts
-- Important features or characteristics
-- Common examples
-- Practical applications
-
-## Examples
-
-- Real-world use case
-- Beginner-friendly example
-- Situation where this topic matters
-
-## Why It Matters
-
-${fallbackTopic} can be useful in study, discussion, practical work, or general understanding depending on the subject area.
-
-## Summary
-
-These notes give a starting point for understanding ${fallbackTopic}. Add more topic-specific detail when source material is available.
-
-`;
+return `# ${fallbackTopic}\n\n${sectionOrder.map(key => fallbackSections[key]).join("\n\n")}`;
 
 }
 
@@ -4021,22 +3997,19 @@ notesOutput.innerHTML =
 const extractedText =
 await extractFileText(file);
 
-const prompt = `I am a EXPERT study note writer. I must write VERY DETAILED, PROFESSIONAL study notes entirely in English.
+const prompt = `Write detailed study notes about "${topic}" in English.
+${extractedText ? `\nUse this source:\n${extractedText}\n` : ""}
 
-Topic: ${topic}
-${extractedText ? `\nSource material:\n${extractedText}\n` : ""}
-
-I will now write extremely comprehensive notes following these rules:
-- Write 2000-3500 words of real, in-depth educational content
-- Use proper markdown with multiple sections (## headings, ### subheadings, tables, bullet points)
-- Cover EVERY aspect in depth: definition, types, working mechanism, real-world examples with detailed scenarios, practical applications, advantages, disadvantages, comparison with alternatives, best practices, common mistakes, and recent developments
-- NEVER use templates like "What It Means" or "Key Points"
-- Write genuine exam-ready educational content with thorough explanations
-- Start writing the notes directly without any preamble or meta-commentary
-- Give multiple detailed real-world examples with practical scenarios and case studies
-- Include code snippets and technical examples ONLY if the topic is a programming or technical subject
-- Write at least 5-6 major sections with detailed sub-points under each
-- End with a concise bullet-point summary of key takeaways
+Rules:
+- 1200-1800 words of real educational content
+- Markdown with ## headings, bullet points, tables
+- Cover: definition, types, working, examples, applications, pros/cons
+- Real-world examples with practical scenarios
+- Never use templates like "What It Means" or "Key Points"
+- Start directly, no preamble
+- End with bullet-point summary
+- Code examples only for programming topics
+- 5-6 major sections minimum
 `;
 
 const result =
