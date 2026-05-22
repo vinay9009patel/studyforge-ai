@@ -2933,7 +2933,7 @@ const GEMINI_API_KEY = "AIzaSyDPQJFUWQ697doCBbdypKCQVfOTIVS4H5E";
 async function generateGeminiImage(promptText){
   try{
     const body = {
-      contents: [{ parts: [{ text: `Create an educational illustration for study purposes. ${promptText}. Make it clear, professional, and visually informative with good composition and labeling.` }] }],
+      contents: [{ parts: [{ text: promptText }] }],
       generationConfig: { responseModalities: ["IMAGE", "TEXT"] }
     };
     const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${GEMINI_API_KEY}`, {
@@ -2950,25 +2950,123 @@ async function generateGeminiImage(promptText){
     }
     return {imageBase64: img, altText: txt, success: !!img};
   }catch(e){
-    console.log(e);
+    console.log("Gemini error:", e);
     return {success: false};
   }
 }
 
+async function drawCanvasDiagram(topic, concepts){
+  const canvas = document.createElement("canvas");
+  canvas.width = 800;
+  canvas.height = 480;
+  const ctx = canvas.getContext("2d");
+
+  ctx.fillStyle = "#0f172a";
+  ctx.fillRect(0, 0, 800, 480);
+
+  const grad = ctx.createLinearGradient(0,0,800,0);
+  grad.addColorStop(0,"#1e293b");
+  grad.addColorStop(1,"#0f172a");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0,0,800,480);
+
+  ctx.fillStyle = "rgba(139,92,246,0.12)";
+  ctx.fillRect(0,0,800,3);
+  ctx.fillRect(0,477,800,3);
+
+  ctx.textAlign = "center";
+  const titleGrad = ctx.createLinearGradient(200,15,600,15);
+  titleGrad.addColorStop(0,"#a78bfa");
+  titleGrad.addColorStop(1,"#38bdf8");
+  ctx.fillStyle = titleGrad;
+  ctx.font = "bold 20px Inter, sans-serif";
+  ctx.fillText(topic + " — Key Concepts", 400, 35);
+
+  ctx.fillStyle = "#475569";
+  ctx.font = "11px Inter, sans-serif";
+  ctx.fillText("StudyForge AI • Concept Map", 400, 52);
+
+  const colors = [
+    {bg:"rgba(139,92,246,0.2)",border:"#8b5cf6",text:"#c4b5fd",icon:"📖"},
+    {bg:"rgba(59,130,246,0.2)",border:"#3b82f6",text:"#93c5fd",icon:"⚙️"},
+    {bg:"rgba(34,197,94,0.2)",border:"#22c55e",text:"#86efac",icon:"🎯"},
+    {bg:"rgba(251,191,36,0.2)",border:"#f59e0b",text:"#fde68a",icon:"💡"},
+    {bg:"rgba(236,72,153,0.2)",border:"#ec4899",text:"#f9a8d4",icon:"📊"},
+    {bg:"rgba(168,85,247,0.2)",border:"#a855f7",text:"#d8b4fe",icon:"✅"}
+  ];
+
+  const cols = 3, cardW = 220, cardH = 110, startX = 50, startY = 75, gapX = 25, gapY = 18;
+
+  concepts.forEach((c, i)=>{
+    const col = i % cols, row = Math.floor(i / cols);
+    const x = startX + col * (cardW + gapX), y = startY + row * (cardH + gapY);
+    const cs = colors[i % colors.length];
+
+    ctx.shadowColor = "rgba(0,0,0,0.3)";
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 3;
+    ctx.fillStyle = cs.bg;
+    ctx.beginPath();
+    ctx.roundRect(x, y, cardW, cardH, 12);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.strokeStyle = cs.border;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(x, y, cardW, cardH, 12);
+    ctx.stroke();
+
+    ctx.fillStyle = cs.text;
+    ctx.font = "bold 13px Inter, sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText(c.label, x + 14, y + 28);
+
+    ctx.fillStyle = "#cbd5e1";
+    ctx.font = "11px Inter, sans-serif";
+    const words = (c.desc || "").split(" ");
+    let lines = [], line = "";
+    words.forEach(w=>{
+      if((line + " " + w).length > 26){ lines.push(line); line = w; }
+      else line = (line ? line + " " : "") + w;
+    });
+    if(line) lines.push(line);
+    lines.forEach((l, li)=>{ ctx.fillText(l, x + 14, y + 50 + li * 15); });
+
+    ctx.font = "16px Inter, sans-serif";
+    ctx.textAlign = "right";
+    ctx.fillText(cs.icon, x + cardW - 12, y + 28);
+  });
+
+  return canvas.toDataURL("image/png", 0.9);
+}
+
 async function generateConceptDiagram(topic, contextText){
   try{
-    const result = await generateGeminiImage(`Educational infographic diagram for topic "${topic}". Create a detailed textbook-style illustration showing: definition, key components, working mechanism, types, real-world applications, and important facts. Use clear labels, arrows, hierarchy, color coding, and visual elements. Include 6-8 concept areas with connections shown between them. Make it comprehensive enough that someone can learn the topic just by looking at this diagram. Style: professional educational chart with titled sections, icons, and organized layout.`);
+    const geminiResult = await generateGeminiImage(`Educational infographic diagram for topic "${topic}". Create a detailed textbook-style illustration showing definition, key components, working mechanism, types, real-world applications, and important facts. Use clear labels, arrows, hierarchy, color coding, and visual elements. Include 6-8 concept areas with connections shown. Style: professional educational chart.`);
 
-    if(result.success){
+    if(geminiResult.success){
       return `<div class="ai-diagram-card" style="margin-bottom:30px;">
         <div class="ai-diagram-title">🎨 AI Generated Concept Diagram</div>
-        <img src="data:image/png;base64,${result.imageBase64}" alt="Concept diagram for ${topic}" style="width:100%;display:block;border-radius:0 0 28px 28px;">
-        ${result.altText ? `<div style="padding:12px 20px;color:#94a3b8;font-size:13px;border-top:1px solid rgba(255,255,255,0.06);">${escapeHtml(result.altText)}</div>` : ""}
+        <img src="data:image/png;base64,${geminiResult.imageBase64}" alt="Concept diagram for ${topic}" style="width:100%;display:block;border-radius:0 0 28px 28px;">
+        ${geminiResult.altText ? `<div style="padding:12px 20px;color:#94a3b8;font-size:13px;border-top:1px solid rgba(255,255,255,0.06);">${escapeHtml(geminiResult.altText)}</div>` : ""}
       </div>`;
     }
-    throw new Error("No image");
+  }catch(e){ console.log("Gemini fail:", e); }
+
+  try{
+    const raw = await askAI(`List 6 key educational concepts about "${topic}" as JSON. Format: [{"label":"short name","desc":"1-line explanation max 8 words"}] covering: definition, types, working, uses, pros/cons, example. Return ONLY valid JSON array.`, "Return JSON only.");
+    const cleaned = String(raw ?? "").replace(/```json/g,"").replace(/```/g,"").trim();
+    let concepts = JSON.parse(cleaned);
+    if(!Array.isArray(concepts) || concepts.length < 3) throw new Error("Bad data");
+    concepts = concepts.slice(0,6);
+    const imgData = await drawCanvasDiagram(topic, concepts);
+    return `<div class="ai-diagram-card" style="margin-bottom:30px;">
+      <div class="ai-diagram-title">📊 Key Concepts Overview</div>
+      <img src="${imgData}" alt="Concept diagram for ${topic}" style="width:100%;display:block;border-radius:0 0 28px 28px;">
+    </div>`;
   }catch(e){
-    console.log("Gemini image error:", e);
+    console.log("Canvas diagram error:", e);
     return "";
   }
 }
