@@ -2841,7 +2841,7 @@ return cleaned.join("\n");
 
 async function generateDetailedMindMap(topic,sourceText = ""){
 const prompt = `
-Create a comprehensive MIND MAP that works as a complete CHEAT SHEET for the topic "${topic}".
+Create a VERY DETAILED MIND MAP covering "${topic}" completely — this is the MAIN study material, not just an overview.
 
 Topic:
 ${topic}
@@ -2849,29 +2849,33 @@ ${topic}
 Source content:
 ${sourceText}
 
+IMPORTANT: This mind map is the PRIMARY learning tool. Make it so detailed that reading it alone teaches the full topic.
+
 Rules:
 1. Return ONLY Mermaid mindmap code. First line: mindmap
 2. One root node = "${topic}"
-3. Create 8-12 main branches covering EVERY angle:
-   - Definition & core concept
-   - Key features / characteristics
-   - Types / categories / classification
-   - How it works (process / mechanism)
-   - Real-world applications & use cases
-   - Advantages & benefits
-   - Disadvantages & limitations
-   - Comparison with alternatives
+3. Create 10-15 main branches (cheat-sheet style, 1-4 word labels):
+   - Definition & core meaning
+   - Key features & characteristics (list 4-6)
+   - Types / categories / classification with examples
+   - How it works — step-by-step mechanism
+   - Real-world applications (3-5 specific examples)
+   - Advantages & benefits (4-6 points)
+   - Disadvantages & limitations (3-5 points)
+   - Comparison with similar concepts
+   - Important terms & definitions (5-7 terms with meaning)
+   - Common mistakes & how to avoid
    - Best practices & tips
-   - Common mistakes to avoid
-   - Key terminology (3-5 important terms with 1-line meaning)
-   - Quick summary / takeaway
-4. Each branch must have 3-6 sub-points going 2-3 levels deep
-5. Keep labels SHORT (1-4 words) — like a real cheat sheet
-6. Every branch must actually be filled — no empty branches
-7. Use ONLY valid Mermaid mindmap syntax
-8. No markdown fences, no explanation text
-9. Write ALL labels in English
-10. TOTAL coverage — reading this mind map should teach the full topic
+   - Key people / history / origin (if relevant)
+   - Related topics & connections
+   - Quick summary / key takeaway
+4. Each branch: minimum 4 sub-points, 2-3 levels deep
+5. Be SPECIFIC — use real examples, numbers, names
+6. Keep labels short (1-4 words) for readability
+7. Every branch must be filled with real content
+8. Valid Mermaid syntax, no markdown fences
+9. Labels in English only
+10. GOAL: This mind map alone should teach the FULL topic
 `;
 
 const result =
@@ -2953,7 +2957,7 @@ async function generateGeminiImage(promptText){
 
 async function generateConceptDiagram(topic, contextText){
   try{
-    const result = await generateGeminiImage(`Educational concept diagram for "${topic}". Show the key principles, components, and how they relate. Style: clean infographic with labels, suitable for study notes. Use clear visual hierarchy with the topic name centered prominently. Include 5-6 key concept areas arranged logically. Use professional colors, diagrams, icons and visual elements. Make it look like a textbook illustration.`);
+    const result = await generateGeminiImage(`Educational infographic diagram for topic "${topic}". Create a detailed textbook-style illustration showing: definition, key components, working mechanism, types, real-world applications, and important facts. Use clear labels, arrows, hierarchy, color coding, and visual elements. Include 6-8 concept areas with connections shown between them. Make it comprehensive enough that someone can learn the topic just by looking at this diagram. Style: professional educational chart with titled sections, icons, and organized layout.`);
 
     if(result.success){
       return `<div class="ai-diagram-card" style="margin-bottom:30px;">
@@ -3997,19 +4001,17 @@ notesOutput.innerHTML =
 const extractedText =
 await extractFileText(file);
 
-const prompt = `Write detailed study notes about "${topic}" in English.
-${extractedText ? `\nUse this source:\n${extractedText}\n` : ""}
+const prompt = `Write concise study notes on "${topic}" in English.
+${extractedText ? `\nSource:\n${extractedText}\n` : ""}
 
-Rules:
-- 1200-1800 words of real educational content
-- Markdown with ## headings, bullet points, tables
-- Cover: definition, types, working, examples, applications, pros/cons
-- Real-world examples with practical scenarios
-- Never use templates like "What It Means" or "Key Points"
-- Start directly, no preamble
-- End with bullet-point summary
-- Code examples only for programming topics
-- 5-6 major sections minimum
+Format: bullet points and short paragraphs, NOT long essays.
+Structure with ## headings covering: definition, types, working, examples, applications, pros/cons.
+Keep it compact — cover everything but in brief points.
+Real-world examples in 1-2 lines each.
+No preamble. End with key takeaways summary.
+Never use "What It Means" or "Key Points" templates.
+Code only for programming topics.
+5-6 sections minimum, 800-1200 words max.
 `;
 
 const result =
