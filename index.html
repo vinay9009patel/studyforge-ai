@@ -3995,23 +3995,63 @@ const geminiResult = await askGemini(prompt, systemMsg);
 if(geminiResult) return geminiResult;
 
 console.log("Gemini also failed, using local fallback");
-let fallbackTopic = "";
-const topicMatch = prompt.match(/Topic:\s*(.+)/);
-if(topicMatch) fallbackTopic = topicMatch[1].trim();
-if(!fallbackTopic) fallbackTopic = prompt.split("\n").map(l=>l.trim()).find(Boolean) || "Topic";
 
-const fallbackSections = {
-  "definition": `## Definition & Overview\n\n**${fallbackTopic}** refers to a fundamental concept in its field. It encompasses key ideas, principles, and practices that are essential for understanding the subject.\n\n- Core definition and meaning\n- Historical context and evolution\n- Scope and importance in modern context`,
-  "types": `## Types & Classification\n\n${fallbackTopic} can be categorized into several types based on different criteria:\n\n- **Primary types** — the main categories that define the field\n- **Sub-types** — more specific classifications within each category\n- **Related concepts** — connected ideas that help understand the topic better`,
-  "working": `## How It Works\n\nThe working mechanism of ${fallbackTopic} involves several key processes:\n\n1. **Core process** — the fundamental operation or mechanism\n2. **Key components** — the essential elements involved\n3. **Flow of operations** — how different parts work together\n4. **Expected outcomes** — what results from the process`,
-  "applications": `## Applications & Use Cases\n\n${fallbackTopic} has widespread applications across various domains:\n\n- **Education** — used for learning and teaching purposes\n- **Industry** — practical implementation in professional settings\n- **Research** — ongoing developments and innovations\n- **Everyday life** — common situations where this knowledge applies`,
-  "advantages": `## Advantages & Benefits\n\n- Provides a structured approach to understanding complex ideas\n- Enables better problem-solving and decision-making\n- Builds a strong foundation for advanced learning\n- Applicable across multiple disciplines`,
-  "summary": `## Key Takeaways\n\n- ${fallbackTopic} is a fundamental concept with broad applications\n- Understanding the core principles is essential for mastery\n- Regular practice and application reinforce learning\n- Connect this topic with related concepts for deeper understanding`
-};
+let fallbackTopic = "Topic";
+const qMatch = prompt.match(/["""]([^"""]+)["""]/);
+if(qMatch) fallbackTopic = qMatch[1].trim();
+else if(!fallbackTopic || fallbackTopic==="Topic"){
+  const tMatch = prompt.match(/Topic:\s*(.+)/i);
+  if(tMatch) fallbackTopic = tMatch[1].trim();
+}
+if(!fallbackTopic || fallbackTopic==="Topic" || fallbackTopic.length>60){
+  fallbackTopic = "Topic";
+}
 
-const sectionOrder = ["definition","types","working","applications","advantages","summary"];
+return `# ${fallbackTopic}
 
-return `# ${fallbackTopic}\n\n${sectionOrder.map(key => fallbackSections[key]).join("\n\n")}`;
+## Definition
+**${fallbackTopic}** is a fundamental concept with key principles that are essential for understanding the subject.
+
+- Core meaning and definition
+- Why it matters in real-world applications
+- Basic principles and foundation
+
+## How It Works
+The working of ${fallbackTopic} follows a systematic approach:
+
+1. **Core logic** — the fundamental mechanism behind it
+2. **Key steps** — the process broken down into stages
+3. **Optimization** — how efficiency is achieved
+4. **Edge cases** — special situations to handle
+
+## Types & Variations
+Different forms of ${fallbackTopic} exist for different scenarios:
+
+- **Basic approach** — the standard implementation
+- **Optimized version** — improvements for better performance
+- **Specialized variants** — adapted for specific use cases
+
+## Real-World Applications
+${fallbackTopic} is widely used in:
+
+- **Software development** — practical coding applications
+- **Data processing** — handling and organizing information
+- **Problem solving** — algorithmic thinking and logic
+- **System design** — architecture and optimization
+
+## Advantages
+- Efficient and reliable approach
+- Easy to understand and implement
+- Broad range of applications
+- Proven track record in industry
+
+## Key Takeaways
+- ${fallbackTopic} is a core concept with wide applicability
+- Understanding the fundamentals enables advanced learning
+- Practice with real examples builds strong intuition
+- Connect with related concepts for deeper understanding
+
+> **Note:** AI services are currently unavailable. These are auto-generated notes covering the general structure. Try again later for AI-powered detailed content.`;
 }
 
 }
@@ -4073,18 +4113,62 @@ notesOutput.innerHTML =
 const extractedText =
 await extractFileText(file);
 
-const prompt = `Write concise study notes on "${topic}" in English.
+  const prompt = `You are an ELITE AI VISUAL NOTES GENERATOR.
+
+Topic: "${topic}"
 ${extractedText ? `\nSource:\n${extractedText}\n` : ""}
 
-Format: bullet points and short paragraphs, NOT long essays.
-Structure with ## headings covering: definition, types, working, examples, applications, pros/cons.
-Keep it compact — cover everything but in brief points.
-Real-world examples in 1-2 lines each.
-No preamble. End with key takeaways summary.
-Never use "What It Means" or "Key Points" templates.
-Code only for programming topics.
-5-6 sections minimum, 800-1200 words max.
-`;
+CRITICAL RULES:
+1. Return ONLY clean markdown.
+2. Use beautiful professional formatting.
+3. Use headings and subheadings.
+4. Use beginner-friendly explanation first.
+5. Then explain professionally.
+6. Keep explanations visually understandable.
+7. Use bullet points for readability.
+8. Use comparison tables where useful.
+9. Add real-world analogies.
+10. Add examples frequently.
+11. Avoid huge paragraphs.
+12. Use small readable sections.
+13. Add ONE valid Mermaid diagram only.
+14. Mermaid syntax MUST be valid.
+15. Use graph TD only.
+16. Use short labels in Mermaid.
+17. Avoid special characters in Mermaid labels.
+18. Keep notes visually structured.
+19. Make notes educational and premium.
+20. Optimize output for API token limits.
+
+TEACHING STYLE:
+Teach like an amazing real teacher. The student should feel "Ohhh now I finally understand this topic." NOT "This looks difficult."
+
+OUTPUT STRUCTURE:
+
+# ${topic}
+
+# HERO SECTION
+Explain topic in ONE simple sentence.
+
+# WHY THIS TOPIC EXISTS
+Explain why humans created it, what problem it solves, why it matters.
+
+# REAL WORLD ANALOGY
+Explain topic using real-life comparison with examples.
+
+# QUICK VISUAL FLOW
+Explain topic flow in 3-5 simple visual steps.
+
+# VISUAL STORY LEARNING
+Explain topic like a visual story so student mentally visualizes the process.
+
+# MERMAID DIAGRAM
+Generate ONE valid Mermaid diagram using graph TD only with short labels.
+
+# KEY TAKEAWAYS
+Summarize the most important points in simple bullet points.
+
+Write in English only. No preamble.`;
 
 const result =
               await askAI(prompt,"",3500);
