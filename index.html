@@ -2959,98 +2959,98 @@ async function drawCanvasDiagram(topic, concepts){
   ctx.fillStyle = grad;
   ctx.fillRect(0,0,800,480);
 
-  ctx.shadowColor = "rgba(139,92,246,0.15)";
-  ctx.shadowBlur = 60;
-  ctx.fillStyle = "rgba(139,92,246,0.06)";
-  ctx.beginPath();
-  ctx.arc(400, 100, 160, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.shadowBlur = 0;
+  ctx.strokeStyle = "rgba(139,92,246,0.06)";
+  ctx.lineWidth = 1;
+  for(let i=0;i<12;i++){
+    ctx.beginPath();
+    ctx.arc(60 + i*60, 80, 140, 0, Math.PI*2);
+    ctx.stroke();
+  }
 
-  const centerX = 400, centerY = 82;
-  ctx.shadowColor = "rgba(139,92,246,0.4)";
-  ctx.shadowBlur = 25;
-  const cGrad = ctx.createLinearGradient(centerX-80,centerY-20,centerX+80,centerY+20);
-  cGrad.addColorStop(0,"#8b5cf6");
-  cGrad.addColorStop(1,"#3b82f6");
-  ctx.fillStyle = cGrad;
-  ctx.beginPath();
-  ctx.roundRect(centerX-90, centerY-22, 180, 44, 22);
-  ctx.fill();
-  ctx.shadowBlur = 0;
+  ctx.fillStyle = "rgba(139,92,246,0.12)";
+  ctx.fillRect(0,0,800,3);
+  ctx.fillRect(0,477,800,3);
 
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 16px Inter, sans-serif";
   ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(topic, centerX, centerY);
+  const titleGrad = ctx.createLinearGradient(200,18,600,18);
+  titleGrad.addColorStop(0,"#a78bfa");
+  titleGrad.addColorStop(1,"#38bdf8");
+  ctx.fillStyle = titleGrad;
+  ctx.font = "bold 18px Inter, sans-serif";
+  ctx.fillText(topic + " — Key Concepts", 400, 30);
 
-  const radius = 170;
-  const angleStep = (2 * Math.PI) / concepts.length;
-  const startAngle = -Math.PI / 2;
+  const colors = [
+    {bg:"rgba(139,92,246,0.2)",border:"#8b5cf6",text:"#c4b5fd",icon:"▸"},
+    {bg:"rgba(59,130,246,0.2)",border:"#3b82f6",text:"#93c5fd",icon:"▸"},
+    {bg:"rgba(34,197,94,0.2)",border:"#22c55e",text:"#86efac",icon:"▸"},
+    {bg:"rgba(251,191,36,0.2)",border:"#f59e0b",text:"#fde68a",icon:"▸"},
+    {bg:"rgba(236,72,153,0.2)",border:"#ec4899",text:"#f9a8d4",icon:"▸"},
+    {bg:"rgba(168,85,247,0.2)",border:"#a855f7",text:"#d8b4fe",icon:"▸"}
+  ];
 
-  concepts.forEach((c, i)=>{
-    const angle = startAngle + i * angleStep;
-    const nx = centerX + radius * Math.cos(angle);
-    const ny = centerY + radius * Math.sin(angle) + 25;
+  const rows = 2, cols = 3;
+  const bw = 220, bh = 100;
+  const startX = 55, startY = 55;
+  const gapX = 20, gapY = 16;
 
-    ctx.strokeStyle = "rgba(139,92,246,0.25)";
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([5,4]);
-    ctx.beginPath();
-    ctx.moveTo(centerX, centerY + 22);
-    ctx.lineTo(nx, ny - 20);
-    ctx.stroke();
-    ctx.setLineDash([]);
+  for(let r=0; r<rows; r++){
+    for(let c=0; c<cols; c++){
+      const idx = r * cols + c;
+      if(idx >= concepts.length) break;
+      const x = startX + c * (bw + gapX);
+      const y = startY + r * (bh + gapY) + 60;
+      const cs = colors[idx];
 
-    const cs = [
-      {bg:"rgba(139,92,246,0.2)",border:"#8b5cf6",text:"#c4b5fd"},
-      {bg:"rgba(59,130,246,0.2)",border:"#3b82f6",text:"#93c5fd"},
-      {bg:"rgba(34,197,94,0.2)",border:"#22c55e",text:"#86efac"},
-      {bg:"rgba(251,191,36,0.2)",border:"#f59e0b",text:"#fde68a"},
-      {bg:"rgba(236,72,153,0.2)",border:"#ec4899",text:"#f9a8d4"},
-      {bg:"rgba(168,85,247,0.2)",border:"#a855f7",text:"#d8b4fe"}
-    ][i % 6];
+      if(r === 0){
+        ctx.strokeStyle = "rgba(139,92,246,0.2)";
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4,4]);
+        ctx.beginPath();
+        ctx.moveTo(400, 50);
+        ctx.lineTo(x + bw/2, y - 5);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
 
-    const bw = 170, bh = 70;
-    ctx.shadowColor = "rgba(0,0,0,0.3)";
-    ctx.shadowBlur = 8;
-    ctx.shadowOffsetY = 3;
-    ctx.fillStyle = cs.bg;
-    ctx.beginPath();
-    ctx.roundRect(nx - bw/2, ny - bh/2, bw, bh, 10);
-    ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
-    ctx.strokeStyle = cs.border;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.roundRect(nx - bw/2, ny - bh/2, bw, bh, 10);
-    ctx.stroke();
+      ctx.shadowColor = "rgba(0,0,0,0.3)";
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetY = 3;
+      ctx.fillStyle = cs.bg;
+      ctx.beginPath();
+      ctx.roundRect(x, y, bw, bh, 12);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
+      ctx.strokeStyle = cs.border;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(x, y, bw, bh, 12);
+      ctx.stroke();
 
-    ctx.fillStyle = cs.text;
-    ctx.font = "bold 12px Inter, sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(c.label, nx, ny - 10);
+      ctx.fillStyle = cs.text;
+      ctx.font = "bold 14px Inter, sans-serif";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      ctx.fillText(cs.icon + " " + c.label, x + 16, y + 14);
 
-    ctx.fillStyle = "#94a3b8";
-    ctx.font = "10px Inter, sans-serif";
-    const words = (c.desc || "").split(" ");
-    let line1 = "", line2 = "";
-    words.forEach(w=>{
-      if((line1 + " " + w).trim().length <= 22) line1 = (line1 + " " + w).trim();
-      else if((line2 + " " + w).trim().length <= 22) line2 = (line2 + " " + w).trim();
-    });
-    if(line1) ctx.fillText(line1, nx, ny + 10);
-    if(line2) ctx.fillText(line2, nx, ny + 24);
-  });
+      ctx.fillStyle = "#94a3b8";
+      ctx.font = "11px Inter, sans-serif";
+      const words = (c.desc || "").split(" ");
+      let lines = [], line = "";
+      words.forEach(w=>{
+        if((line + " " + w).trim().length <= 28){ line = (line + " " + w).trim(); }
+        else{ if(line) lines.push(line); line = w; }
+      });
+      if(line) lines.push(line);
+      lines.forEach((l, li)=>{ ctx.fillText(l, x + 16, y + 38 + li * 16); });
+    }
+  }
 
   ctx.fillStyle = "#334155";
   ctx.font = "10px Inter, sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "bottom";
-  ctx.fillText("StudyForge AI — Concept Map", 400, 475);
+  ctx.fillText("StudyForge AI — Concept Map", 400, 468);
 
   return canvas.toDataURL("image/png", 0.9);
 }
