@@ -2841,7 +2841,7 @@ return cleaned.join("\n");
 
 async function generateDetailedMindMap(topic,sourceText = ""){
 const prompt = `
-Create a detailed Mermaid mindmap for study notes.
+Create a comprehensive MIND MAP that works as a complete CHEAT SHEET for the topic "${topic}".
 
 Topic:
 ${topic}
@@ -2850,16 +2850,28 @@ Source content:
 ${sourceText}
 
 Rules:
-1. Return ONLY Mermaid code.
-2. The first line must be exactly: mindmap
-3. Use one root node only.
-4. Create at least 6 main branches covering all key aspects.
-5. Each main branch must have 3 to 5 sub-points going 2-3 levels deep.
-6. Keep labels short but descriptive.
-7. Use ONLY valid Mermaid mindmap syntax.
-8. No markdown fences.
-9. No explanation text.
-10. Write ALL node labels in English.
+1. Return ONLY Mermaid mindmap code. First line: mindmap
+2. One root node = "${topic}"
+3. Create 8-12 main branches covering EVERY angle:
+   - Definition & core concept
+   - Key features / characteristics
+   - Types / categories / classification
+   - How it works (process / mechanism)
+   - Real-world applications & use cases
+   - Advantages & benefits
+   - Disadvantages & limitations
+   - Comparison with alternatives
+   - Best practices & tips
+   - Common mistakes to avoid
+   - Key terminology (3-5 important terms with 1-line meaning)
+   - Quick summary / takeaway
+4. Each branch must have 3-6 sub-points going 2-3 levels deep
+5. Keep labels SHORT (1-4 words) — like a real cheat sheet
+6. Every branch must actually be filled — no empty branches
+7. Use ONLY valid Mermaid mindmap syntax
+8. No markdown fences, no explanation text
+9. Write ALL labels in English
+10. TOTAL coverage — reading this mind map should teach the full topic
 `;
 
 const result =
@@ -2910,6 +2922,51 @@ stack.pop();
 }
 
 return `<div class="mindmap-fallback">${html}</div>`;
+}
+
+const GEMINI_API_KEY = "AIzaSyDPQJFUWQ697doCBbdypKCQVfOTIVS4H5E";
+
+async function generateGeminiImage(promptText){
+  try{
+    const body = {
+      contents: [{ parts: [{ text: `Create an educational illustration for study purposes. ${promptText}. Make it clear, professional, and visually informative with good composition and labeling.` }] }],
+      generationConfig: { responseModalities: ["IMAGE", "TEXT"] }
+    };
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${GEMINI_API_KEY}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    const data = await resp.json();
+    const parts = data?.candidates?.[0]?.content?.parts || [];
+    let img = "", txt = "";
+    for(const p of parts){
+      if(p.inlineData) img = p.inlineData.data;
+      if(p.text) txt = p.text;
+    }
+    return {imageBase64: img, altText: txt, success: !!img};
+  }catch(e){
+    console.log(e);
+    return {success: false};
+  }
+}
+
+async function generateConceptDiagram(topic, contextText){
+  try{
+    const result = await generateGeminiImage(`Educational concept diagram for "${topic}". Show the key principles, components, and how they relate. Style: clean infographic with labels, suitable for study notes. Use clear visual hierarchy with the topic name centered prominently. Include 5-6 key concept areas arranged logically. Use professional colors, diagrams, icons and visual elements. Make it look like a textbook illustration.`);
+
+    if(result.success){
+      return `<div class="ai-diagram-card" style="margin-bottom:30px;">
+        <div class="ai-diagram-title">🎨 AI Generated Concept Diagram</div>
+        <img src="data:image/png;base64,${result.imageBase64}" alt="Concept diagram for ${topic}" style="width:100%;display:block;border-radius:0 0 28px 28px;">
+        ${result.altText ? `<div style="padding:12px 20px;color:#94a3b8;font-size:13px;border-top:1px solid rgba(255,255,255,0.06);">${escapeHtml(result.altText)}</div>` : ""}
+      </div>`;
+    }
+    throw new Error("No image");
+  }catch(e){
+    console.log("Gemini image error:", e);
+    return "";
+  }
 }
 
 function renderInterviewScreen(){
@@ -3970,7 +4027,7 @@ Topic: ${topic}
 ${extractedText ? `\nSource material:\n${extractedText}\n` : ""}
 
 I will now write extremely comprehensive notes following these rules:
-- Write 3000-5000 words of real, in-depth educational content
+- Write 2000-3500 words of real, in-depth educational content
 - Use proper markdown with multiple sections (## headings, ### subheadings, tables, bullet points)
 - Cover EVERY aspect in depth: definition, types, working mechanism, real-world examples with detailed scenarios, practical applications, advantages, disadvantages, comparison with alternatives, best practices, common mistakes, and recent developments
 - NEVER use templates like "What It Means" or "Key Points"
@@ -3983,13 +4040,18 @@ I will now write extremely comprehensive notes following these rules:
 `;
 
 const result =
-await askAI(prompt,"",4096);
+              await askAI(prompt,"",3500);
 
 let mermaidCode =
 await generateDetailedMindMap(
 topic,
 `${topic}\n${extractedText}\n${result}`
 );
+
+let conceptDiagramHtml = "";
+try{
+conceptDiagramHtml = await generateConceptDiagram(topic, `${topic}\n${extractedText}\n${result}`);
+}catch(e){ console.log(e); }
 
 let cleanedResult = result
 .replace(/```mermaid([\s\S]*?)```/g,"")
@@ -4013,6 +4075,8 @@ class="upload-preview"
 notesOutput.innerHTML = `
 
 ${preview}
+
+${conceptDiagramHtml}
 
 ${mermaidCode ? `
 <div class="ai-diagram-card" style="margin-bottom:30px;">
