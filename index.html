@@ -2117,12 +2117,7 @@ Toggle Theme
 
 </button>
 
-<div style="margin-top:20px;">
-<h3 style="font-size:22px;font-weight:800;margin-bottom:14px;">🔑 Gemini API Key</h3>
-<p style="color:#94a3b8;font-size:13px;margin-bottom:12px;">Get free key from <a href="https://aistudio.google.com" target="_blank" style="color:#8b5cf6;">Google AI Studio</a>. Required for AI image &amp; text generation.</p>
-<input type="text" id="geminiKeyInput" class="input" placeholder="Enter your Gemini API key" value="">
-<button class="btn primary" onclick="saveGeminiKey()">Save Key</button>
-</div>
+
 
 </div>
 
@@ -2924,32 +2919,15 @@ stack.pop();
 return `<div class="mindmap-fallback">${html}</div>`;
 }
 
-function getGeminiKey(){
-  return localStorage.getItem("geminiApiKey") || "";
-}
-
 async function generateGeminiImage(promptText){
   try{
-    const body = {
-      contents: [{ parts: [{ text: promptText }] }],
-      generationConfig: { responseModalities: ["IMAGE", "TEXT"] }
-    };
-    const apiKey = getGeminiKey(); if(!apiKey) return {success: false};
-const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
+    const resp = await fetch(WORKER_URL + "/gemini-image", {
+      method: "POST", headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ prompt: promptText })
     });
-    const data = await resp.json();
-    const parts = data?.candidates?.[0]?.content?.parts || [];
-    let img = "", txt = "";
-    for(const p of parts){
-      if(p.inlineData) img = p.inlineData.data;
-      if(p.text) txt = p.text;
-    }
-    return {imageBase64: img, altText: txt, success: !!img};
+    return await resp.json();
   }catch(e){
-    console.log("Gemini error:", e);
+    console.log("Gemini image error:", e);
     return {success: false};
   }
 }
@@ -3971,20 +3949,12 @@ if(idx>=0 && btns[idx]) btns[idx].classList.add("active");
 
 async function askGemini(prompt, systemMsg){
   try{
-    const fullPrompt = systemMsg ? `${systemMsg}\n\n${prompt}` : prompt;
-    const body = {
-      contents: [{ parts: [{ text: fullPrompt }] }],
-      generationConfig: { temperature: 0.3, maxOutputTokens: 3500 }
-    };
-    const apiKey = getGeminiKey(); if(!apiKey) return null;
-const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
+    const resp = await fetch(WORKER_URL + "/gemini-text", {
+      method: "POST", headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ prompt, systemMsg, maxTok: 3500 })
     });
     const data = await resp.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if(text) return text;
-    throw new Error("No response from Gemini");
+    return data.text || null;
   }catch(e){
     console.log("Gemini text error:", e);
     return null;
@@ -5736,22 +5706,6 @@ e.target.result
 
 reader.readAsDataURL(file);
 
-}
-
-function saveGeminiKey(){
-  const key = document.getElementById("geminiKeyInput").value.trim();
-  if(key){
-    localStorage.setItem("geminiApiKey", key);
-    alert("Gemini API key saved!");
-  }else{
-    localStorage.removeItem("geminiApiKey");
-    alert("API key removed.");
-  }
-}
-
-if(localStorage.getItem("geminiApiKey")){
-  const inp = document.getElementById("geminiKeyInput");
-  if(inp) inp.value = localStorage.getItem("geminiApiKey");
 }
 
 if(localStorage.getItem("profilePic")){

@@ -23,51 +23,53 @@ export default {
 
     const url = new URL(request.url);
 
-    if (url.pathname.includes("gemini-image")) {
-      const body = await request.json();
-      const prompt = body.prompt || "Generate an educational diagram";
+    const body = await request.json();
 
+    if (url.pathname.includes("gemini-image")) {
+      const prompt = body.prompt || "Generate an educational diagram";
       const geminiBody = {
         contents: [{
           parts: [{ text: `Create an educational illustration for study purposes: ${prompt}. Make it clear, professional, and visually informative with good composition and labeling.` }]
         }],
-        generationConfig: {
-          responseModalities: ["IMAGE", "TEXT"]
-        }
+        generationConfig: { responseModalities: ["IMAGE", "TEXT"] }
       };
-
       const geminiResp = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${env.GEMINI_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(geminiBody),
-        }
+        { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(geminiBody) }
       );
-
       const geminiData = await geminiResp.json();
       const parts = geminiData?.candidates?.[0]?.content?.parts || [];
-      let imageBase64 = "";
-      let altText = "";
-
-      for (const part of parts) {
-        if (part.inlineData) {
-          imageBase64 = part.inlineData.data;
-        }
-        if (part.text) {
-          altText = part.text;
-        }
+      let imageBase64 = "", altText = "";
+      for (const p of parts) {
+        if (p.inlineData) imageBase64 = p.inlineData.data;
+        if (p.text) altText = p.text;
       }
-
       return new Response(JSON.stringify({ imageBase64, altText, success: !!imageBase64 }), {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
+        status: 200, headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    if (url.pathname.includes("gemini-text")) {
+      const prompt = body.prompt || "";
+      const systemMsg = body.systemMsg || "";
+      const maxTok = body.maxTok || 3500;
+      const fullPrompt = systemMsg ? `${systemMsg}\n\n${prompt}` : prompt;
+      const geminiBody = {
+        contents: [{ parts: [{ text: fullPrompt }] }],
+        generationConfig: { temperature: 0.3, maxOutputTokens: maxTok }
+      };
+      const geminiResp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${env.GEMINI_API_KEY}`,
+        { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(geminiBody) }
+      );
+      const geminiData = await geminiResp.json();
+      const text = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      return new Response(JSON.stringify({ text, success: !!text }), {
+        status: 200, headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
     const groqUrl = `https://api.groq.com${url.pathname}${url.search}`;
-
-    const body = await request.json();
 
     const response = await fetch(groqUrl, {
       method: "POST",
