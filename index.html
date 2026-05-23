@@ -3288,22 +3288,56 @@ async function drawCanvasDiagram(topic, concepts){
 
 async function searchWikimediaImagesForTopic(topic, count = 6){
   try{
-    const baseQueries = [
-      topic,
-      topic + " diagram",
-      topic + " illustration",
-      topic + " algorithm",
-      topic + " process",
-      topic + " structure",
-      topic + " explained",
-      "what is " + topic,
-      topic + " example"
-    ];
+    let searchQueries = [];
+    
+    try{
+      const aiPrompt = `For the topic "${topic}", list 6 specific visual concepts or components that are most important for understanding this topic. 
+
+Return ONLY a valid JSON array of strings. Each string should be a specific search query to find educational images.
+
+Example for "binary search":
+["binary search algorithm", "sorted array search", "divide and conquer algorithm", "search algorithm comparison", "binary search visualization", "array data structure"]
+
+Example for "DNA replication":
+["DNA double helix structure", "DNA replication process", "helicase enzyme", "DNA polymerase", "semi-conservative replication", "DNA nucleotides"]
+
+Now generate for "${topic}":
+`;
+      
+      const aiResponse = await askAI(aiPrompt, "Return ONLY a valid JSON array of strings. No explanations, no markdown.", 500);
+      
+      try{
+        const cleaned = String(aiResponse ?? "")
+          .replace(/```json/g,"")
+          .replace(/```/g,"")
+          .trim();
+        const aiQueries = JSON.parse(cleaned);
+        if(Array.isArray(aiQueries) && aiQueries.length >= 3){
+          searchQueries = aiQueries.slice(0, 8);
+          console.log("✅ AI generated search queries:", searchQueries);
+        }
+      }catch(e){
+        console.log("AI query parse failed, using default:", e);
+      }
+    }catch(e){
+      console.log("AI query generation failed:", e);
+    }
+    
+    if(searchQueries.length === 0){
+      searchQueries = [
+        topic,
+        topic + " diagram",
+        topic + " illustration",
+        topic + " process",
+        topic + " structure",
+        topic + " example"
+      ];
+    }
     
     const resp = await fetch(WORKER_URL + "/gemini-image", {
       method: "POST",
       headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({ queries: baseQueries, prompt: topic })
+      body: JSON.stringify({ queries: searchQueries, prompt: topic })
     });
     
     const result = await resp.json();
