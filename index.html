@@ -4097,69 +4097,42 @@ return null;
 function buildVisualNotesHTML(data, topic){
 let html = "";
 
-if(data.hero_section){
+if(data.hero){
 html += `
 <div class="card" style="text-align:center;padding:40px;">
 <div style="font-size:48px;font-weight:900;margin-bottom:16px;background:linear-gradient(to right,#a78bfa,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
-${escapeHtml(data.hero_section.title || topic)}
+${escapeHtml(data.hero.title || topic)}
 </div>
 <p style="font-size:20px;color:#dbeafe;line-height:1.6;max-width:700px;margin:0 auto;">
-${escapeHtml(data.hero_section.simple_explanation || "")}
+${escapeHtml(data.hero.subtitle || "")}
 </p>
 </div>`;
 }
 
-if(data.why_it_exists){
+if(data.quick_understanding && data.quick_understanding.length){
 html += `
 <div class="card">
-<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">🎯 Why It Exists</h2>
-<div style="padding:20px;border-radius:16px;background:rgba(255,255,255,0.03);border-left:4px solid #8b5cf6;margin-bottom:16px;">
-<div style="color:#94a3b8;margin-bottom:6px;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">Problem It Solves</div>
-<div style="font-size:18px;color:#dbeafe;line-height:1.8;">${escapeHtml(data.why_it_exists.problem_solved || "")}</div>
-</div>
-<div style="padding:20px;border-radius:16px;background:rgba(255,255,255,0.03);border-left:4px solid #3b82f6;">
-<div style="color:#94a3b8;margin-bottom:6px;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">Importance</div>
-<div style="font-size:18px;color:#dbeafe;line-height:1.8;">${escapeHtml(data.why_it_exists.importance || "")}</div>
-</div>
-</div>`;
-}
-
-if(data.real_world_analogy){
-html += `
-<div class="card">
-<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">💡 Real World Analogy</h2>
-<div style="padding:24px;border-radius:20px;background:linear-gradient(145deg,rgba(139,92,246,0.12),rgba(59,130,246,0.08));border:1px solid rgba(255,255,255,0.06);">
-<div style="font-size:20px;font-weight:700;margin-bottom:12px;color:#c4b5fd;">${escapeHtml(data.real_world_analogy.analogy || "")}</div>
-<div style="font-size:16px;color:#dbeafe;line-height:1.8;">${escapeHtml(data.real_world_analogy.explanation || "")}</div>
-</div>
-</div>`;
-}
-
-if(data.quick_visual_flow && data.quick_visual_flow.length){
-html += `
-<div class="card">
-<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">⚡ Quick Visual Flow</h2>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
-${data.quick_visual_flow.map((item,i)=>`
-<div style="padding:20px;border-radius:18px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);text-align:center;">
-<div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#3b82f6);display:flex;align-items:center;justify-content:center;font-weight:900;margin:0 auto 12px;font-size:18px;">${i+1}</div>
-<div style="font-weight:700;margin-bottom:8px;font-size:16px;">${escapeHtml(item.step || "")}</div>
-<div style="font-size:14px;color:#94a3b8;">${escapeHtml(item.visual || "")}</div>
+<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">⚡ Quick Understanding</h2>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;">
+${data.quick_understanding.map((item,i)=>`
+<div style="padding:18px;border-radius:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);display:flex;align-items:start;gap:12px;">
+<div style="min-width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#3b82f6);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;">${i+1}</div>
+<div style="color:#dbeafe;font-size:15px;line-height:1.6;">${escapeHtml(item)}</div>
 </div>
 `).join("")}
 </div>
 </div>`;
 }
 
-if(data.visual_scenes && data.visual_scenes.length){
+if(data.visual_story && data.visual_story.length){
 html += `
 <div class="card">
-<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">🎬 Visual Learning</h2>
+<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">🎬 Visual Story</h2>
 <div style="display:grid;gap:20px;">
-${data.visual_scenes.map((scene,i)=>`
+${data.visual_story.map((scene)=>`
 <div style="padding:24px;border-radius:20px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);">
 <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
-<div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#8b5cf6,#3b82f6);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;">${i+1}</div>
+<div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#8b5cf6,#3b82f6);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;">${scene.scene_number || (data.visual_story.indexOf(scene)+1)}</div>
 <h3 style="font-size:24px;font-weight:800;margin:0;">${escapeHtml(scene.title || "")}</h3>
 </div>
 <div style="padding:16px;border-radius:14px;background:rgba(139,92,246,0.1);margin-bottom:12px;">
@@ -4174,24 +4147,6 @@ ${scene.animation ? `<div style="padding:12px 16px;border-radius:14px;background
 </div>`;
 }
 
-if(data.step_by_step_working && data.step_by_step_working.length){
-html += `
-<div class="card">
-<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">🔧 Step-by-Step Working</h2>
-<div style="display:grid;gap:16px;">
-${data.step_by_step_working.map((item,i)=>`
-<div style="display:flex;gap:16px;padding:18px;border-radius:16px;background:rgba(255,255,255,0.03);border-left:4px solid #8b5cf6;">
-<div style="min-width:36px;height:36px;border-radius:50%;background:rgba(139,92,246,0.2);display:flex;align-items:center;justify-content:center;font-weight:900;color:#c4b5fd;">${i+1}</div>
-<div>
-<div style="font-weight:700;font-size:18px;margin-bottom:6px;">${escapeHtml(item.step || "")}</div>
-<div style="font-size:15px;color:#94a3b8;line-height:1.7;">${escapeHtml(item.explanation || "")}</div>
-</div>
-</div>
-`).join("")}
-</div>
-</div>`;
-}
-
 if(data.core_concepts && data.core_concepts.length){
 html += `
 <div class="card">
@@ -4200,30 +4155,10 @@ html += `
 ${data.core_concepts.map(concept=>`
 <div style="padding:22px;border-radius:18px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);">
 <h3 style="font-size:22px;font-weight:800;margin-bottom:12px;color:#c4b5fd;">${escapeHtml(concept.concept || "")}</h3>
-<div style="margin-bottom:10px;"><span style="color:#94a3b8;">🧒 Simple:</span> <span style="color:#dbeafe;">${escapeHtml(concept.simple_explanation || "")}</span></div>
-<div style="margin-bottom:10px;"><span style="color:#94a3b8;">🔬 Technical:</span> <span style="color:#93c5fd;">${escapeHtml(concept.technical_explanation || "")}</span></div>
-${concept.example ? `<div style="padding:12px;border-radius:12px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.15);"><span style="color:#86efac;">💡 Example:</span> <span style="color:#dbeafe;">${escapeHtml(concept.example)}</span></div>` : ""}
+<div style="margin-bottom:10px;"><span style="color:#94a3b8;">🧒 Simple:</span> <span style="color:#dbeafe;">${escapeHtml(concept.simple || concept.simple_explanation || "")}</span></div>
+<div style="margin-bottom:10px;"><span style="color:#94a3b8;">🔬 Technical:</span> <span style="color:#93c5fd;">${escapeHtml(concept.technical || concept.technical_explanation || "")}</span></div>
 </div>
 `).join("")}
-</div>
-</div>`;
-}
-
-const features = data.features || data.advantages || [];
-const drawbacks = data.disadvantages || [];
-if(features.length || drawbacks.length){
-html += `
-<div class="card">
-<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">⚖️ Pros & Cons</h2>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
-${features.length ? `<div>
-<div style="font-size:18px;font-weight:700;margin-bottom:12px;color:#86efac;">✅ Advantages</div>
-${features.map(f=>`<div style="padding:10px 14px;border-radius:10px;background:rgba(34,197,94,0.08);margin-bottom:8px;border:1px solid rgba(34,197,94,0.1);color:#dbeafe;">${escapeHtml(f)}</div>`).join("")}
-</div>` : ""}
-${drawbacks.length ? `<div>
-<div style="font-size:18px;font-weight:700;margin-bottom:12px;color:#fca5a5;">❌ Disadvantages</div>
-${drawbacks.map(d=>`<div style="padding:10px 14px;border-radius:10px;background:rgba(248,113,113,0.08);margin-bottom:8px;border:1px solid rgba(248,113,113,0.1);color:#dbeafe;">${escapeHtml(d)}</div>`).join("")}
-</div>` : ""}
 </div>
 </div>`;
 }
@@ -4275,21 +4210,6 @@ ${data.important_points.map(p=>`
 </div>`;
 }
 
-if(data.memory_tricks && data.memory_tricks.length){
-html += `
-<div class="card">
-<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">🧠 Memory Tricks</h2>
-<div style="display:grid;gap:14px;">
-${data.memory_tricks.map(trick=>`
-<div style="padding:18px;border-radius:16px;background:linear-gradient(145deg,rgba(168,85,247,0.1),rgba(59,130,246,0.06));border:1px solid rgba(168,85,247,0.15);">
-<div style="font-size:28px;margin-bottom:8px;">🧠</div>
-<div style="color:#d8b4fe;font-size:17px;line-height:1.6;">${escapeHtml(trick)}</div>
-</div>
-`).join("")}
-</div>
-</div>`;
-}
-
 if(data.summary){
 html += `
 <div class="card">
@@ -4323,180 +4243,57 @@ notesOutput.innerHTML =
 const extractedText =
 await extractFileText(file);
 
-const prompt = `You are an ELITE AI VISUAL LEARNING ENGINE.
+const prompt = `You are an AI Visual Story Learning Engine.
 
-Your job is to create a COMPLETE VISUAL LEARNING EXPERIENCE
-for ANY topic in the world.
+Your job is to convert ANY topic into:
+- animated learning scenes
+- visual storytelling
+- interactive educational flow
+- beginner-friendly visual explanation
 
-The output will be used in:
-- AI Notes Website
-- Animated Learning UI
-- Interactive Educational Platform
-- Visual Story-Based Learning System
+IMPORTANT:
 
-IMPORTANT GOAL:
+Students should feel:
+"I can SEE the topic happening."
 
-A complete beginner should:
-- understand the topic visually
-- mentally see the process happening
-- understand flow step-by-step
-- remember concepts easily
-- enjoy learning
-
-The learning should feel:
-- visual
-- animated
-- interactive
-- modern
-- premium
-- easy to understand
+NOT:
+"I am reading boring notes."
 
 ==================================================
 
-CRITICAL RULES:
+Return ONLY valid JSON.
 
-1. Return ONLY VALID JSON.
-2. No markdown.
-3. No explanation outside JSON.
-4. Keep JSON clean and valid.
-5. Keep explanations beginner-friendly.
-6. Keep output visually structured.
-7. Keep scenes easy to animate.
-8. Maximum 5 visual scenes.
-9. Optimize for API token limits.
-10. Every topic should feel visually alive.
-
-==================================================
-
-VERY IMPORTANT:
-
-The output structure controls the WEBSITE UI.
-
-So generate content in the SAME ORDER students should SEE it.
-
-The frontend will render sections in this order.
-
-==================================================
-
-WEBSITE VISUAL STRUCTURE ORDER:
-
-1. HERO SECTION
-- Large animated hero card
-- AI generated topic image
-- Topic title
-- One-line understanding
-
-2. WHY IT EXISTS
-- Problem-solving explanation
-- Real-world importance
-
-3. REAL WORLD ANALOGY
-- Daily life comparison
-- Beginner-friendly understanding
-
-4. QUICK VISUAL FLOW
-- Small animated step cards
-- Simple flow understanding
-
-5. MAIN VISUAL LEARNING SECTION
-- Animated scenes
-- Process visualization
-- Interactive learning cards
-
-6. AI GENERATED INFOGRAPHIC
-- Educational visual image
-- Topic diagram
-- Process overview
-
-7. STEP-BY-STEP WORKING
-- Detailed explanation
-- Visual workflow
-
-8. CORE CONCEPTS
-- Important concepts
-- Technical understanding
-- Examples
-
-9. COMPARISON TABLE
-- If relevant
-
-10. REAL WORLD APPLICATIONS
-- Practical usage
-
-11. IMPORTANT POINTS
-- Revision
-- Interview points
-
-12. MEMORY TRICKS
-- Fast remembering methods
-
-13. SUMMARY
-- Quick revision
-
-==================================================
-
-RETURN FORMAT:
+FORMAT:
 
 {
   "topic":"Topic Name",
 
-  "hero_section":{
+  "hero":{
     "title":"Topic title",
 
-    "simple_explanation":"One-line simple understanding",
+    "subtitle":"One-line simple understanding",
 
-    "hero_image_prompt":"Prompt for AI image generation",
-
-    "background_animation":"Suggested UI animation"
+    "hero_image_prompt":"AI image prompt"
   },
 
-  "why_it_exists":{
-    "problem_solved":"What problem this solves",
-
-    "importance":"Why topic is important"
-  },
-
-  "real_world_analogy":{
-    "analogy":"Real-world comparison",
-
-    "explanation":"How analogy connects to topic"
-  },
-
-  "quick_visual_flow":[
-    {
-      "step":"Step name",
-
-      "visual":"What visually appears"
-    }
+  "quick_understanding":[
+    "Simple point 1",
+    "Simple point 2"
   ],
 
-  "visual_scenes":[
+  "visual_story":[
     {
+      "scene_number":1,
+
       "title":"Scene title",
 
-      "visual":"What student should see",
+      "visual":"What visually appears",
 
       "animation":"What movement happens",
 
-      "image_prompt":"Prompt for Gemini image generation",
+      "explanation":"Short beginner explanation",
 
-      "video_style":"How animation should feel",
-
-      "explanation":"Short beginner-friendly explanation"
-    }
-  ],
-
-  "infographic_section":{
-    "title":"Infographic title",
-
-    "image_prompt":"Educational infographic prompt"
-  },
-
-  "step_by_step_working":[
-    {
-      "step":"Step title",
-
-      "explanation":"Detailed explanation"
+      "image_prompt":"Prompt for AI image generation"
     }
   ],
 
@@ -4504,31 +4301,15 @@ RETURN FORMAT:
     {
       "concept":"Concept name",
 
-      "simple_explanation":"Easy explanation",
+      "simple":"Easy explanation",
 
-      "technical_explanation":"Professional explanation",
-
-      "example":"Practical example"
+      "technical":"Professional explanation"
     }
-  ],
-
-  "features":[
-    "Feature 1",
-    "Feature 2"
-  ],
-
-  "advantages":[
-    "Advantage 1",
-    "Advantage 2"
-  ],
-
-  "disadvantages":[
-    "Disadvantage 1",
-    "Disadvantage 2"
   ],
 
   "comparison_table":{
     "headers":["Feature","Type A","Type B"],
+
     "rows":[
       ["Example","Fast","Slow"]
     ]
@@ -4540,58 +4321,27 @@ RETURN FORMAT:
   ],
 
   "important_points":[
-    "Important point 1",
-    "Important point 2"
+    "Point 1",
+    "Point 2"
   ],
 
-  "memory_tricks":[
-    "Memory trick 1"
-  ],
-
-  "summary":"Short revision summary"
+  "summary":"Quick revision summary"
 }
 
 ==================================================
 
-VISUAL LEARNING EXAMPLES:
+RULES:
 
-ARRAY:
-- Array boxes appear
-- Values insert visually
-- Deletion shifts elements
-- Update changes values
-
-DIGESTIVE SYSTEM:
-- Human eating
-- Food moving through organs
-- Stomach digestion
-- Nutrient absorption
-
-BLOCKCHAIN:
-- Blocks connecting
-- Transactions moving
-- Mining happening visually
-
-NETWORKING:
-- Packets traveling
-- Routers forwarding data
-
-OS:
-- CPU scheduling
-- Processes moving
-- Memory allocation
-
-==================================================
-
-IMPORTANT:
-
-Students should feel:
-
-"I can SEE the topic happening."
-
-NOT:
-
-"I am reading boring notes."
+1. Maximum 5 visual scenes.
+2. Every scene should feel animated.
+3. Keep explanations short.
+4. Make scenes visually understandable.
+5. Keep JSON valid.
+6. No markdown.
+7. No extra text.
+8. Optimize for API token limits.
+9. Make learning feel interactive.
+10. Make students mentally visualize the topic.
 
 ==================================================
 
