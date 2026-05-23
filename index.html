@@ -4094,6 +4094,215 @@ return null;
 }
 }
 
+function buildVisualNotesHTML(data, topic){
+let html = "";
+
+if(data.hero_section){
+html += `
+<div class="card" style="text-align:center;padding:40px;">
+<div style="font-size:48px;font-weight:900;margin-bottom:16px;background:linear-gradient(to right,#a78bfa,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+${escapeHtml(data.hero_section.title || topic)}
+</div>
+<p style="font-size:20px;color:#dbeafe;line-height:1.6;max-width:700px;margin:0 auto;">
+${escapeHtml(data.hero_section.simple_explanation || "")}
+</p>
+</div>`;
+}
+
+if(data.why_it_exists){
+html += `
+<div class="card">
+<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">🎯 Why It Exists</h2>
+<div style="padding:20px;border-radius:16px;background:rgba(255,255,255,0.03);border-left:4px solid #8b5cf6;margin-bottom:16px;">
+<div style="color:#94a3b8;margin-bottom:6px;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">Problem It Solves</div>
+<div style="font-size:18px;color:#dbeafe;line-height:1.8;">${escapeHtml(data.why_it_exists.problem_solved || "")}</div>
+</div>
+<div style="padding:20px;border-radius:16px;background:rgba(255,255,255,0.03);border-left:4px solid #3b82f6;">
+<div style="color:#94a3b8;margin-bottom:6px;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">Importance</div>
+<div style="font-size:18px;color:#dbeafe;line-height:1.8;">${escapeHtml(data.why_it_exists.importance || "")}</div>
+</div>
+</div>`;
+}
+
+if(data.real_world_analogy){
+html += `
+<div class="card">
+<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">💡 Real World Analogy</h2>
+<div style="padding:24px;border-radius:20px;background:linear-gradient(145deg,rgba(139,92,246,0.12),rgba(59,130,246,0.08));border:1px solid rgba(255,255,255,0.06);">
+<div style="font-size:20px;font-weight:700;margin-bottom:12px;color:#c4b5fd;">${escapeHtml(data.real_world_analogy.analogy || "")}</div>
+<div style="font-size:16px;color:#dbeafe;line-height:1.8;">${escapeHtml(data.real_world_analogy.explanation || "")}</div>
+</div>
+</div>`;
+}
+
+if(data.quick_visual_flow && data.quick_visual_flow.length){
+html += `
+<div class="card">
+<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">⚡ Quick Visual Flow</h2>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
+${data.quick_visual_flow.map((item,i)=>`
+<div style="padding:20px;border-radius:18px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);text-align:center;">
+<div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#3b82f6);display:flex;align-items:center;justify-content:center;font-weight:900;margin:0 auto 12px;font-size:18px;">${i+1}</div>
+<div style="font-weight:700;margin-bottom:8px;font-size:16px;">${escapeHtml(item.step || "")}</div>
+<div style="font-size:14px;color:#94a3b8;">${escapeHtml(item.visual || "")}</div>
+</div>
+`).join("")}
+</div>
+</div>`;
+}
+
+if(data.visual_scenes && data.visual_scenes.length){
+html += `
+<div class="card">
+<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">🎬 Visual Learning</h2>
+<div style="display:grid;gap:20px;">
+${data.visual_scenes.map((scene,i)=>`
+<div style="padding:24px;border-radius:20px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);">
+<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+<div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#8b5cf6,#3b82f6);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;">${i+1}</div>
+<h3 style="font-size:24px;font-weight:800;margin:0;">${escapeHtml(scene.title || "")}</h3>
+</div>
+<div style="padding:16px;border-radius:14px;background:rgba(139,92,246,0.1);margin-bottom:12px;">
+<div style="color:#94a3b8;font-size:12px;text-transform:uppercase;margin-bottom:4px;">👁️ Visual</div>
+<div style="color:#dbeafe;font-size:16px;">${escapeHtml(scene.visual || "")}</div>
+</div>
+${scene.animation ? `<div style="padding:12px 16px;border-radius:14px;background:rgba(59,130,246,0.08);margin-bottom:12px;"><span style="color:#94a3b8;font-size:12px;text-transform:uppercase;">🎞️ Animation:</span> <span style="color:#93c5fd;">${escapeHtml(scene.animation)}</span></div>` : ""}
+<div style="font-size:16px;color:#dbeafe;line-height:1.8;">${escapeHtml(scene.explanation || "")}</div>
+</div>
+`).join("")}
+</div>
+</div>`;
+}
+
+if(data.step_by_step_working && data.step_by_step_working.length){
+html += `
+<div class="card">
+<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">🔧 Step-by-Step Working</h2>
+<div style="display:grid;gap:16px;">
+${data.step_by_step_working.map((item,i)=>`
+<div style="display:flex;gap:16px;padding:18px;border-radius:16px;background:rgba(255,255,255,0.03);border-left:4px solid #8b5cf6;">
+<div style="min-width:36px;height:36px;border-radius:50%;background:rgba(139,92,246,0.2);display:flex;align-items:center;justify-content:center;font-weight:900;color:#c4b5fd;">${i+1}</div>
+<div>
+<div style="font-weight:700;font-size:18px;margin-bottom:6px;">${escapeHtml(item.step || "")}</div>
+<div style="font-size:15px;color:#94a3b8;line-height:1.7;">${escapeHtml(item.explanation || "")}</div>
+</div>
+</div>
+`).join("")}
+</div>
+</div>`;
+}
+
+if(data.core_concepts && data.core_concepts.length){
+html += `
+<div class="card">
+<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">📚 Core Concepts</h2>
+<div style="display:grid;gap:20px;">
+${data.core_concepts.map(concept=>`
+<div style="padding:22px;border-radius:18px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);">
+<h3 style="font-size:22px;font-weight:800;margin-bottom:12px;color:#c4b5fd;">${escapeHtml(concept.concept || "")}</h3>
+<div style="margin-bottom:10px;"><span style="color:#94a3b8;">🧒 Simple:</span> <span style="color:#dbeafe;">${escapeHtml(concept.simple_explanation || "")}</span></div>
+<div style="margin-bottom:10px;"><span style="color:#94a3b8;">🔬 Technical:</span> <span style="color:#93c5fd;">${escapeHtml(concept.technical_explanation || "")}</span></div>
+${concept.example ? `<div style="padding:12px;border-radius:12px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.15);"><span style="color:#86efac;">💡 Example:</span> <span style="color:#dbeafe;">${escapeHtml(concept.example)}</span></div>` : ""}
+</div>
+`).join("")}
+</div>
+</div>`;
+}
+
+const features = data.features || data.advantages || [];
+const drawbacks = data.disadvantages || [];
+if(features.length || drawbacks.length){
+html += `
+<div class="card">
+<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">⚖️ Pros & Cons</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+${features.length ? `<div>
+<div style="font-size:18px;font-weight:700;margin-bottom:12px;color:#86efac;">✅ Advantages</div>
+${features.map(f=>`<div style="padding:10px 14px;border-radius:10px;background:rgba(34,197,94,0.08);margin-bottom:8px;border:1px solid rgba(34,197,94,0.1);color:#dbeafe;">${escapeHtml(f)}</div>`).join("")}
+</div>` : ""}
+${drawbacks.length ? `<div>
+<div style="font-size:18px;font-weight:700;margin-bottom:12px;color:#fca5a5;">❌ Disadvantages</div>
+${drawbacks.map(d=>`<div style="padding:10px 14px;border-radius:10px;background:rgba(248,113,113,0.08);margin-bottom:8px;border:1px solid rgba(248,113,113,0.1);color:#dbeafe;">${escapeHtml(d)}</div>`).join("")}
+</div>` : ""}
+</div>
+</div>`;
+}
+
+if(data.comparison_table && data.comparison_table.headers && data.comparison_table.rows && data.comparison_table.rows.length){
+html += `
+<div class="card">
+<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">📊 Comparison</h2>
+<div style="overflow:auto;border-radius:16px;border:1px solid rgba(255,255,255,0.06);">
+<table style="width:100%;border-collapse:collapse;">
+<thead>
+<tr>${data.comparison_table.headers.map(h=>`<th style="padding:14px 18px;background:rgba(139,92,246,0.2);font-weight:700;text-align:left;color:#c4b5fd;border-bottom:1px solid rgba(255,255,255,0.06);">${escapeHtml(h)}</th>`).join("")}</tr>
+</thead>
+<tbody>
+${data.comparison_table.rows.map(row=>`<tr>${row.map((cell,i)=>`<td style="padding:12px 18px;border-bottom:1px solid rgba(255,255,255,0.04);color:#dbeafe;${i===0?'font-weight:600;':''}">${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}
+</tbody>
+</table>
+</div>
+</div>`;
+}
+
+if(data.applications && data.applications.length){
+html += `
+<div class="card">
+<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">🌍 Real-World Applications</h2>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;">
+${data.applications.map(app=>`
+<div style="padding:16px;border-radius:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);">
+<span style="font-size:24px;margin-right:8px;">🚀</span>
+<span style="color:#dbeafe;">${escapeHtml(app)}</span>
+</div>
+`).join("")}
+</div>
+</div>`;
+}
+
+if(data.important_points && data.important_points.length){
+html += `
+<div class="card">
+<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">⭐ Important Points</h2>
+<div style="display:grid;gap:12px;">
+${data.important_points.map(p=>`
+<div style="display:flex;gap:12px;padding:14px 18px;border-radius:12px;background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.1);">
+<span style="color:#fde68a;">⭐</span>
+<span style="color:#dbeafe;">${escapeHtml(p)}</span>
+</div>
+`).join("")}
+</div>
+</div>`;
+}
+
+if(data.memory_tricks && data.memory_tricks.length){
+html += `
+<div class="card">
+<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">🧠 Memory Tricks</h2>
+<div style="display:grid;gap:14px;">
+${data.memory_tricks.map(trick=>`
+<div style="padding:18px;border-radius:16px;background:linear-gradient(145deg,rgba(168,85,247,0.1),rgba(59,130,246,0.06));border:1px solid rgba(168,85,247,0.15);">
+<div style="font-size:28px;margin-bottom:8px;">🧠</div>
+<div style="color:#d8b4fe;font-size:17px;line-height:1.6;">${escapeHtml(trick)}</div>
+</div>
+`).join("")}
+</div>
+</div>`;
+}
+
+if(data.summary){
+html += `
+<div class="card">
+<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">📝 Summary</h2>
+<div style="padding:24px;border-radius:20px;background:linear-gradient(145deg,rgba(139,92,246,0.08),rgba(59,130,246,0.04));border:1px solid rgba(255,255,255,0.06);">
+<div style="font-size:18px;color:#dbeafe;line-height:2;">${escapeHtml(data.summary)}</div>
+</div>
+</div>`;
+}
+
+return html;
+}
+
 async function generateNotes(){
 try{
 
@@ -4114,91 +4323,329 @@ notesOutput.innerHTML =
 const extractedText =
 await extractFileText(file);
 
-  const prompt = `You are a WORLD-CLASS AI VISUAL TEACHER.
+const prompt = `You are an ELITE AI VISUAL LEARNING ENGINE.
 
-Topic: "${topic}"
-${extractedText ? `\nSource:\n${extractedText}\n` : ""}
+Your job is to create a COMPLETE VISUAL LEARNING EXPERIENCE
+for ANY topic in the world.
 
-STRICT RULES:
-1. Return ONLY clean markdown.
-2. Use professional formatting.
-3. Use headings and subheadings.
-4. Keep explanations beginner-friendly first.
-5. Then explain professionally in detail.
-6. Avoid difficult language initially.
-7. Use visual explanations.
-8. Use real-world analogies.
-9. Use examples frequently.
-10. Use bullet points for readability.
-11. Use comparison tables where useful.
-12. Add ONE valid Mermaid diagram only.
-13. Mermaid syntax MUST be valid.
-14. Keep diagram meaningful and educational.
-15. Do NOT generate random text.
-16. Keep notes structured and organized.
-17. Avoid huge paragraphs.
-18. Use short readable sections.
-19. Make notes suitable for complete beginners, students, revision, interview prep, and self-learning.
+The output will be used in:
+- AI Notes Website
+- Animated Learning UI
+- Interactive Educational Platform
+- Visual Story-Based Learning System
 
-TEACHING STYLE:
-Teach like an amazing real teacher. The student should feel "Ohhhh now I understand." NOT "This looks complicated."
+IMPORTANT GOAL:
 
-LEARNING METHOD:
-1. Explain SIMPLE first.
-2. Then explain TECHNICAL.
-3. Then show VISUAL flow.
-4. Then give EXAMPLE.
-5. Then give REAL-WORLD analogy.
-6. Then give PROFESSIONAL understanding.
+A complete beginner should:
+- understand the topic visually
+- mentally see the process happening
+- understand flow step-by-step
+- remember concepts easily
+- enjoy learning
 
-OUTPUT STRUCTURE:
+The learning should feel:
+- visual
+- animated
+- interactive
+- modern
+- premium
+- easy to understand
 
-# ${topic}
+==================================================
 
-# SIMPLE UNDERSTANDING
-Explain the topic in the simplest possible way. A 10-year-old student should get the basic idea.
+CRITICAL RULES:
 
-# WHY THIS TOPIC EXISTS
-Explain why humans created this concept, what problem it solves, why it is important.
+1. Return ONLY VALID JSON.
+2. No markdown.
+3. No explanation outside JSON.
+4. Keep JSON clean and valid.
+5. Keep explanations beginner-friendly.
+6. Keep output visually structured.
+7. Keep scenes easy to animate.
+8. Maximum 5 visual scenes.
+9. Optimize for API token limits.
+10. Every topic should feel visually alive.
 
-# REAL WORLD ANALOGY
-Explain using real-life examples with comparison.
+==================================================
 
-# QUICK VISUAL UNDERSTANDING
-Explain topic flow in 3-5 simple visual steps.
+VERY IMPORTANT:
 
-# MERMAID VISUAL DIAGRAM
-Generate ONE valid Mermaid diagram using graph TD only with simple short labels. No special characters.
+The output structure controls the WEBSITE UI.
 
-# KEY TAKEAWAYS
-Summarize the most important points in simple bullet points for quick revision.
+So generate content in the SAME ORDER students should SEE it.
 
-Write in English only. No preamble.`;
+The frontend will render sections in this order.
+
+==================================================
+
+WEBSITE VISUAL STRUCTURE ORDER:
+
+1. HERO SECTION
+- Large animated hero card
+- AI generated topic image
+- Topic title
+- One-line understanding
+
+2. WHY IT EXISTS
+- Problem-solving explanation
+- Real-world importance
+
+3. REAL WORLD ANALOGY
+- Daily life comparison
+- Beginner-friendly understanding
+
+4. QUICK VISUAL FLOW
+- Small animated step cards
+- Simple flow understanding
+
+5. MAIN VISUAL LEARNING SECTION
+- Animated scenes
+- Process visualization
+- Interactive learning cards
+
+6. AI GENERATED INFOGRAPHIC
+- Educational visual image
+- Topic diagram
+- Process overview
+
+7. STEP-BY-STEP WORKING
+- Detailed explanation
+- Visual workflow
+
+8. CORE CONCEPTS
+- Important concepts
+- Technical understanding
+- Examples
+
+9. COMPARISON TABLE
+- If relevant
+
+10. REAL WORLD APPLICATIONS
+- Practical usage
+
+11. IMPORTANT POINTS
+- Revision
+- Interview points
+
+12. MEMORY TRICKS
+- Fast remembering methods
+
+13. SUMMARY
+- Quick revision
+
+==================================================
+
+RETURN FORMAT:
+
+{
+  "topic":"Topic Name",
+
+  "hero_section":{
+    "title":"Topic title",
+
+    "simple_explanation":"One-line simple understanding",
+
+    "hero_image_prompt":"Prompt for AI image generation",
+
+    "background_animation":"Suggested UI animation"
+  },
+
+  "why_it_exists":{
+    "problem_solved":"What problem this solves",
+
+    "importance":"Why topic is important"
+  },
+
+  "real_world_analogy":{
+    "analogy":"Real-world comparison",
+
+    "explanation":"How analogy connects to topic"
+  },
+
+  "quick_visual_flow":[
+    {
+      "step":"Step name",
+
+      "visual":"What visually appears"
+    }
+  ],
+
+  "visual_scenes":[
+    {
+      "title":"Scene title",
+
+      "visual":"What student should see",
+
+      "animation":"What movement happens",
+
+      "image_prompt":"Prompt for Gemini image generation",
+
+      "video_style":"How animation should feel",
+
+      "explanation":"Short beginner-friendly explanation"
+    }
+  ],
+
+  "infographic_section":{
+    "title":"Infographic title",
+
+    "image_prompt":"Educational infographic prompt"
+  },
+
+  "step_by_step_working":[
+    {
+      "step":"Step title",
+
+      "explanation":"Detailed explanation"
+    }
+  ],
+
+  "core_concepts":[
+    {
+      "concept":"Concept name",
+
+      "simple_explanation":"Easy explanation",
+
+      "technical_explanation":"Professional explanation",
+
+      "example":"Practical example"
+    }
+  ],
+
+  "features":[
+    "Feature 1",
+    "Feature 2"
+  ],
+
+  "advantages":[
+    "Advantage 1",
+    "Advantage 2"
+  ],
+
+  "disadvantages":[
+    "Disadvantage 1",
+    "Disadvantage 2"
+  ],
+
+  "comparison_table":{
+    "headers":["Feature","Type A","Type B"],
+    "rows":[
+      ["Example","Fast","Slow"]
+    ]
+  },
+
+  "applications":[
+    "Application 1",
+    "Application 2"
+  ],
+
+  "important_points":[
+    "Important point 1",
+    "Important point 2"
+  ],
+
+  "memory_tricks":[
+    "Memory trick 1"
+  ],
+
+  "summary":"Short revision summary"
+}
+
+==================================================
+
+VISUAL LEARNING EXAMPLES:
+
+ARRAY:
+- Array boxes appear
+- Values insert visually
+- Deletion shifts elements
+- Update changes values
+
+DIGESTIVE SYSTEM:
+- Human eating
+- Food moving through organs
+- Stomach digestion
+- Nutrient absorption
+
+BLOCKCHAIN:
+- Blocks connecting
+- Transactions moving
+- Mining happening visually
+
+NETWORKING:
+- Packets traveling
+- Routers forwarding data
+
+OS:
+- CPU scheduling
+- Processes moving
+- Memory allocation
+
+==================================================
+
+IMPORTANT:
+
+Students should feel:
+
+"I can SEE the topic happening."
+
+NOT:
+
+"I am reading boring notes."
+
+==================================================
+
+TOPIC:
+${topic}
+
+EXTRA CONTENT:
+${extractedText || "No extra content provided."}`;
 
 const result =
-              await askAI(prompt,"",3500);
+await askAI(prompt,"",4000);
 
-let mermaidCode =
-await generateDetailedMindMap(
+let data;
+let isJson = false;
+try{
+const cleaned = String(result ?? "")
+.replace(/```json/g,"")
+.replace(/```/g,"")
+.trim();
+data = JSON.parse(cleaned);
+isJson = true;
+}catch(parseError){
+console.log("JSON parse failed, using markdown fallback", parseError);
+}
+
+let visualHtml = "";
+let mermaidCode = "";
+let conceptDiagramHtml = "";
+
+if(isJson && data){
+visualHtml = buildVisualNotesHTML(data, topic);
+
+mermaidCode = await generateDetailedMindMap(
 topic,
-`${topic}\n${extractedText}\n${result}`
+`${topic}\n${extractedText}\n${JSON.stringify(data)}`
 );
 
-let conceptDiagramHtml = "";
 try{
-conceptDiagramHtml = await generateConceptDiagram(topic, `${topic}\n${extractedText}\n${result}`);
+conceptDiagramHtml = await generateConceptDiagram(
+topic,
+`${topic}\n${extractedText}\n${JSON.stringify(data)}`
+);
 }catch(e){ console.log(e); }
+}
 
+let formatted = "";
+if(!isJson){
 let cleanedResult = result
 .replace(/```mermaid([\s\S]*?)```/g,"")
 .replace(/```/g,"");
-
-let formatted = DOMPurify.sanitize(
-marked.parse(cleanedResult)
-);
+formatted = DOMPurify.sanitize(marked.parse(cleanedResult));
+}
 
 let preview = "";
-
 if(file && file.type.includes("image")){
 preview = `
 <img
@@ -4225,38 +4672,33 @@ ${mermaidCode}
 </div>
 ` : ""}
 
+${visualHtml}
+
 ${formatted}
 
 `;
 
+if(mermaidCode){
 try{
-
 mermaid.initialize({
 startOnLoad:false,
 securityLevel:"loose",
 theme:"dark",
 mindmap:{}
 });
-
 await mermaid.run({
 querySelector:".mermaid"
 });
-
 }catch(error){
 console.log(error);
-
-const fallbackMindMap =
-buildFallbackMindMap(
+const fallbackMindMap = buildFallbackMindMap(
 topic,
-`${topic}\n${extractedText}\n${cleanedResult}`
+`${topic}\n${extractedText}\n${isJson ? JSON.stringify(data) : result}`
 );
-
-const mermaidContainer =
-notesOutput.querySelector("#notesMindMap");
-
+const mermaidContainer = notesOutput.querySelector("#notesMindMap");
 if(mermaidContainer){
-mermaidContainer.outerHTML =
-renderFallbackMindMapHtml(fallbackMindMap);
+mermaidContainer.outerHTML = renderFallbackMindMapHtml(fallbackMindMap);
+}
 }
 }
 
@@ -4266,7 +4708,6 @@ behavior:"smooth"
 
 appData.notesGenerated++;
 appData.xp += 10;
-
 updateUI();
 
 }catch(error){
