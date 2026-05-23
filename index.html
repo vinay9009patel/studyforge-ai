@@ -1767,6 +1767,53 @@ Download Notes
 
 </button>
 
+<div id="audioControls" style="margin-top:20px;display:none;gap:12px;flex-wrap:wrap;align-items:center;">
+<button
+id="audioPlayBtn"
+class="btn"
+style="background:linear-gradient(135deg,#22c55e,#16a34a);color:white;padding:12px 24px;border-radius:14px;border:none;font-size:15px;cursor:pointer;font-weight:700;"
+onclick="toggleAudioPlay()">
+▶ Play Audio
+</button>
+
+<button
+id="audioPauseBtn"
+class="btn"
+style="background:rgba(251,191,36,0.2);color:#fde68a;padding:12px 24px;border-radius:14px;border:1px solid rgba(251,191,36,0.3);font-size:15px;cursor:pointer;font-weight:700;display:none;"
+onclick="pauseAudio()">
+⏸ Pause
+</button>
+
+<button
+id="audioStopBtn"
+class="btn"
+style="background:rgba(239,68,68,0.2);color:#fca5a5;padding:12px 24px;border-radius:14px;border:1px solid rgba(239,68,68,0.3);font-size:15px;cursor:pointer;font-weight:700;"
+onclick="stopAudio()">
+⏹ Stop
+</button>
+
+<select
+id="voiceSelect"
+class="input dark-select"
+style="max-width:250px;padding:12px 16px;font-size:14px;"
+onchange="changeVoice()">
+</select>
+
+<div style="display:flex;align-items:center;gap:8px;">
+<span style="color:#94a3b8;font-size:14px;">Speed:</span>
+<input
+type="range"
+id="speechRate"
+min="0.5"
+max="2"
+step="0.1"
+value="1"
+style="width:100px;"
+onchange="changeSpeechRate()">
+<span id="speechRateValue" style="color:#94a3b8;font-size:14px;">1x</span>
+</div>
+</div>
+
 <div
 id="notesOutput"
 class="notes-content"
@@ -2150,6 +2197,7 @@ Toggle Theme
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
+<script src="https://js.puter.com/v2/"></script>
 
 <script>
 
@@ -3286,175 +3334,185 @@ async function drawCanvasDiagram(topic, concepts){
   return canvas.toDataURL("image/png", 0.9);
 }
 
-async function searchWikimediaImagesForTopic(topic, conceptsData = null){
-  try{
-    let searchQueries = [];
-    let explanations = [];
-    
-    if(conceptsData){
-      if(conceptsData.core_concepts && Array.isArray(conceptsData.core_concepts)){
-        for(const c of conceptsData.core_concepts){
-          if(c.concept){
-            searchQueries.push(c.concept);
-            searchQueries.push(c.concept + " diagram");
-            explanations.push(c.simple_explanation || c.simple || "Key concept");
-          }
-        }
-      }
-      
-      if(conceptsData.visual_story && Array.isArray(conceptsData.visual_story)){
-        for(const s of conceptsData.visual_story){
-          if(s.title){
-            searchQueries.push(s.title);
-            explanations.push(s.explanation || s.voiceover || "Visual scene");
-          }
-          if(s.visual){
-            searchQueries.push(s.visual);
-          }
-        }
-      }
-      
-      if(conceptsData.visual_dry_run && Array.isArray(conceptsData.visual_dry_run)){
-        for(const s of conceptsData.visual_dry_run){
-          if(s.title){
-            searchQueries.push(s.title);
-            explanations.push(s.understanding_goal || s.voiceover || "Step-by-step scene");
-          }
-        }
-      }
-      
-      if(conceptsData.important_points && Array.isArray(conceptsData.important_points)){
-        for(const p of conceptsData.important_points){
-          searchQueries.push(p);
-          explanations.push("Important point");
-        }
-      }
-    }
-    
-    searchQueries = searchQueries.slice(0, 15);
-    
-    if(searchQueries.length === 0){
-      searchQueries = [
-        topic,
-        topic + " diagram",
-        topic + " illustration",
-        topic + " process",
-        topic + " structure",
-        topic + " example",
-        topic + " visualization",
-        topic + " step by step"
-      ];
-      explanations = [
-        "Visual representation of " + topic,
-        "How " + topic + " works diagram",
-        "Illustration of " + topic,
-        topic + " process flow",
-        topic + " structure and components",
-        "Real-world example of " + topic,
-        "Visual understanding of " + topic,
-        "Step-by-step guide to " + topic
-      ];
-    }
-    
-    const uniqQueries = [];
-    const seen = new Set();
-    for(const q of searchQueries){
-      const lower = q.toLowerCase().trim();
-      if(!seen.has(lower) && lower.length > 2){
-        seen.add(lower);
-        uniqQueries.push(q);
-      }
-    }
-    searchQueries = uniqQueries;
-    
-    console.log("📸 Searching for images with queries:", searchQueries.slice(0, 8));
-    
-    const resp = await fetch(WORKER_URL + "/gemini-image", {
-      method: "POST",
-      headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({ queries: searchQueries, prompt: topic })
-    });
-    
-    const result = await resp.json();
-    result.explanations = explanations;
-    return result;
-  }catch(e){
-    console.log("Wikimedia search error:", e);
-    return { success: false, images: [], error: e.message };
+let puterImageCache = {};
+
+async function generateAIImage(prompt, seed = 123){
+  console.log("🖼️ Generating image for:", prompt.substring(0, 60) + "...");
+  
+  const cacheKey = prompt + "_" + seed;
+  if(puterImageCache[cacheKey]){
+    console.log("   🔄 Using cached image");
+    return puterImageCache[cacheKey];
   }
+  
+  try{
+    if(typeof puter !== 'undefined' && puter.ai && puter.ai.txt2img){
+      console.log("   🚀 Trying Puter.js (FREE - FLUX/GPT Image/DALL-E)");
+      
+      const fullPrompt = prompt + ", educational diagram, clean white background, labeled, professional, for students, high quality, infographic style";
+      
+      try{
+        const imgElement = await puter.ai.txt2img(fullPrompt, {
+          model: "black-forest-labs/flux-schnell",
+          quality: "low"
+        });
+        
+        if(imgElement && imgElement.src){
+          console.log("   ✅ Puter.js image generated:", imgElement.src.substring(0, 50) + "...");
+          puterImageCache[cacheKey] = imgElement.src;
+          return imgElement.src;
+        }
+      }catch(puterErr){
+        console.log("   ⚠️ Puter.js error (user not signed in?):", puterErr.message);
+        console.log("   🔄 Falling back to Pollinations.ai");
+      }
+    }
+  }catch(e){
+    console.log("   Puter.js not available, using fallback:", e.message);
+  }
+  
+  console.log("   🔗 Using Pollinations.ai FREE (no key)");
+  const safePrompt = encodeURIComponent(prompt + ", educational diagram, clean white background");
+  const imageUrl = `https://image.pollinations.ai/prompt/${safePrompt}?width=800&height=600&nologo=true&seed=${seed}`;
+  console.log("   📍 Image URL:", imageUrl);
+  
+  puterImageCache[cacheKey] = imageUrl;
+  return imageUrl;
 }
 
-async function generateConceptDiagram(topic, contextText, conceptsData = null){
-  try{
-    const imageResult = await searchWikimediaImagesForTopic(topic, conceptsData);
-    
-    if(imageResult.success && imageResult.images && imageResult.images.length > 0){
-      const images = imageResult.images.slice(0, 6);
-      
-      const defaultExplanations = imageResult.explanations || [
-        "Visual representation of the core concept",
-        "How the process works step-by-step",
-        "Key components and their relationships",
-        "Real-world application examples",
-        "Comparison with similar concepts",
-        "Summary and important takeaways"
-      ];
-      
-      let html = `<div class="card" style="margin-bottom:30px;">
-        <h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">🖼️ Concept Gallery - ${escapeHtml(topic)}</h2>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;">`;
-      
-       for(var i=0;i<images.length;i++){
-        var img = images[i];
-        var expl = defaultExplanations[i] || "Educational illustration";
-        var title = img.title || ("Illustration " + (i+1));
-        
-        html += `<div style="border-radius:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);overflow:hidden;">
-          <div style="position:relative;overflow:hidden;background:#0f172a;min-height:180px;display:flex;align-items:center;justify-content:center;">
-            <img src="${escapeHtml(img.imageUrl)}" 
-                 alt="${escapeHtml(title)}" 
-                 style="width:100%;height:auto;max-height:250px;object-fit:contain;"
-                 onerror="this.style.display='none';this.parentNode.innerHTML='<div style=\\'padding:40px;text-align:center;color:#94a3b8;\\'>🖼️ Image</div>';">
-          </div>
-          <div style="padding:16px;">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-              <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#3b82f6);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:white;">${i+1}</div>
-              <h3 style="font-size:16px;font-weight:700;color:#c4b5fd;margin:0;">${escapeHtml(title)}</h3>
-            </div>
-            <p style="font-size:13px;color:#94a3b8;line-height:1.6;margin:0;">${escapeHtml(expl)}</p>
-            ${img.query ? `<div style="margin-top:8px;padding:6px 10px;border-radius:8px;background:rgba(139,92,246,0.1);font-size:11px;color:#a78bfa;">🔍 ${escapeHtml(title)}</div>` : ""}
-          </div>
-        </div>`;
-      }
-      
-      html += `</div>
-        <div style="margin-top:16px;padding:14px;border-radius:12px;background:rgba(99,102,241,0.05);border:1px solid rgba(99,102,241,0.1);">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:16px;">📚</span>
-            <span style="font-size:13px;color:#818cf8;">Images from Wikipedia Commons</span>
-          </div>
-        </div>
-      </div>`;
-      
-      return html;
+async function generateTopicDiagrams(topic, data, sequenceData = []){
+  console.log("\n🚀 ====== Starting AI Image Generation ======");
+  console.log("📌 Topic:", topic);
+  console.log("📋 Sequence data items:", sequenceData ? sequenceData.length : 0);
+  
+  const images = [];
+  const usedSeeds = new Set();
+  
+  function getUniqueSeed(base){
+    let seed = base;
+    while(usedSeeds.has(seed)){
+      seed = seed + 7;
     }
-  }catch(e){ console.log("Wikimedia gallery fail:", e); }
-
-  try{
-    const raw = await askAI(`List 6 key educational concepts about "${topic}" as JSON. Format: [{"label":"short name","desc":"1-line explanation max 8 words"}] covering: definition, types, working, uses, pros/cons, example. Return ONLY valid JSON array.`, "Return JSON only.");
-    const cleaned = String(raw ?? "").replace(/```json/g,"").replace(/```/g,"").trim();
-    let concepts = JSON.parse(cleaned);
-    if(!Array.isArray(concepts) || concepts.length < 3) throw new Error("Bad data");
-    concepts = concepts.slice(0,6);
-    const imgData = await drawCanvasDiagram(topic, concepts);
-    return `<div class="ai-diagram-card" style="margin-bottom:30px;">
-      <div class="ai-diagram-title">📊 Key Concepts Overview</div>
-      <img src="${imgData}" alt="Concept diagram for ${topic}" style="width:100%;display:block;border-radius:0 0 28px 28px;">
-    </div>`;
-  }catch(e){
-    console.log("Canvas diagram error:", e);
-    return "";
+    usedSeeds.add(seed);
+    return seed;
   }
+  
+  if(sequenceData && sequenceData.length > 0){
+    console.log("\n🎨 Generating images from sequence data...");
+    
+    for(let i=0;i<sequenceData.length && i<6;i++){
+      const seq = sequenceData[i];
+      const baseTopic = seq.fullTitle || seq.title || seq.search_term || topic;
+      const seed = getUniqueSeed(100 + i * 11);
+      
+      console.log(`\n   [${i+1}] Generating for: ${baseTopic}`);
+      
+      const imagePrompt = `${baseTopic}, educational diagram, clean white background, labeled, professional, for students, exam preparation, high quality, infographic style`;
+      
+      const imageUrl = await generateAIImage(imagePrompt, seed);
+      
+      if(imageUrl){
+        const imgData = {
+          imageUrl: imageUrl,
+          title: seq.title || `Visual ${i+1}`,
+          sequenceLabel: seq.sequenceLabel || "📷 Visual",
+          fullTitle: seq.fullTitle || seq.title,
+          sectionTitle: seq.title,
+          query: seq.search_term || topic
+        };
+        images.push(imgData);
+        console.log(`   ✅ Image ${i+1} added: ${imgData.title}`);
+      }
+    }
+  }
+  
+  if(images.length === 0){
+    console.log("\n⚠️ No sequence data, using fallback images...");
+    
+    const fallbackItems = [
+      { title: `Introduction to ${topic}`, search: `${topic} introduction diagram`, label: "📖 Introduction" },
+      { title: `How ${topic} Works`, search: `${topic} process diagram`, label: "⚡ Process" },
+      { title: `${topic} Structure`, search: `${topic} structure labeled`, label: "🏗️ Structure" },
+      { title: `Types of ${topic}`, search: `${topic} types comparison`, label: "📊 Types" },
+      { title: `${topic} Applications`, search: `${topic} real world applications`, label: "🌍 Applications" },
+      { title: `${topic} Summary`, search: `${topic} concept map`, label: "📝 Summary" }
+    ];
+    
+    for(let i=0;i<fallbackItems.length;i++){
+      const item = fallbackItems[i];
+      const seed = getUniqueSeed(500 + i * 13);
+      
+      console.log(`\n   [${i+1}] Fallback: ${item.title}`);
+      
+      const imagePrompt = `${item.search}, educational diagram, clean white background, labeled, professional, infographic`;
+      const imageUrl = await generateAIImage(imagePrompt, seed);
+      
+      if(imageUrl){
+        images.push({
+          imageUrl: imageUrl,
+          title: item.title,
+          sequenceLabel: item.label,
+          fullTitle: item.title,
+          sectionTitle: item.title,
+          query: item.search
+        });
+        console.log(`   ✅ Fallback image ${i+1} added`);
+      }
+    }
+  }
+  
+  console.log(`\n✅ ====== Image Generation Complete ======`);
+  console.log(`📊 Total images generated: ${images.length}`);
+  console.log("🌐 Image URLs:");
+  images.forEach((img, idx) => {
+    console.log(`   [${idx+1}] ${img.title}: ${img.imageUrl.substring(0, 60)}...`);
+  });
+  
+  window.__galleryImages = images;
+  console.log(`\n💾 Saved to window.__galleryImages (${images.length} items)`);
+  
+  return images;
+}
+
+function renderImageCard(image, title = "", explanation = ""){
+  if(!image || !image.imageUrl) return "";
+  
+  const imgTitle = title || image.title || "Educational illustration";
+  const imgExpl = explanation || "";
+  
+  return `
+<div style="border-radius:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);overflow:hidden;margin:16px 0;">
+  <div style="position:relative;overflow:hidden;background:#0f172a;min-height:150px;max-height:300px;display:flex;align-items:center;justify-content:center;">
+    <img src="${escapeHtml(image.imageUrl)}" 
+         alt="${escapeHtml(imgTitle)}" 
+         style="width:100%;height:auto;max-height:300px;object-fit:contain;"
+         onerror="this.style.display='none';this.parentNode.innerHTML='<div style=\\'padding:40px;text-align:center;color:#94a3b8;\\'>🖼️ Image not available</div>';">
+  </div>
+  ${imgTitle || imgExpl ? `
+  <div style="padding:14px 16px;">
+    ${imgTitle ? `<div style="font-weight:700;color:#c4b5fd;margin-bottom:6px;">${escapeHtml(imgTitle)}</div>` : ""}
+    ${imgExpl ? `<div style="font-size:13px;color:#94a3b8;line-height:1.6;">${escapeHtml(imgExpl)}</div>` : ""}
+  </div>` : ""}
+</div>`;
+}
+
+function renderComparisonTable(table){
+  if(!table || !table.headers || !table.rows || table.rows.length === 0) return "";
+  
+  return `
+<div class="card" style="margin-bottom:30px;">
+<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">📊 Comparison</h2>
+<div style="overflow:auto;border-radius:16px;border:1px solid rgba(255,255,255,0.06);">
+<table style="width:100%;border-collapse:collapse;">
+<thead>
+<tr>${table.headers.map(h=>`<th style="padding:14px 18px;background:rgba(139,92,246,0.2);font-weight:700;text-align:left;color:#c4b5fd;border-bottom:1px solid rgba(255,255,255,0.06);">${escapeHtml(h)}</th>`).join("")}</tr>
+</thead>
+<tbody>
+${table.rows.map(row=>`<tr>${row.map((cell,i)=>`<td style="padding:12px 18px;border-bottom:1px solid rgba(255,255,255,0.04);color:#dbeafe;${i===0?'font-weight:600;':''}">${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}
+</tbody>
+</table>
+</div>
+</div>`;
 }
 
 function renderInterviewScreen(){
@@ -4152,47 +4210,184 @@ setTimeout(() => startOwnAutoMic(), 500);
 
 let voiceRecognition = null;
 let isListening = false;
+let voiceCommittedText = "";
 
 let micStream = null;
 let ownCamStream = null;
 
+function checkVoiceSupport(){
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const isHttps = location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1";
+    const isChrome = /Chrome|Chromium|Edg/.test(navigator.userAgent);
+    
+    console.log("🎤 Voice Support Check:");
+    console.log("   - SpeechRecognition available:", !!SpeechRecognition);
+    console.log("   - HTTPS/Localhost:", isHttps);
+    console.log("   - Chrome/Edge browser:", isChrome);
+    console.log("   - User Agent:", navigator.userAgent);
+    
+    return {
+        supported: !!SpeechRecognition && isHttps,
+        SpeechRecognition,
+        isHttps,
+        isChrome,
+        issues: []
+    };
+}
 
 function toggleVoiceInput(){
-const btn = document.getElementById("voiceBtn");
-const btnText = document.getElementById("voiceBtnText");
-const textarea = document.getElementById("interviewAnswer");
-if(!textarea) return;
-if(isListening){ stopVoiceInput(); return; }
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-if(!SpeechRecognition){ alert("Voice not supported. Use Chrome."); return; }
-btnText.innerText = "Listening...";
-btn.style.background = "rgba(239,68,68,0.3)";
-btn.style.borderColor = "#ef4444";
-isListening = true;
-function startRec(){
-if(!isListening) return;
-let committed = textarea.value;
-const rec = new SpeechRecognition();
-rec.lang = "en-US";
-rec.continuous = false;
-rec.interimResults = true;
-rec.onresult = function(e){
-let final = "";
-let interim = "";
-for(let i=e.resultIndex;i<e.results.length;i++){
-const t = e.results[i][0].transcript;
-if(e.results[i].isFinal) final += t + " ";
-else interim += t;
+    const btn = document.getElementById("voiceBtn");
+    const btnText = document.getElementById("voiceBtnText");
+    const textarea = document.getElementById("interviewAnswer");
+    
+    if(!textarea) return;
+    
+    if(isListening){ 
+        stopVoiceInput(); 
+        return; 
+    }
+    
+    const support = checkVoiceSupport();
+    
+    if(!support.SpeechRecognition){
+        let msg = "❌ Voice Recognition NOT available!\n\n";
+        if(!support.isChrome){
+            msg += "⚠️ You're not using Chrome/Edge.\n";
+            msg += "👉 Voice typing ONLY works in Google Chrome or Microsoft Edge.\n\n";
+        }
+        if(!support.isHttps){
+            msg += "⚠️ Not using HTTPS or localhost.\n";
+            msg += "👉 Use Live Server in VS Code or serve over HTTPS.\n\n";
+        }
+        msg += "💡 Alternative: Type your answer manually in the text box.";
+        alert(msg);
+        showMicStatus("❌ Use Chrome/Edge with HTTPS", "error");
+        return;
+    }
+    
+    if(!support.isHttps){
+        showMicStatus("⚠️ Needs HTTPS for voice", "warning");
+    }
+    
+    voiceCommittedText = textarea.value;
+    
+    btnText.innerText = "🔴 Listening...";
+    btn.style.background = "rgba(239,68,68,0.3)";
+    btn.style.borderColor = "#ef4444";
+    isListening = true;
+    
+    startVoiceRecognition();
 }
-if(final) committed += final.charAt(0).toUpperCase() + final.slice(1);
-textarea.value = committed + (interim ? interim.charAt(0).toUpperCase() + interim.slice(1) : "");
-textarea.scrollTop = textarea.scrollHeight;
-};
-rec.onerror = function(){ stopVoiceInput(); };
-rec.onend = function(){ if(isListening) setTimeout(startRec, 100); };
-try { rec.start(); voiceRecognition = rec; } catch(e){ stopVoiceInput(); }
-}
-startRec();
+
+function startVoiceRecognition(){
+    if(!isListening) return;
+    
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if(!SpeechRecognition) return;
+    
+    const textarea = document.getElementById("interviewAnswer");
+    if(!textarea) return;
+    
+    if(voiceRecognition){
+        try{ voiceRecognition.stop(); }catch(e){}
+        voiceRecognition = null;
+    }
+    
+    console.log("🎤 Starting Voice Recognition...");
+    showMicStatus("🎤 Listening... Speak now!", "active");
+    
+    const rec = new SpeechRecognition();
+    rec.lang = "en-US";
+    rec.continuous = true;
+    rec.interimResults = true;
+    
+    rec.onstart = function(){
+        console.log("🎤 Voice Recognition STARTED");
+        showMicStatus("🎤 Listening... Speak now!", "active");
+    };
+    
+    rec.onresult = function(event){
+        console.log("🎤 Voice result received");
+        
+        let interim = "";
+        let final = "";
+        
+        for(let i = event.resultIndex; i < event.results.length; i++){
+            const transcript = event.results[i][0].transcript;
+            if(event.results[i].isFinal){
+                final += transcript + " ";
+                console.log("   📝 Final:", transcript);
+            } else {
+                interim += transcript;
+                console.log("   ⏳ Interim:", transcript);
+            }
+        }
+        
+        if(final){
+            voiceCommittedText += final.charAt(0).toUpperCase() + final.slice(1);
+        }
+        
+        const displayText = voiceCommittedText + (interim ? interim.charAt(0).toUpperCase() + interim.slice(1) : "");
+        textarea.value = displayText;
+        textarea.scrollTop = textarea.scrollHeight;
+    };
+    
+    rec.onerror = function(event){
+        console.log("❌ Voice Recognition ERROR:", event.error);
+        
+        if(event.error === "not-allowed"){
+            showMicStatus("❌ Microphone permission denied. Click 🔒 in address bar.", "error");
+            alert("⚠️ Microphone Permission Denied!\n\n" +
+                  "Please click the 🔒 lock icon in your browser address bar,\n" +
+                  "then ALLOW microphone access, then try again.\n\n" +
+                  "Alternatively, type your answer manually.");
+            stopVoiceInput();
+        } else if(event.error === "no-speech"){
+            showMicStatus("😶 No speech detected. Try again.", "warning");
+            if(isListening){
+                setTimeout(() => {
+                    if(isListening) startVoiceRecognition();
+                }, 500);
+            }
+        } else if(event.error === "aborted"){
+            console.log("   Voice recognition aborted, will restart if needed");
+            if(isListening){
+                setTimeout(() => {
+                    if(isListening) startVoiceRecognition();
+                }, 300);
+            }
+        } else {
+            showMicStatus("⚠️ Voice error: " + event.error, "warning");
+            if(isListening){
+                setTimeout(() => {
+                    if(isListening) startVoiceRecognition();
+                }, 500);
+            }
+        }
+    };
+    
+    rec.onend = function(){
+        console.log("🎤 Voice Recognition ENDED. isListening:", isListening);
+        if(isListening){
+            console.log("   🔄 Restarting...");
+            setTimeout(() => {
+                if(isListening) startVoiceRecognition();
+            }, 200);
+        }
+    };
+    
+    try{
+        rec.start();
+        voiceRecognition = rec;
+        console.log("🎤 rec.start() called successfully");
+    } catch(e){
+        console.log("❌ rec.start() failed:", e);
+        if(isListening){
+            setTimeout(() => {
+                if(isListening) startVoiceRecognition();
+            }, 500);
+        }
+    }
 }
 
 function stopVoiceInput(){
@@ -4345,106 +4540,1554 @@ async function askGemini(prompt, systemMsg){
   }
 }
 
-async function askAI(prompt,systemMsg,maxTok){
-if(!maxTok) maxTok = 3500;
-const messages = systemMsg ? [
-{role:"system",content:systemMsg},
-{role:"user",content:prompt}
-] : [
-{role:"user",content:prompt}
-];
-
-try{
-const response =
-await fetch(
-WORKER_URL + "/openai/v1/chat/completions",
-{
-method:"POST",
-headers:{ "Content-Type":"text/plain" },
-body: JSON.stringify({
-model:"llama-3.1-8b-instant",
-messages,
-temperature:0.3,
-max_tokens:maxTok,
-})
-}
-);
-if(!response.ok) throw new Error("Groq failed: " + await response.text());
-const data = await response.json();
-if(!data?.choices?.[0]) throw new Error("Invalid AI response");
-return data.choices[0].message.content;
-}catch(error){
-console.log("Groq error, trying Gemini:", error);
-const geminiResult = await askGemini(prompt, systemMsg);
-if(geminiResult) return geminiResult;
-
-console.log("Gemini also failed, using local fallback");
-
-let fallbackTopic = "Topic";
-
-const topicMatch = prompt.match(/^TOPIC:\s*(.+?)(?:\n|$)/im);
-if(topicMatch){
-  fallbackTopic = topicMatch[1].trim();
-} else {
-  const simpleTopicMatch = prompt.match(/Topic:\s*(.+?)(?:\n|$)/i);
-  if(simpleTopicMatch){
-    fallbackTopic = simpleTopicMatch[1].trim();
+async function askAI(prompt, systemMsg, maxTok){
+  if(!maxTok) maxTok = 3500;
+  
+  const messages = systemMsg ? [
+    {role:"system",content:systemMsg},
+    {role:"user",content:prompt}
+  ] : [
+    {role:"user",content:prompt}
+  ];
+  
+  console.log("🤖 === askAI called ===");
+  console.log("   System Msg:", systemMsg ? "YES" : "NO");
+  console.log("   Prompt length:", prompt.length);
+  
+  try{
+    if(typeof puter !== 'undefined' && puter.ai && puter.ai.chat){
+      console.log("   🚀 Trying Puter.js FREE API (GPT/Claude)...");
+      
+      try{
+        const fullPrompt = systemMsg ? (systemMsg + "\n\n" + prompt) : prompt;
+        
+        const chatResult = await puter.ai.chat(fullPrompt, {
+          model: "claude-sonnet-4-5"
+        });
+        
+        if(chatResult && chatResult.message && chatResult.message.content){
+          console.log("   ✅ Puter.js chat success!");
+          console.log("   📝 Response length:", chatResult.message.content.length);
+          return chatResult.message.content;
+        }else if(typeof chatResult === 'string'){
+          console.log("   ✅ Puter.js returned string directly!");
+          return chatResult;
+        }else if(chatResult && typeof chatResult === 'object'){
+          console.log("   📦 Puter.js returned object:", Object.keys(chatResult));
+          if(chatResult.content) return chatResult.content;
+          if(chatResult.text) return chatResult.text;
+        }
+        
+        console.log("   ⚠️ Puter.js returned unexpected format, trying next option...");
+        
+      }catch(puterErr){
+        console.log("   ⚠️ Puter.js error:", puterErr.message);
+        console.log("   (User may not be signed in to Puter)");
+      }
+    }
+  }catch(e){
+    console.log("   Puter.js not available:", e.message);
   }
+  
+  console.log("   🌐 Trying Cloudflare Worker...");
+  try{
+    const response = await fetch(WORKER_URL + "/openai/v1/chat/completions",{
+      method:"POST",
+      headers:{ "Content-Type":"text/plain" },
+      body: JSON.stringify({
+        model:"llama-3.1-8b-instant",
+        messages,
+        temperature:0.3,
+        max_tokens:maxTok,
+      })
+    });
+    
+    if(!response.ok){
+      throw new Error("Worker API error: " + response.status);
+    }
+    
+    const data = await response.json();
+    if(!data?.choices?.[0]) throw new Error("Invalid AI response");
+    console.log("   ✅ Worker API success!");
+    return data.choices[0].message.content;
+    
+  }catch(workerErr){
+    console.log("   ❌ Worker failed:", workerErr.message);
+  }
+  
+  console.log("   🔄 Trying Gemini fallback...");
+  const geminiResult = await askGemini(prompt, systemMsg);
+  if(geminiResult){
+    console.log("   ✅ Gemini success!");
+    return geminiResult;
+  }
+  
+  console.log("   🧠 All APIs failed. Using SMART FALLBACK notes...");
+  
+  const fallbackNotes = generateSmartFallbackNotes(prompt);
+  console.log("   📋 Generated fallback notes length:", fallbackNotes.length);
+  
+  return fallbackNotes;
 }
 
-if(!fallbackTopic || fallbackTopic==="Topic" || fallbackTopic.length>60 || fallbackTopic.length<2){
-  fallbackTopic = "Topic";
+function extractTopicFromPrompt(prompt){
+    let topic = "Topic";
+    
+    const patterns = [
+        /TOPIC:\s*(.+?)(?:\n|$)/im,
+        /Topic:\s*(.+?)(?:\n|$)/i,
+        /topic[:：]\s*(.+?)(?:\n|$)/i,
+        /for[:\s]+["']?(.+?)["']?(?:\n|$)/i,
+        /Generate exam-ready structured notes for[:\s]+["']?(.+?)["']?(?:\n|$)/i
+    ];
+    
+    for(const pattern of patterns){
+        const match = prompt.match(pattern);
+        if(match && match[1]){
+            const t = match[1].trim();
+            if(t.length > 1 && t.length < 80){
+                topic = t;
+                break;
+            }
+        }
+    }
+    
+    return topic;
 }
 
-window.__lastFallbackTopic = fallbackTopic;
-
-return `# ${fallbackTopic}
-
-## Definition
-**${fallbackTopic}** is a fundamental concept with key principles that are essential for understanding the subject.
-
-- Core meaning and definition
-- Why it matters in real-world applications
-- Basic principles and foundation
-
-## How It Works
-The working of ${fallbackTopic} follows a systematic approach:
-
-1. **Core logic** — the fundamental mechanism behind it
-2. **Key steps** — the process broken down into stages
-3. **Optimization** — how efficiency is achieved
-4. **Edge cases** — special situations to handle
-
-## Types & Variations
-Different forms of ${fallbackTopic} exist for different scenarios:
-
-- **Basic approach** — the standard implementation
-- **Optimized version** — improvements for better performance
-- **Specialized variants** — adapted for specific use cases
-
-## Real-World Applications
-${fallbackTopic} is widely used in:
-
-- **Software development** — practical coding applications
-- **Data processing** — handling and organizing information
-- **Problem solving** — algorithmic thinking and logic
-- **System design** — architecture and optimization
-
-## Advantages
-- Efficient and reliable approach
-- Easy to understand and implement
-- Broad range of applications
-- Proven track record in industry
-
-## Key Takeaways
-- ${fallbackTopic} is a core concept with wide applicability
-- Understanding the fundamentals enables advanced learning
-- Practice with real examples builds strong intuition
-- Connect with related concepts for deeper understanding
-
-> **Note:** AI services are currently unavailable. These are auto-generated notes covering the general structure. Try again later for AI-powered detailed content.`;
-}
-
+function generateSmartFallbackNotes(prompt){
+    const topic = extractTopicFromPrompt(prompt);
+    const topicLower = topic.toLowerCase();
+    
+    console.log("🧠 Generating SMART fallback notes for:", topic);
+    
+    let introDef = `A ${topic} is a fundamental concept that plays an important role in understanding the subject matter. It provides a structured way to organize and work with information efficiently.`;
+    let introSimple = `Think of ${topic} as a systematic way to handle and organize information, making it easier to access and modify when needed.`;
+    
+    let sections = [];
+    let keyConcepts = [];
+    
+    if(topicLower.includes("array") || topicLower.includes("arrays")){
+        introDef = "An array is a fundamental data structure that stores a collection of elements of the same data type in contiguous memory locations. Each element can be accessed directly using its index.";
+        introSimple = "Think of an array like a numbered list where every item has its own specific position (index), and all items are of the same type.";
+        
+        sections = [
+            {
+                title: "Understanding Array Structure",
+                search_term: "array data structure diagram contiguous memory",
+                points: [
+                    {
+                        heading: "Contiguous Memory Allocation",
+                        explanation: "Arrays store elements in adjacent (contiguous) memory blocks. This means if the first element is at memory address 1000 and each element takes 4 bytes, the second element is at 1004, third at 1008, and so on. This enables O(1) access time.",
+                        search_term: "array contiguous memory allocation diagram"
+                    },
+                    {
+                        heading: "Zero-Based Indexing",
+                        explanation: "Most programming languages (C, Java, JavaScript, Python) use zero-based indexing where the first element is at index 0, not 1. So an array of size N has indices from 0 to N-1. This simplifies address calculation: address = base + index * element_size.",
+                        search_term: "array zero based indexing concept"
+                    },
+                    {
+                        heading: "Homogeneous Elements",
+                        explanation: "All elements in an array must be of the same data type (all integers, all floats, all characters, etc.). This is what makes array memory predictable and allows for efficient access. The size of each element is known in advance.",
+                        search_term: "homogeneous array data type"
+                    },
+                    {
+                        heading: "Fixed Size (Static Arrays)",
+                        explanation: "In many languages, arrays have a fixed size that must be declared at creation. Once created, the size cannot change. Dynamic arrays (like JavaScript arrays or Python lists) can resize, but this involves reallocating memory and copying elements.",
+                        search_term: "static vs dynamic array comparison"
+                    }
+                ]
+            },
+            {
+                title: "Types of Arrays",
+                search_term: "types of arrays 1d 2d multi dimensional",
+                points: [
+                    {
+                        heading: "One-Dimensional (1D) Arrays",
+                        explanation: "A 1D array is a simple linear list of elements. Each element is accessed with a single index. Example in JavaScript: let scores = [85, 92, 78, 90, 88]; Access: scores[0] = 85, scores[2] = 78. This is the most common array type.",
+                        search_term: "one dimensional array example"
+                    },
+                    {
+                        heading: "Two-Dimensional (2D) Arrays",
+                        explanation: "A 2D array can be visualized as a table or matrix with rows and columns. It's essentially 'an array of arrays'. Example: let matrix = [[1,2,3], [4,5,6], [7,8,9]]; Access: matrix[row][col] = matrix[1][2] = 6. Used for grids, spreadsheets, game boards.",
+                        search_term: "two dimensional array matrix diagram"
+                    },
+                    {
+                        heading: "Multi-Dimensional Arrays",
+                        explanation: "Arrays can have 3 or more dimensions. A 3D array might represent layers of 2D arrays, like frames in a video animation or layers in a 3D cube. Access: arr[z][y][x]. While conceptually useful, they become less efficient as dimensions increase.",
+                        search_term: "three dimensional array visualization"
+                    }
+                ]
+            },
+            {
+                title: "Common Array Operations",
+                search_term: "array operations time complexity",
+                points: [
+                    {
+                        heading: "Access (Read/Write)",
+                        explanation: "Accessing any element by index is O(1) — constant time! This is the biggest advantage of arrays. The address calculation is: base_address + (index * element_size). No traversal needed. This makes arrays perfect for situations where you need direct access.",
+                        search_term: "array access operation O(1)"
+                    },
+                    {
+                        heading: "Insertion",
+                        explanation: "Inserting at the END is O(1) for dynamic arrays (amortized). But inserting at the BEGINNING or MIDDLE is O(N) — linear time. Why? Because all elements after the insertion point must be shifted to make room. The more elements, the slower this operation.",
+                        search_term: "array insertion algorithm shift elements"
+                    },
+                    {
+                        heading: "Deletion",
+                        explanation: "Similar to insertion. Deleting at the END is O(1). Deleting at BEGINNING or MIDDLE is O(N) because all remaining elements must be shifted left to fill the gap. If you need frequent insertions/deletions in the middle, consider using a Linked List instead.",
+                        search_term: "array deletion algorithm shift left"
+                    },
+                    {
+                        heading: "Searching",
+                        explanation: "Linear Search: Check each element one by one — O(N) time. Works on sorted or unsorted arrays. Binary Search: If the array is SORTED, you can use binary search which is O(log N) — exponentially faster! Always use binary search on sorted arrays for large datasets.",
+                        search_term: "linear vs binary search comparison"
+                    },
+                    {
+                        heading: "Traversal",
+                        explanation: "Visiting each element once, usually with a loop. O(N) time. Common patterns: for loop with index, for-of loop, forEach method. This is the foundation for many array algorithms like finding max, sum, average, filtering, mapping.",
+                        search_term: "array traversal loop examples"
+                    }
+                ]
+            }
+        ];
+        
+        keyConcepts = [
+            {
+                concept: "Index",
+                simple_explanation: "A number that points to an element's position.",
+                detailed_explanation: "An integer used to locate and access elements in an array. In zero-based indexing (most common), the first element is at index 0, second at 1, and so on. Enables direct memory address calculation.",
+                search_term: "array index subscript concept"
+            },
+            {
+                concept: "Contiguous Memory",
+                simple_explanation: "Elements stored right next to each other.",
+                detailed_explanation: "The physical arrangement of array elements in adjacent memory blocks. This is what makes O(1) access possible and also improves CPU cache performance, as nearby memory is loaded together into cache.",
+                search_term: "array contiguous memory cache performance"
+            },
+            {
+                concept: "Time Complexity",
+                simple_explanation: "How long an operation takes based on size.",
+                detailed_explanation: "A measure of how the runtime of an operation grows with the input size. For arrays: Access = O(1), Insert/Delete (middle) = O(N), Search (linear) = O(N), Search (binary) = O(log N).",
+                search_term: "array time complexity operations"
+            },
+            {
+                concept: "Dynamic Array",
+                simple_explanation: "An array that can grow as needed.",
+                detailed_explanation: "Unlike static arrays with fixed size, dynamic arrays automatically resize when full. They typically allocate more space than needed (e.g., double the capacity), making amortized insertions at the end O(1). Examples: JavaScript Array, Python List, Java ArrayList.",
+                search_term: "dynamic array resizing capacity"
+            }
+        ];
+    }
+    else if(topicLower.includes("linked list") || topicLower.includes("linkedlist")){
+        introDef = "A linked list is a linear data structure where elements are not stored in contiguous memory locations. Instead, each element (called a node) contains data and a pointer/reference to the next node in the sequence.";
+        introSimple = "Think of a linked list like a treasure hunt — each clue tells you where to find the next clue. You start at the beginning (head) and follow the pointers until you reach the end (null).";
+        
+        sections = [
+            {
+                title: "Linked List Structure",
+                search_term: "linked list node structure diagram",
+                points: [
+                    {
+                        heading: "Node Structure",
+                        explanation: "Each node in a linked list contains: (1) Data — the actual value being stored, (2) Next pointer/reference — memory address of the next node. In doubly linked lists, there's also a 'previous' pointer. The last node's next points to null (end of list).",
+                        search_term: "linked list node data next pointer"
+                    },
+                    {
+                        heading: "Head and Tail",
+                        explanation: "The HEAD is the first node of the list — it's our entry point. If the list is empty, head is null. The TAIL is the last node, whose next pointer is null. Some implementations track both head and tail for O(1) operations at both ends.",
+                        search_term: "linked list head tail pointer"
+                    }
+                ]
+            },
+            {
+                title: "Types of Linked Lists",
+                search_term: "singly doubly circular linked list comparison",
+                points: [
+                    {
+                        heading: "Singly Linked List",
+                        explanation: "Each node has data and one 'next' pointer. Traversal is only forward (from head to tail). Simple implementation but can't traverse backward. Memory efficient (only one pointer per node). Most common type.",
+                        search_term: "singly linked list forward traversal"
+                    },
+                    {
+                        heading: "Doubly Linked List",
+                        explanation: "Each node has data, 'next' pointer, AND 'previous' pointer. Can traverse in both directions (forward and backward). Easier to delete arbitrary nodes. Uses more memory (two pointers per node). Example: browser history.",
+                        search_term: "doubly linked list prev next pointer"
+                    },
+                    {
+                        heading: "Circular Linked List",
+                        explanation: "The last node points back to the first node (instead of null). Can be singly or doubly circular. Useful for round-robin scheduling, implementing queues, and things that repeat indefinitely (like a music playlist).",
+                        search_term: "circular linked list round robin"
+                    }
+                ]
+            },
+            {
+                title: "Linked List Operations",
+                search_term: "linked list operations time complexity",
+                points: [
+                    {
+                        heading: "Insertion at Beginning",
+                        explanation: "O(1) — constant time! This is a huge advantage over arrays. Simply: (1) Create new node, (2) Set new_node.next = head, (3) Set head = new_node. No shifting needed, no matter how many elements exist.",
+                        search_term: "linked list insert at beginning O(1)"
+                    },
+                    {
+                        heading: "Deletion at Beginning",
+                        explanation: "O(1) — constant time. Simply: (1) Store reference to second node: temp = head.next, (2) Free/remove head node, (3) Set head = temp. Again, no shifting like arrays. Perfect for stack (LIFO) implementation.",
+                        search_term: "linked list delete at beginning"
+                    },
+                    {
+                        heading: "Access/Search",
+                        explanation: "O(N) — linear time. Must traverse from head, following each 'next' pointer until found or reaching null. No direct access like arrays. This is the biggest disadvantage of linked lists compared to arrays.",
+                        search_term: "linked list traversal O(N)"
+                    },
+                    {
+                        heading: "Insertion/Deletion at End",
+                        explanation: "O(N) if only head is tracked — must traverse to end. O(1) if tail is also tracked! When implementing a linked list, always ask: do I need to track the tail? For queues (FIFO), tracking tail is essential for efficiency.",
+                        search_term: "linked list tail pointer optimization"
+                    }
+                ]
+            }
+        ];
+        
+        keyConcepts = [
+            {
+                concept: "Node",
+                simple_explanation: "The basic building block containing data and pointer(s).",
+                detailed_explanation: "A self-referential structure that holds: (1) the actual data, (2) one or more pointers/references to other nodes. The pointer holds the memory address of another node in the list.",
+                search_term: "linked list node self referential structure"
+            },
+            {
+                concept: "Head Pointer",
+                simple_explanation: "Entry point to the list — points to first node.",
+                detailed_explanation: "The head pointer references the first node of a linked list. If the list is empty, head is null. All operations begin from the head since we can only traverse forward through next pointers.",
+                search_term: "linked list head pointer entry point"
+            },
+            {
+                concept: "Null Reference",
+                simple_explanation: "Marks the end of the list.",
+                detailed_explanation: "The last node's 'next' pointer is null (or None, or nil depending on language), indicating 'no more nodes'. This is how traversal loops know when to stop. Circular linked lists don't use null — they point back to head.",
+                search_term: "linked list null termination"
+            }
+        ];
+    }
+    else if(topicLower.includes("stack")){
+        introDef = "A stack is a linear data structure that follows the Last-In-First-Out (LIFO) principle. This means the last element added is the first one to be removed, just like a stack of plates.";
+        introSimple = "Think of a stack of plates: you add new plates on TOP, and you remove plates from the TOP. The bottom plate is only accessible after removing all plates above it. That's LIFO!";
+        
+        sections = [
+            {
+                title: "Stack Operations",
+                search_term: "stack push pop peek operations",
+                points: [
+                    {
+                        heading: "Push (Insert)",
+                        explanation: "Add an element to the TOP of the stack. O(1) time. Before pushing, check if the stack is full (stack overflow condition for fixed-size implementations). Dynamic stacks simply grow as needed.",
+                        search_term: "stack push operation add to top"
+                    },
+                    {
+                        heading: "Pop (Remove)",
+                        explanation: "Remove and return the TOP element. O(1) time. Before popping, check if the stack is empty (stack underflow condition). If empty and you try to pop, that's an error.",
+                        search_term: "stack pop operation remove from top"
+                    },
+                    {
+                        heading: "Peek/Top",
+                        explanation: "Return the TOP element without removing it. O(1) time. Useful when you want to check what's on top before deciding to pop. Also called 'top' operation.",
+                        search_term: "stack peek top operation"
+                    },
+                    {
+                        heading: "isEmpty",
+                        explanation: "Check if stack is empty. O(1) time. Returns true if empty, false otherwise. Always check isEmpty before pop to avoid underflow errors.",
+                        search_term: "stack isempty check condition"
+                    }
+                ]
+            },
+            {
+                title: "Stack Applications",
+                search_term: "stack real world applications",
+                points: [
+                    {
+                        heading: "Function Call Stack",
+                        explanation: "Every program uses a call stack! When a function is called, its stack frame (return address, parameters, local variables) is pushed. When the function returns, it's popped. This is what makes recursion possible.",
+                        search_term: "function call stack recursion"
+                    },
+                    {
+                        heading: "Undo/Redo Operations",
+                        explanation: "Text editors (like Word, VS Code) use stacks for undo. Each action is pushed onto a stack. When you press undo, the top action is popped and reverted. Redo uses a second stack.",
+                        search_term: "undo redo stack application"
+                    },
+                    {
+                        heading: "Expression Evaluation & Conversion",
+                        explanation: "Used for evaluating postfix expressions (Reverse Polish Notation), and for converting infix to postfix/prefix. Operators are pushed and popped based on precedence. Dijkstra's Shunting-yard algorithm uses stacks.",
+                        search_term: "infix postfix conversion stack algorithm"
+                    },
+                    {
+                        heading: "Balanced Parentheses Check",
+                        explanation: "To check if [(] is balanced: push opening brackets, when encountering closing, pop and check if matching. If at end stack is empty, balanced. Used in compilers and IDEs for syntax checking.",
+                        search_term: "balanced parentheses stack algorithm"
+                    },
+                    {
+                        heading: "Browser Back Button",
+                        explanation: "Each page you visit is pushed onto a stack. When you click 'Back', the current page is popped and the previous (now top) is loaded. 'Forward' uses another stack.",
+                        search_term: "browser history stack back button"
+                    }
+                ]
+            }
+        ];
+        
+        keyConcepts = [
+            {
+                concept: "LIFO Principle",
+                simple_explanation: "Last-In, First-Out — last added is first removed.",
+                detailed_explanation: "The defining characteristic of stacks. Elements are added to and removed from only one end (the TOP). Like a stack of plates or pez dispenser. Contrast with FIFO (First-In-First-Out) of queues.",
+                search_term: "LIFO last in first out stack principle"
+            },
+            {
+                concept: "Top",
+                simple_explanation: "The current insertion/deletion point.",
+                detailed_explanation: "A pointer/index tracking where the next element will be added (push) or removed (pop). In array-based stacks, top often starts at -1 (empty) and increments on push. In linked-list stacks, top is simply the head pointer.",
+                search_term: "stack top pointer index"
+            },
+            {
+                concept: "Stack Overflow",
+                simple_explanation: "Trying to push when stack is full.",
+                detailed_explanation: "In fixed-size array implementations, if you try to push when the stack is already at maximum capacity, you get stack overflow. In programming, infinite recursion causes call stack overflow, crashing the program.",
+                search_term: "stack overflow fixed size array"
+            }
+        ];
+    }
+    else if(topicLower.includes("queue")){
+        introDef = "A queue is a linear data structure that follows the First-In-First-Out (FIFO) principle. Elements are added at the REAR (enqueue) and removed from the FRONT (dequeue), just like a line of people waiting.";
+        introSimple = "Think of a ticket counter line: the FIRST person in line is the FIRST to get a ticket and leave. New people join at the END. That's FIFO — First-In, First-Out!";
+        
+        sections = [
+            {
+                title: "Queue Operations",
+                search_term: "queue enqueue dequeue front rear",
+                points: [
+                    {
+                        heading: "Enqueue",
+                        explanation: "Add an element to the REAR (end) of the queue. O(1) time if rear is tracked. Before enqueue, check for queue full (for fixed-size). In a naive array implementation, moving all elements after dequeue makes it O(N).",
+                        search_term: "queue enqueue add to rear"
+                    },
+                    {
+                        heading: "Dequeue",
+                        explanation: "Remove and return element from the FRONT. O(1) if using circular array or linked list. In naive array implementation, all elements must shift left after dequeue, making it O(N). Circular queues solve this with modulo arithmetic.",
+                        search_term: "queue dequeue remove from front"
+                    },
+                    {
+                        heading: "Front & Rear",
+                        explanation: "FRONT returns (without removing) the first element. REAR returns (without removing) the last element. Both O(1) time. Essential for peeking without modifying the queue.",
+                        search_term: "queue front rear peek operations"
+                    }
+                ]
+            },
+            {
+                title: "Types of Queues",
+                search_term: "types of queues circular priority deque",
+                points: [
+                    {
+                        heading: "Circular Queue (Ring Buffer)",
+                        explanation: "An array-based queue where the rear wraps around to the front when reaching the end, using modulo arithmetic. Solves the 'wasted space' problem of naive queues. Uses two pointers (front and rear) and tracks count or uses empty/full sentinel states.",
+                        search_term: "circular queue ring buffer modulo"
+                    },
+                    {
+                        heading: "Priority Queue",
+                        explanation: "Elements are dequeued based on priority (highest first), not insertion order. Can be implemented with a heap (most efficient) or sorted array. Used in: Dijkstra's shortest path, Huffman coding, OS process scheduling.",
+                        search_term: "priority queue heap dijkstra algorithm"
+                    },
+                    {
+                        heading: "Double-Ended Queue (Deque)",
+                        explanation: "Pronounced 'deck'. Elements can be added or removed from BOTH front AND rear. Hybrid of stack and queue. Can be used as a stack (push/pop at one end) or as a queue (add at one end, remove at the other). Implemented with dynamic array or doubly linked list.",
+                        search_term: "deque double ended queue stack queue hybrid"
+                    }
+                ]
+            },
+            {
+                title: "Queue Applications",
+                search_term: "queue real world applications",
+                points: [
+                    {
+                        heading: "Process Scheduling (OS)",
+                        explanation: "Operating systems use queues for CPU scheduling. The ready queue holds processes waiting for CPU. Multi-level feedback queues use multiple queues with different priorities. Round-robin scheduling is circular queue based.",
+                        search_term: "os process scheduling ready queue"
+                    },
+                    {
+                        heading: "Breadth-First Search (BFS)",
+                        explanation: "BFS uses a queue to explore nodes level by level. Start node is enqueued. While queue not empty: dequeue, mark visited, enqueue all unvisited neighbors. Essential for shortest path in unweighted graphs.",
+                        search_term: "BFS breadth first search queue algorithm"
+                    },
+                    {
+                        heading: "Print Queue / Job Scheduling",
+                        explanation: "When multiple people print to a network printer, requests are processed in arrival order. The first print job sent is the first to print. Buffers in data communication also use queues for rate matching.",
+                        search_term: "print queue job scheduling FIFO"
+                    },
+                    {
+                        heading: "Message Queues",
+                        explanation: "In distributed systems, message queues (RabbitMQ, Kafka, AWS SQS) enable asynchronous communication. Producer sends messages to queue, consumer processes later. Decouples systems, provides buffering.",
+                        search_term: "message queue asynchronous distributed systems"
+                    }
+                ]
+            }
+        ];
+        
+        keyConcepts = [
+            {
+                concept: "FIFO Principle",
+                simple_explanation: "First-In, First-Out — earliest added is first removed.",
+                detailed_explanation: "The defining characteristic of queues. Elements are added at one end (rear) and removed from the opposite end (front). Like people waiting in line, packets in network routers, or print jobs. Contrast with LIFO of stacks.",
+                search_term: "FIFO first in first out queue principle"
+            },
+            {
+                concept: "Circular Queue",
+                simple_explanation: "Efficient array-based queue using wrap-around.",
+                detailed_explanation: "Solves the 'empty slots at front' problem by treating the array as circular. When rear reaches end, it wraps to index 0 using: rear = (rear + 1) % capacity. Need to track count or use empty/full detection to distinguish empty from full.",
+                search_term: "circular queue modulo wrap around"
+            },
+            {
+                concept: "Enqueue vs Dequeue",
+                simple_explanation: "Enqueue = add, Dequeue = remove.",
+                detailed_explanation: "Enqueue (insert) adds to the REAR/TAIL. Dequeue (remove/delete) takes from the FRONT/HEAD. Both ideally O(1), but naive array dequeue is O(N) due to shifting. Use circular array or linked list for true O(1) on both.",
+                search_term: "enqueue dequeue front rear queue"
+            }
+        ];
+    }
+    else if(topicLower.includes("tree") || topicLower.includes("binary search tree") || topicLower.includes("bst")){
+        introDef = "A tree is a non-linear hierarchical data structure consisting of nodes connected by edges. Unlike linear structures (arrays, linked lists), trees organize data in levels with parent-child relationships. There are no cycles.";
+        introSimple = "Think of a family tree or company organization chart: there's a root at the top (CEO), children below them (directors), and so on down to the leaves (employees). No cycles — you can't loop around!";
+        
+        sections = [
+            {
+                title: "Tree Terminology",
+                search_term: "tree data structure terms root leaf parent child",
+                points: [
+                    {
+                        heading: "Root, Parent, Child",
+                        explanation: "ROOT: The topmost node with no parent. PARENT: A node that has children. CHILD: A node with a parent. SIBLINGS: Nodes sharing the same parent. Every node except root has exactly one parent.",
+                        search_term: "tree root parent child node relationship"
+                    },
+                    {
+                        heading: "Leaf & Internal Nodes",
+                        explanation: "LEAF: A node with NO children (terminal node). INTERNAL NODE: A node with at least one child. DEGREE: Number of children a node has. The degree of a tree is the maximum degree among all its nodes.",
+                        search_term: "tree leaf internal node degree"
+                    },
+                    {
+                        heading: "Level, Height, Depth",
+                        explanation: "LEVEL: Root is at level 0 (or 1), its children at level 1, etc. DEPTH of a node: Number of edges from root to this node. HEIGHT of a node: Number of edges on longest path from node to a leaf. HEIGHT of tree = height of root.",
+                        search_term: "tree depth height level difference"
+                    }
+                ]
+            },
+            {
+                title: "Binary Tree Properties",
+                search_term: "binary tree properties maximum nodes height",
+                points: [
+                    {
+                        heading: "What is a Binary Tree?",
+                        explanation: "A tree where each node can have at MOST 2 children (left child and right child). The order matters (left is distinct from right). This is the most commonly studied tree type. BST, AVL, Red-Black, Heap are all special binary trees.",
+                        search_term: "binary tree left right child"
+                    },
+                    {
+                        heading: "Maximum Nodes at Level",
+                        explanation: "Level i can have at most 2^i nodes. Level 0 (root): max 1 node = 2^0. Level 1: max 2 nodes = 2^1. Level 2: max 4 nodes = 2^2. Level 3: max 8 nodes = 2^3. This is true for perfect binary trees.",
+                        search_term: "binary tree maximum nodes per level formula"
+                    },
+                    {
+                        heading: "Maximum Nodes for Height h",
+                        explanation: "A binary tree of height h has at most 2^(h+1) - 1 nodes. For h=0: 2^(1)-1 = 1 node. For h=2: 2^3-1 = 7 nodes (perfect binary tree). Height is measured in edges from root to deepest leaf.",
+                        search_term: "binary tree maximum nodes height formula"
+                    },
+                    {
+                        heading: "Full, Perfect, Complete",
+                        explanation: "FULL (Proper): Every node has 0 or 2 children. PERFECT: All internal nodes have 2 children, all leaves at same level. COMPLETE: Every level (except possibly last) is completely filled, and last level has nodes filled left-to-right.",
+                        search_term: "full perfect complete binary tree comparison"
+                    }
+                ]
+            },
+            {
+                title: "Binary Search Tree (BST)",
+                search_term: "binary search tree BST property search insert delete",
+                points: [
+                    {
+                        heading: "BST Property",
+                        explanation: "For EVERY node: (1) All values in its LEFT subtree are LESS than the node's value, (2) All values in its RIGHT subtree are GREATER than the node's value. This property enables efficient searching. Duplicates can be handled in either subtree (by convention).",
+                        search_term: "BST binary search tree property left less right greater"
+                    },
+                    {
+                        heading: "Search in BST",
+                        explanation: "Start at root. If target < current: go left. If target > current: go right. If equal: found. If reach null: not found. Time: O(h) where h is height. In a BALANCED BST: h = log N, so O(log N). In a SKEWED BST (like linked list): h = N, so O(N).",
+                        search_term: "BST search algorithm balanced skewed"
+                    },
+                    {
+                        heading: "Insert in BST",
+                        explanation: "Similar to search: traverse to find the correct empty spot. At each step: if value < current: go left, else: go right. When you hit null: insert new node there. Always inserts as a leaf. Time: O(h). Can unbalance the tree if values are inserted in sorted order (creates skewed tree).",
+                        search_term: "BST insert algorithm leaf node"
+                    },
+                    {
+                        heading: "Delete in BST (3 Cases)",
+                        explanation: "Case 1: NO CHILDREN (leaf) — simply remove the node. Case 2: ONE CHILD — replace the node with its child. Case 3: TWO CHILDREN — replace with inorder successor (smallest in right subtree) or inorder predecessor (largest in left subtree). Most complex case.",
+                        search_term: "BST delete three cases successor predecessor"
+                    }
+                ]
+            },
+            {
+                title: "Tree Traversals",
+                search_term: "tree traversal inorder preorder postorder level",
+                points: [
+                    {
+                        heading: "Inorder (Left → Root → Right)",
+                        explanation: "Traverse left subtree, visit root, traverse right subtree. For a BST, inorder traversal gives VALUES IN SORTED ORDER! This is a key property. Implementation: recursion or stack. Time: O(N), Space: O(h) for recursion stack.",
+                        search_term: "inorder traversal BST sorted output"
+                    },
+                    {
+                        heading: "Preorder (Root → Left → Right)",
+                        explanation: "Visit root first, then left subtree, then right subtree. Used for: creating a copy of the tree, prefix expressions, and the first step in building a tree from traversals. The first element of preorder is always the ROOT.",
+                        search_term: "preorder traversal root first copy tree"
+                    },
+                    {
+                        heading: "Postorder (Left → Right → Root)",
+                        explanation: "Traverse left, traverse right, visit root last. Used for: deleting a tree (children before parent), postfix expressions, calculating space/size from leaves up. The last element of postorder is the ROOT.",
+                        search_term: "postorder traversal delete tree children first"
+                    },
+                    {
+                        heading: "Level Order (BFS)",
+                        explanation: "Visit nodes level by level, left to right. Uses a QUEUE. Start by enqueuing root. While queue not empty: dequeue, visit, enqueue left child (if exists), enqueue right child (if exists). Time: O(N), Space: O(W) where W is maximum width.",
+                        search_term: "level order traversal BFS queue"
+                    }
+                ]
+            }
+        ];
+        
+        keyConcepts = [
+            {
+                concept: "Binary Search Tree Property",
+                simple_explanation: "Left < Root < Right for all nodes.",
+                detailed_explanation: "The defining property of BSTs. For every node, all left descendants are smaller, all right descendants are larger. This enables O(log N) search when balanced. Inorder traversal gives sorted output.",
+                search_term: "BST property left less right greater"
+            },
+            {
+                concept: "Balanced vs Skewed",
+                simple_explanation: "Balance determines BST performance.",
+                detailed_explanation: "BALANCED: Height = O(log N). Operations O(log N). SKEWED: All nodes have only one child (like linked list). Height = O(N). Operations O(N) — as bad as linear search! This is why self-balancing BSTs (AVL, Red-Black) are important.",
+                search_term: "balanced skewed BST height performance"
+            },
+            {
+                concept: "Inorder Traversal",
+                simple_explanation: "Gives sorted output for BST.",
+                detailed_explanation: "Left → Root → Right. Most commonly used traversal. For BSTs, this produces values in ascending order. If you need to verify if a binary tree is a BST, perform inorder and check if output is sorted.",
+                search_term: "inorder traversal BST sorted verification"
+            },
+            {
+                concept: "Inorder Successor",
+                simple_explanation: "Next value in sorted order.",
+                detailed_explanation: "The smallest value greater than current node. Used in BST deletion (case 3: node with 2 children). How to find: (1) If right subtree exists: min in right subtree, (2) Else: traverse up using parent pointers until you find a node that is the LEFT child of its parent.",
+                search_term: "inorder successor BST delete two children"
+            }
+        ];
+    }
+    else if(topicLower.includes("graph")){
+        introDef = "A graph is a non-linear data structure consisting of a finite set of vertices (nodes) and a set of edges connecting pairs of vertices. Graphs represent relationships between entities and are among the most powerful data structures.";
+        introSimple = "Think of a social network: each person is a NODE (vertex), and each friendship is an EDGE connecting two people. Cities on a map? Cities are nodes, roads are edges. Graphs are everywhere!";
+        
+        sections = [
+            {
+                title: "Graph Fundamentals",
+                search_term: "graph vertex edge directed undirected",
+                points: [
+                    {
+                        heading: "Vertex (Node) & Edge",
+                        explanation: "VERTEX: The fundamental unit representing an entity (person, city, webpage). EDGE: A connection between two vertices, representing a relationship (friendship, road, hyperlink). V = {A,B,C,D} E = {(A,B), (B,C)} defines a graph.",
+                        search_term: "graph vertex edge node relationship"
+                    },
+                    {
+                        heading: "Directed vs Undirected",
+                        explanation: "UNDIRECTED: Edges have no direction. If A connected to B, B is also connected to A. Symmetric. Example: Facebook friendship. DIRECTED (Digraph): Edges have direction (A→B). Asymmetric. Example: Twitter follow (you can follow someone who doesn't follow you).",
+                        search_term: "directed undirected graph digraph symmetric"
+                    },
+                    {
+                        heading: "Weighted vs Unweighted",
+                        explanation: "WEIGHTED: Edges have weights (cost, distance, time). Example: map where edge weight = distance between cities. UNWEIGHTED: All edges have same implicit weight of 1. Used when only existence of connection matters. Weight affects shortest path algorithms.",
+                        search_term: "weighted unweighted graph edge cost"
+                    },
+                    {
+                        heading: "Degree (In-degree, Out-degree)",
+                        explanation: "DEGREE: Number of edges connected to a vertex. In undirected graph: degree of A = number of edges touching A. In directed graph: IN-DEGREE = edges coming IN, OUT-DEGREE = edges going OUT. Total degree = 2 × |E| (handshaking lemma).",
+                        search_term: "graph in degree out degree handshaking lemma"
+                    },
+                    {
+                        heading: "Path & Cycle",
+                        explanation: "PATH: A sequence of vertices where each consecutive pair is connected by an edge. SIMPLE PATH: No repeated vertices. CYCLE: A path that starts and ends at the same vertex with no other repeats. ACYCLIC: A graph with no cycles. A DAG is a Directed Acyclic Graph.",
+                        search_term: "graph path cycle simple acyclic DAG"
+                    }
+                ]
+            },
+            {
+                title: "Graph Representations",
+                search_term: "graph adjacency matrix list comparison",
+                points: [
+                    {
+                        heading: "Adjacency Matrix",
+                        explanation: "A 2D array of size V×V where matrix[i][j] = 1 (or weight) if there's an edge from i to j, else 0. PRO: Checking edge existence O(1), simple for dense graphs. CON: Space O(V²) — inefficient for sparse graphs. Iterating over neighbors O(V).",
+                        search_term: "adjacency matrix 2D array edge existence O(1)"
+                    },
+                    {
+                        heading: "Adjacency List",
+                        explanation: "An array of lists. For each vertex i, adj[i] is a list of vertices adjacent to i. PRO: Space O(V + E) — efficient for sparse graphs. Iterating over neighbors is O(degree(v)) — only actual neighbors. CON: Edge existence check O(degree(v)).",
+                        search_term: "adjacency list array of lists space efficient"
+                    },
+                    {
+                        heading: "When to Use Which?",
+                        explanation: "ADJACENCY MATRIX: When graph is DENSE (E close to V²), when you need fast edge existence queries, when implementing Floyd-Warshall. ADJACENCY LIST: When graph is SPARSE (E much less than V²), when you need to iterate over neighbors, when implementing BFS, DFS, Dijkstra.",
+                        search_term: "adjacency matrix vs list sparse dense graph"
+                    }
+                ]
+            },
+            {
+                title: "Graph Traversal Algorithms",
+                search_term: "DFS BFS graph traversal stack queue",
+                points: [
+                    {
+                        heading: "Depth-First Search (DFS)",
+                        explanation: "Explore as far as possible along each branch before backtracking. Uses STACK (or recursion, which uses call stack). Algorithm: Push start to stack, mark visited. While stack not empty: pop, visit, push all UNVISITED neighbors (order matters for output). Time: O(V+E), Space: O(V).",
+                        search_term: "DFS depth first search stack recursion backtracking"
+                    },
+                    {
+                        heading: "Breadth-First Search (BFS)",
+                        explanation: "Explore all neighbors at current depth before going deeper. Level by level. Uses QUEUE. Algorithm: Enqueue start, mark visited. While queue not empty: dequeue, visit, enqueue all UNVISITED neighbors. Time: O(V+E), Space: O(W) where W = max width.",
+                        search_term: "BFS breadth first search queue level by level"
+                    },
+                    {
+                        heading: "BFS = Shortest Path (Unweighted)",
+                        explanation: "In an UNWEIGHTED graph, BFS gives the SHORTEST PATH between two nodes! Because it explores nodes in order of their distance from start. First time we reach target node, that's via the shortest path. DFS does NOT guarantee shortest path (can take long meandering route).",
+                        search_term: "BFS shortest path unweighted graph"
+                    },
+                    {
+                        heading: "DFS vs BFS — When to Use?",
+                        explanation: "USE DFS when: path existence (reachability), cycle detection, topological sort (DAG), strongly connected components, generating all paths, backtracking problems, puzzle solving. USE BFS when: shortest path (unweighted), level-order traversal, finding nearest neighbors, web crawling.",
+                        search_term: "DFS vs BFS applications use cases"
+                    }
+                ]
+            },
+            {
+                title: "Shortest Path Algorithms",
+                search_term: "Dijkstra Bellman-Ford Floyd-Warshall shortest path",
+                points: [
+                    {
+                        heading: "Dijkstra's Algorithm",
+                        explanation: "Finds shortest path from a SINGLE source to ALL reachable vertices. Works only on graphs with NON-NEGATIVE edge weights. Uses: priority queue (min-heap) to select next vertex with smallest known distance. Greedy approach. Time: O((V+E) log V) with heap.",
+                        search_term: "Dijkstra algorithm single source non negative weights"
+                    },
+                    {
+                        heading: "Bellman-Ford Algorithm",
+                        explanation: "Finds shortest path from single source. CAN HANDLE NEGATIVE EDGE WEIGHTS! Can also detect negative weight cycles (and report them). Less efficient than Dijkstra when no negative weights. Time: O(V×E). Used when Dijkstra can't (due to negative edges).",
+                        search_term: "Bellman-Ford negative edge weights cycle detection"
+                    },
+                    {
+                        heading: "Floyd-Warshall Algorithm",
+                        explanation: "Finds SHORTEST PATHS BETWEEN ALL PAIRS of vertices. Uses dynamic programming. Easy to implement (3 nested loops), uses adjacency matrix. Time: O(V³) — cubic. Good for small graphs, or when you need all-pairs paths. Works with negative edges (but not cycles).",
+                        search_term: "Floyd-Warshall all pairs shortest path dynamic programming"
+                    }
+                ]
+            }
+        ];
+        
+        keyConcepts = [
+            {
+                concept: "Adjacency List",
+                simple_explanation: "Most common graph representation.",
+                detailed_explanation: "An array (or hash map) where each vertex has a list of its neighbors. Space: O(V+E) — very efficient for sparse graphs. Essential for BFS, DFS, Dijkstra. In code: often vector<vector<int>> adj(V) in C++, or list of lists.",
+                search_term: "adjacency list efficient sparse graph"
+            },
+            {
+                concept: "DFS with Stack/Recursion",
+                simple_explanation: "Go deep before going wide.",
+                detailed_explanation: "DFS explores one complete path to its end before backtracking. The recursive implementation is elegant but risks stack overflow for very deep graphs. Iterative DFS uses an explicit stack and avoids stack overflow issues.",
+                search_term: "DFS stack recursion backtracking deep"
+            },
+            {
+                concept: "BFS with Queue",
+                simple_explanation: "Level by level exploration.",
+                detailed_explanation: "BFS explores all nodes at distance d before nodes at distance d+1. This property makes it perfect for shortest path in unweighted graphs. Always uses a queue (FIFO). The distance array tracks shortest distance from start.",
+                search_term: "BFS queue level order shortest path"
+            },
+            {
+                concept: "Cycle Detection",
+                simple_explanation: "Finding if a graph has a cycle.",
+                detailed_explanation: "UNDIRECTED: During DFS, if we encounter an adjacent vertex that is already visited and NOT the parent — cycle exists. DIRECTED (DAG check): Use DFS with recursion stack. If a back edge exists (to an ancestor in current recursion stack), cycle exists. Or use Kahn's algorithm for topological sort.",
+                search_term: "cycle detection undirected directed graph DFS"
+            }
+        ];
+    }
+    else if(topicLower.includes("sorting") || topicLower.includes("sort")){
+        introDef = "Sorting is the process of arranging elements in a specific order (ascending, descending, or based on some key). Sorting is fundamental in computer science — efficient sorting enables faster algorithms like binary search, and is used in databases, analytics, and data processing.";
+        introSimple = "Think of organizing books on a shelf: by title alphabetically, by author name, or by page count. Sorting algorithms do this systematically for data in arrays or lists. The ORDER matters for efficiency!";
+        
+        sections = [
+            {
+                title: "Comparison-Based Sorting Algorithms",
+                search_term: "comparison sorting bubble selection insertion merge quick heap",
+                points: [
+                    {
+                        heading: "Bubble Sort",
+                        explanation: "Repeatedly swap adjacent elements if they're in wrong order. 'Bubbles' largest element to end each pass. Time: O(N²) worst/average, O(N) best if already sorted. Space: O(1) in-place. Stable. Very simple but inefficient for large N. Mostly educational.",
+                        search_term: "bubble sort adjacent swap O(N²)"
+                    },
+                    {
+                        heading: "Selection Sort",
+                        explanation: "Repeatedly find the MINIMUM element from unsorted part and put it at the beginning. Two subarrays: sorted (built left to right) and unsorted. Time: O(N²) always (even if sorted!). Space: O(1). NOT stable. Makes minimum number of swaps (good when swap cost is high).",
+                        search_term: "selection sort find minimum O(N²) swaps"
+                    },
+                    {
+                        heading: "Insertion Sort",
+                        explanation: "Build sorted array one element at a time. Take next element, insert it into its CORRECT position in the already-sorted part. Time: O(N²) worst/average, O(N) best (already sorted). Space: O(1). Stable. IN-PLACE. Excellent for SMALL or NEARLY-SORTED arrays. Used in practice for small subproblems (like in Timsort).",
+                        search_term: "insertion sort insert correct position nearly sorted"
+                    },
+                    {
+                        heading: "Merge Sort",
+                        explanation: "DIVIDE & CONQUER. Divide array into two halves, recursively sort each half, then MERGE the sorted halves. Time: O(N log N) always (consistent performance). Space: O(N) — NOT in-place! Stable. Predictable O(N log N). Used in external sorting (data too big for memory).",
+                        search_term: "merge sort divide conquer O(N log N) space"
+                    },
+                    {
+                        heading: "Quick Sort",
+                        explanation: "DIVIDE & CONQUER. Pick a PIVOT, partition array such that elements < pivot go left, elements > pivot go right. Pivot ends in its correct sorted position. Recursively sort left and right. Time: O(N log N) average, O(N²) worst (but rare with good pivot). Space: O(log N) recursion stack. IN-PLACE (usually). NOT stable. FASTEST in practice for large random data.",
+                        search_term: "quicksort pivot partition average O(N log N)"
+                    },
+                    {
+                        heading: "Heap Sort",
+                        explanation: "Uses a MAX-HEAP (or MIN-HEAP). Build a max heap from array. Repeatedly: extract max (root) and place at end, heapify the reduced heap. Time: O(N log N) always. Space: O(1) — truly IN-PLACE! NOT stable. Combines speed of quicksort with O(N log N) guarantee of mergesort. But slower in practice than quicksort (due to worse constant factors).",
+                        search_term: "heap sort max heap in place O(N log N)"
+                    }
+                ]
+            },
+            {
+                title: "Non-Comparison Sorting",
+                search_term: "non comparison counting radix bucket sort",
+                points: [
+                    {
+                        heading: "Counting Sort",
+                        explanation: "Works when input values are INTEGERS within a KNOWN RANGE. Count occurrences of each value. Then build output by placing values according to counts. Time: O(N + K) where K = range of input. Space: O(K). Stable. Can be much faster than O(N log N) sorts when K is small (like sorting test scores 0-100, or ages).",
+                        search_term: "counting sort integer range O(N+K) stable"
+                    },
+                    {
+                        heading: "Radix Sort",
+                        explanation: "Digit by digit sorting from LEAST significant digit to MOST significant digit (or vice versa). At each digit position, use COUNTING SORT (which is stable). Time: O(d × (N + K)) where d = number of digits. Works well for sorting large integers or strings (like sorting 10-digit phone numbers).",
+                        search_term: "radix sort digit by digit counting sort LSD MSD"
+                    },
+                    {
+                        heading: "Bucket Sort",
+                        explanation: "Distribute elements into BUCKETS (e.g., by value range). Sort each bucket individually (using another algorithm, often insertion sort). Then concatenate buckets. Average: O(N) when uniformly distributed. Worst: O(N²) if all go to one bucket. Used for floating-point numbers or when input is expected to be uniformly distributed.",
+                        search_term: "bucket sort distribute buckets uniform distribution"
+                    }
+                ]
+            },
+            {
+                title: "Sorting Comparison & Properties",
+                search_term: "sorting algorithm comparison stable in place time space",
+                points: [
+                    {
+                        heading: "Time Complexity Summary",
+                        explanation: "Bubble/Selection/Insertion: O(N²) — simple but slow. Merge/Quick/Heap: O(N log N) — fast for large N. Counting: O(N+K) — linear but restricted. LESSON: For small N (< 15-20), insertion sort is actually FASTEST in practice! Simple = low constant overhead. For large N, use O(N log N).",
+                        search_term: "sorting time complexity O(N²) O(N log N)"
+                    },
+                    {
+                        heading: "Stable vs Unstable",
+                        explanation: "STABLE: Preserves relative order of elements with EQUAL values. Important when sorting by MULTIPLE KEYS. Example: Sort employees first by department, then by salary — stability ensures employees with same salary stay ordered by department. STABLE: Bubble, Insertion, Merge, Counting. UNSTABLE: Selection, Quick, Heap.",
+                        search_term: "stable sort equal elements relative order"
+                    },
+                    {
+                        heading: "In-Place vs Not",
+                        explanation: "IN-PLACE: Requires only constant extra space (O(1)) or O(log N) for recursion. Modifies input array directly. IN-PLACE: Bubble, Selection, Insertion, Quick, Heap. NOT IN-PLACE: Merge (O(N) aux space), Counting (O(K) aux). Trade-off: space efficiency vs simplicity/guarantee.",
+                        search_term: "in place sort constant extra space"
+                    },
+                    {
+                        heading: "Real-World Hybrid Sorts (Timsort, Introsort)",
+                        explanation: "Production languages use HYBRID algorithms, not single algorithms. TIMSORT (Python, Java): MergeSort + InsertionSort. Finds naturally occurring 'runs' (already sorted segments). Best: O(N), avg/worst: O(N log N). INTROSORT (C++ STL): QuickSort → switches to HeapSort if recursion depth too deep (avoids quicksort's O(N²) worst).",
+                        search_term: "timsort introsort hybrid real world sorting"
+                    }
+                ]
+            }
+        ];
+        
+        keyConcepts = [
+            {
+                concept: "O(N log N) Lower Bound",
+                simple_explanation: "Comparison sorts can't beat O(N log N).",
+                detailed_explanation: "Any COMPARISON-based sorting algorithm has a lower bound of Ω(N log N) comparisons in the worst case. This is a theoretical limit proven by decision tree model. Non-comparison sorts (counting, radix, bucket) can achieve O(N) by exploiting properties of the input values.",
+                search_term: "comparison sort lower bound omega N log N decision tree"
+            },
+            {
+                concept: "Divide and Conquer",
+                simple_explanation: "Break into subproblems, solve, combine.",
+                detailed_explanation: "Paradigm used by Merge Sort and Quick Sort. (1) DIVIDE: Split problem into smaller subproblems. (2) CONQUER: Solve subproblems recursively. (3) COMBINE: Merge subproblem solutions. Often leads to O(N log N) time. Merge: balanced division. Quick: variable division based on pivot.",
+                search_term: "divide conquer merge quick sort split combine"
+            },
+            {
+                concept: "Quick Sort Pivot Selection",
+                simple_explanation: "Crucial for avoiding worst-case O(N²).",
+                detailed_explanation: "Bad pivot (always min or max) leads to O(N²). Good pivot strategies: (1) Random pivot, (2) Median-of-three (first, middle, last), (3) Deterministic median. In practice, quicksort is FASTEST because of good cache locality and low constant factors, despite worst-case O(N²) (which is rare with good pivoting).",
+                search_term: "quicksort pivot selection random median of three"
+            },
+            {
+                concept: "Insertion Sort for Small N",
+                simple_explanation: "Actually faster for small arrays!",
+                detailed_explanation: "For small N (N < 15-20), Insertion Sort beats O(N log N) sorts in practice! Why? (1) Very simple = extremely low constant overhead, (2) No recursion overhead, (3) Excellent cache locality, (4) Adaptive (O(N) on nearly sorted). This is why Timsort and Introsort switch to insertion sort for small subarrays.",
+                search_term: "insertion sort small N constant overhead adaptive"
+            }
+        ];
+    }
+    else if(topicLower.includes("searching") || topicLower.includes("search")){
+        introDef = "Searching is the algorithmic process of finding a particular element or its position within a data structure. The two fundamental approaches are linear search (check everything) and binary search (exploit sorted order). Efficient searching is critical for databases, information retrieval, and nearly all software systems.";
+        introSimple = "Think of searching: if books are UNSORTED, you check one by one (linear). If books are SORTED by title, you can jump to the middle, compare, and eliminate half the books instantly (binary). That's the power of order!";
+        
+        sections = [
+            {
+                title: "Linear Search (Sequential Search)",
+                search_term: "linear search sequential unsorted O(N)",
+                points: [
+                    {
+                        heading: "How It Works",
+                        explanation: "Iterate through every element from START to END. Compare each element with target. If found: return index. If reach end without finding: return -1 (not found). Simple but brute-force. Time: O(N) worst case. Space: O(1) in-place.",
+                        search_term: "linear search iterate compare O(N)"
+                    },
+                    {
+                        heading: "When to Use Linear Search",
+                        explanation: "USE when: (1) Array is SMALL, (2) Array is UNSORTED, (3) Data structure doesn't support random access (like linked list — you must traverse). Also used when search cost is negligible compared to other operations. For larger sorted data: ALWAYS use binary search.",
+                        search_term: "linear search use cases small unsorted linked list"
+                    },
+                    {
+                        heading: "Linear Search Optimization",
+                        explanation: "SENTINEL LINEAR SEARCH: Place target at the end of array. Now loop doesn't need to check 'i < N' AND 'arr[i] != target' in each iteration. Only one comparison per iteration. Same O(N) but fewer constants = slightly faster. Still O(N) though.",
+                        search_term: "sentinel linear search optimization fewer comparisons"
+                    }
+                ]
+            },
+            {
+                title: "Binary Search",
+                search_term: "binary search sorted O(log N) divide conquer",
+                points: [
+                    {
+                        heading: "The Power of Binary Search",
+                        explanation: "Works ONLY on SORTED data! Repeatedly DIVIDE the search interval in HALF. Compare target with middle element. If equal: found! If target < mid: search LEFT half (eliminate RIGHT). If target > mid: search RIGHT half (eliminate LEFT). Time: O(log N) — DRAMATIC improvement over O(N)!",
+                        search_term: "binary search sorted divide half O(log N)"
+                    },
+                    {
+                        heading: "Why O(log N) Is Revolutionary",
+                        explanation: "For N = 1,000,000 elements: Linear search needs ~500,000 comparisons (average). Binary search needs only ~20 comparisons! Because log₂(1,000,000) ≈ 20. For N = 1 BILLION: log₂(1B) ≈ 30 steps. Binary search can find a needle in a haystack of 1 BILLION items in only 30 steps! This is why sorting is worth it.",
+                        search_term: "binary search log N comparisons 1 million 20 steps"
+                    },
+                    {
+                        heading: "Implementation Details",
+                        explanation: "Set low = 0, high = N-1. While low <= high: mid = low + (high - low) / 2 (avoids overflow vs (low+high)/2). If arr[mid] == target: return mid. If arr[mid] < target: low = mid + 1 (go right). Else: high = mid - 1 (go left). If loop ends: return -1 (not found).",
+                        search_term: "binary search implementation low high mid overflow"
+                    },
+                    {
+                        heading: "Binary Search Variants (Lower/Upper Bound)",
+                        explanation: "Often we need: LOWER BOUND: First element >= target. UPPER BOUND: First element > target. Or find LAST occurrence. These use modified binary search. Example: 'Find the first occurrence of 5 in [2,3,5,5,5,7]'. Standard binary search might return ANY 5, but lower bound returns index 2 (the FIRST one).",
+                        search_term: "binary search lower upper bound first last occurrence"
+                    }
+                ]
+            },
+            {
+                title: "Binary Search Applications Beyond Searching",
+                search_term: "binary search applications answer on value",
+                points: [
+                    {
+                        heading: "Binary Search on Answer (Monotonic Functions)",
+                        explanation: "The MOST POWERFUL binary search pattern! When you need to find: 'What's the MINIMUM value such that condition(value) is true?' Or MAXIMUM value such that condition is true. If the condition is MONOTONIC (once true, stays true; once false, stays false), binary search works! Used in countless optimization problems.",
+                        search_term: "binary search on answer monotonic function minimum maximum"
+                    },
+                    {
+                        heading: "Classic 'Answer on Value' Problems",
+                        explanation: "Examples: (1) Split array largest sum (minimize max subarray sum when splitting into m parts), (2) Koko eating bananas (min eating speed), (3) Capacity to ship packages in D days, (4) Find smallest divisor, (5) Magnetic force between balls (max min distance). All use: binary search on possible values, check feasibility.",
+                        search_term: "binary search problems split array largest sum koko bananas"
+                    },
+                    {
+                        heading: "Finding Peak Element",
+                        explanation: "A peak is greater than its neighbors. Binary search can find a peak in O(log N)! How: Go to mid. If mid < mid+1: peak must be on right (since increasing). Else: peak is on left (or mid itself). This works because we don't need ALL peaks, just ANY peak. A clever divide-and-conquer insight.",
+                        search_term: "peak element binary search O(log N) divide conquer"
+                    },
+                    {
+                        heading: "Rotated Sorted Array Search",
+                        explanation: "A sorted array rotated at some pivot. Still sorted but split. [4,5,6,7,0,1,2] is rotated sorted. Can still search in O(log N)! Insight: At least ONE of the two halves (left of mid OR right of mid) is ALWAYS sorted. Check which half is sorted, then decide which half target could be in. Advanced binary search variant.",
+                        search_term: "rotated sorted array binary search one half sorted"
+                    }
+                ]
+            }
+        ];
+        
+        keyConcepts = [
+            {
+                concept: "Logarithmic Time (O(log N))",
+                simple_explanation: "Grows EXTREMELY slowly with N.",
+                detailed_explanation: "log₂(N) doubles the problem size for each additional step. N=10 → ~4 steps. N=1000 → ~10 steps. N=1,000,000 → ~20 steps. N=1,000,000,000 → ~30 steps. This is why binary search is one of the most important algorithms — it makes enormous datasets manageable.",
+                search_term: "logarithmic time O(log N) grows slowly"
+            },
+            {
+                concept: "Sorted Order Requirement",
+                simple_explanation: "Binary search needs the data sorted.",
+                detailed_explanation: "Binary search's power comes from ELIMINATING HALF the data with each comparison. This requires ORDER. If data is unsorted, you cannot make this elimination. The PREPROCESSING COST of sorting (O(N log N)) is amortized over many searches (each O(log N)).",
+                search_term: "binary search sorted requirement eliminate half"
+            },
+            {
+                concept: "Mid Calculation Overflow",
+                simple_explanation: "mid = (low+high) can overflow!",
+                detailed_explanation: "In languages with fixed-size integers (C++, Java), (low + high) can exceed MAX_INT and overflow to a negative number, causing ArrayIndexOutOfBounds. SAFER: mid = low + (high - low) / 2. Same mathematical result, but avoids overflow. Or use unsigned shift: low + ((high - low) >>> 1).",
+                search_term: "mid calculation overflow low plus high unsafe"
+            },
+            {
+                concept: "Lower Bound / Upper Bound",
+                simple_explanation: "Find boundaries of duplicates.",
+                detailed_explanation: "LOWER BOUND (bisect_left): First index where element >= target. UPPER BOUND (bisect_right): First index where element > target. Together they give the RANGE of duplicate elements: count = upper - lower. These are the workhorses of binary search in practice (Python's bisect module, C++ lower_bound/upper_bound).",
+                search_term: "lower bound upper bound bisect duplicates count"
+            }
+        ];
+    }
+    else if(topicLower.includes("recursion")){
+        introDef = "Recursion is a programming technique where a function calls itself to solve smaller instances of the same problem. Every recursive function must have: (1) BASE CASE(s) — terminating condition that gives direct answer, (2) RECURSIVE CASE — breaks problem into smaller subproblems and calls itself. Recursion uses the call stack.";
+        introSimple = "Think of Russian nesting dolls: each doll contains a smaller similar doll. Eventually you reach a tiny doll that can't be opened (BASE CASE). Recursion solves a big problem by solving the SAME problem but SMALLER, until it becomes trivial.";
+        
+        sections = [
+            {
+                title: "Recursion Fundamentals",
+                search_term: "recursion base case recursive case call stack",
+                points: [
+                    {
+                        heading: "Base Case vs Recursive Case",
+                        explanation: "BASE CASE: The condition where recursion STOPS. The answer is directly known. Without base case: INFINITE RECURSION (stack overflow!). RECURSIVE CASE: The part where function calls itself with a SMALLER or SIMPLER input. Each recursive call should bring us closer to the base case.",
+                        search_term: "recursion base recursive case infinite stack overflow"
+                    },
+                    {
+                        heading: "The Call Stack",
+                        explanation: "Each recursive call creates a STACK FRAME (activation record) on the call stack containing: function parameters, local variables, return address. Stack grows with each call. When base case returns, stack unwinds (frames popped, values returned). Stack depth = recursion depth. Too deep = Stack Overflow!",
+                        search_term: "recursion call stack frame activation record overflow"
+                    },
+                    {
+                        heading: "Factorial Example",
+                        explanation: "n! = n × (n-1) × (n-2) × ... × 3 × 2 × 1. Recursive definition: Base: fact(0) = 1, fact(1) = 1. Recursive: fact(n) = n × fact(n-1). Tracing fact(4): fact(4) = 4 × fact(3), fact(3) = 3 × fact(2), fact(2) = 2 × fact(1), fact(1) = 1. Then unwind: 2, 6, 24.",
+                        search_term: "factorial recursion n factorial base case"
+                    },
+                    {
+                        heading: "Fibonacci Example (Naive)",
+                        explanation: "Fib(0)=0, Fib(1)=1, Fib(n)=Fib(n-1)+Fib(n-2). Naive recursive Fibonacci is TERRIBLE: exponential time O(2^N) because it computes the same values repeatedly! Fib(5) calls Fib(4)+Fib(3), Fib(4) calls Fib(3)+Fib(2) — Fib(3) computed twice. RED ALERT: exponential = useless for N > 30-40.",
+                        search_term: "fibonacci recursion naive exponential O(2^N) repeated"
+                    }
+                ]
+            },
+            {
+                title: "Recursion Problem Solving Patterns",
+                search_term: "recursion patterns divide conquer DFS backtracking",
+                points: [
+                    {
+                        heading: "Divide and Conquer",
+                        explanation: "Break problem into independent subproblems, solve recursively, combine results. Examples: Merge Sort (split, sort each, merge), Quick Sort (partition around pivot), Binary Search (eliminate half). Often gives O(N log N) time due to balanced division.",
+                        search_term: "divide conquer recursion merge quick sort binary search"
+                    },
+                    {
+                        heading: "Depth-First Search (DFS) & Traversal",
+                        explanation: "Natural fit for recursion. Tree traversals (pre/in/post-order), graph DFS, maze exploration. Recursion elegantly handles the backtracking: when you hit a dead end, return and try next path. The call stack automatically manages the 'remembering where to try next'.",
+                        search_term: "DFS recursion tree traversal graph backtracking"
+                    },
+                    {
+                        heading: "Backtracking",
+                        explanation: "Build solution incrementally. At each step: try a choice, if it leads to solution great. If not, BACKTRACK (undo choice) and try next choice. Systematically explores all possibilities via recursion + constraint checking. Examples: permutations, combinations, subsets, N-Queens, Sudoku solver, word search.",
+                        search_term: "backtracking recursion choices undo explore all"
+                    },
+                    {
+                        heading: "Dynamic Programming (DP) Overlapping Subproblems",
+                        explanation: "When naive recursion has OVERLAPPING SUBPROBLEMS (same subproblem solved many times) like Fibonacci, it's exponentially slow. DP solves this by MEMOIZATION (cache results) or TABULATION (bottom-up). Fib with memoization becomes O(N) time! Recursive + memo = top-down DP. Iterative table = bottom-up DP.",
+                        search_term: "dynamic programming overlapping subproblems memoization"
+                    }
+                ]
+            },
+            {
+                title: "Recursion vs Iteration",
+                search_term: "recursion vs iteration stack space loops",
+                points: [
+                    {
+                        heading: "Recursion: Pros & Cons",
+                        explanation: "PROS: Elegant, readable, natural for DFS/backtracking/tree/graph problems, mirrors mathematical definitions. CONS: Stack overhead (each call costs memory), risk of stack overflow for deep recursion, generally slower than iteration due to function call overhead. Space complexity = recursion depth.",
+                        search_term: "recursion pros cons elegant stack overhead"
+                    },
+                    {
+                        heading: "Iteration: Pros & Cons",
+                        explanation: "PROS: No stack overflow risk, often faster (no function call overhead), uses explicit variables/structures, more control. CONS: Can be much more code/complexity for DFS/backtracking (must manually manage stack), less natural for recursive structures like trees. Space complexity = whatever your data structures use.",
+                        search_term: "iteration pros cons no stack overflow explicit control"
+                    },
+                    {
+                        heading: "Converting Recursion to Iteration",
+                        explanation: "Any recursive algorithm can be converted to iterative using an EXPLICIT STACK data structure. You manually push/pop what the call stack would automatically. Example: Iterative DFS uses Stack<TreeNode>. Iterative post-order is trickier. For tail recursion (last operation is recursive call), some compilers optimize to iterative automatically (TCO), but JavaScript doesn't guarantee TCO.",
+                        search_term: "recursion to iteration explicit stack tail call optimization"
+                    },
+                    {
+                        heading: "Tail Recursion",
+                        explanation: "A function is tail-recursive if the recursive call is the LAST operation performed (nothing to do after the call returns except return the value). In some languages (Scala, Scheme), tail recursion is optimized to NOT consume stack space. Example: factorial can be written tail-recursively with an accumulator parameter. Standard fact(n) = n × fact(n-1) is NOT tail-recursive (multiplication happens after).",
+                        search_term: "tail recursion last operation accumulator TCO"
+                    }
+                ]
+            }
+        ];
+        
+        keyConcepts = [
+            {
+                concept: "Base Case",
+                simple_explanation: "The terminating condition that stops recursion.",
+                detailed_explanation: "Without a base case, recursion continues forever until stack overflow. The base case gives a DIRECT answer without further recursion. Every recursive call MUST progress toward the base case (smaller input, closer to termination). Multiple base cases possible.",
+                search_term: "recursion base case terminating condition"
+            },
+            {
+                concept: "Call Stack",
+                simple_explanation: "Where recursive calls live in memory.",
+                detailed_explanation: "Each recursive invocation adds a stack frame. Stack frames contain parameters, local vars, return address. Stack is LIFO. Stack overflow occurs when depth exceeds available stack size (typically a few thousand calls max in JS). Deep recursion is dangerous.",
+                search_term: "call stack frame stack overflow LIFO"
+            },
+            {
+                concept: "Overlapping Subproblems",
+                simple_explanation: "Same subproblem solved repeatedly.",
+                detailed_explanation: "When a recursive algorithm solves the SAME subproblem multiple times (like naive Fibonacci), it's exponentially inefficient. This is the signal for DYNAMIC PROGRAMMING: memoize (cache) results, or use bottom-up iteration. Fib(50) naive = impossible, Fib(50) with DP = instant.",
+                search_term: "overlapping subproblems repeated calculation DP"
+            },
+            {
+                concept: "Memoization",
+                simple_explanation: "Cache subproblem results to avoid recomputing.",
+                detailed_explanation: "Top-down DP technique: (1) Check cache first — if computed, return cached value. (2) If not, compute recursively, then STORE in cache before returning. Turns exponential O(2^N) Fibonacci into O(N) time! Uses a hash map or array as cache.",
+                search_term: "memoization cache top down DP lookup table"
+            }
+        ];
+    }
+    else if(topicLower.includes("hashing") || topicLower.includes("hash table") || topicLower.includes("hashtable")){
+        introDef = "Hashing is a technique that maps data of arbitrary size (keys) to fixed-size values (hash codes) using a hash function. A Hash Table (or HashMap) is a data structure that uses hashing to enable average O(1) time for insertions, deletions, and lookups — making it one of the most practical and heavily used data structures.";
+        introSimple = "Think of a dictionary: you look up a WORD (key) and find its DEFINITION (value). The physical book uses alphabetical order. A hash table uses a MATH FORMULA (hash function) to compute exactly where to store/find each entry — no searching needed!";
+        
+        sections = [
+            {
+                title: "Hash Table Fundamentals",
+                search_term: "hash table key value hash function index",
+                points: [
+                    {
+                        heading: "Key → Hash Function → Index → Value",
+                        explanation: "A hash table stores key-value pairs. Process: (1) Take KEY, pass to HASH FUNCTION, (2) Hash function returns an INTEGER (hash code), (3) Compute INDEX = hashCode % arrayCapacity, (4) Store/find VALUE at that index. IDEAL: uniform distribution — keys spread evenly across indices.",
+                        search_term: "hash function key to index distribution"
+                    },
+                    {
+                        heading: "What Makes a Good Hash Function?",
+                        explanation: "A good hash function should: (1) Be EFFICIENT to compute, (2) Produce UNIFORM distribution (minimize collisions), (3) Be DETERMINISTIC (same key always gives same hash). BAD hash functions: key % 10 for phone numbers (only 10 buckets, all go to same bucket based on last digit), or returning constant value (everything collides).",
+                        search_term: "good hash function uniform deterministic efficient"
+                    },
+                    {
+                        heading: "Collision — When Two Keys Map to Same Index",
+                        explanation: "Two DIFFERENT keys may hash to the SAME index. This is a COLLISION. It's unavoidable since there are more possible keys than slots. Two main collision resolution strategies: (1) SEPARATE CHAINING (linked list at each slot), (2) OPEN ADDRESSING (find next open slot via probing).",
+                        search_term: "hash collision two keys same index unavoidable"
+                    }
+                ]
+            },
+            {
+                title: "Collision Resolution",
+                search_term: "collision resolution separate chaining open addressing",
+                points: [
+                    {
+                        heading: "Separate Chaining",
+                        explanation: "Each array index contains a LINKED LIST (or another data structure). When collision occurs, the new entry is simply added to the list at that index. LOOKUP: compute index, then traverse the list at that index. If hash function is good and load factor low, list lengths are small. Java's HashMap uses variation of this.",
+                        search_term: "separate chaining linked list at each index"
+                    },
+                    {
+                        heading: "Open Addressing — Linear Probing",
+                        explanation: "When collision occurs, probe (search) for the NEXT empty slot in the array. Linear Probing: index = (originalIndex + i) % capacity. Check i=0,1,2,... until found. CLUSTERING is a problem: once a cluster forms, it grows — consecutive occupied slots cause more collisions and longer probes. Simple but suffers from primary clustering.",
+                        search_term: "linear probing next empty slot clustering problem"
+                    },
+                    {
+                        heading: "Quadratic Probing & Double Hashing",
+                        explanation: "QUADRATIC: index = (original + i²) mod capacity. Reduces clustering by spreading out probes. But may miss some slots. DOUBLE HASHING: Use TWO different hash functions. index = (hash1(key) + i × hash2(key)) % capacity. Best open addressing method — eliminates clustering, but requires second hash function and careful design.",
+                        search_term: "quadratic double hashing reduce clustering"
+                    }
+                ]
+            },
+            {
+                title: "Load Factor & Rehashing",
+                search_term: "load factor rehash resize table capacity",
+                points: [
+                    {
+                        heading: "Load Factor (α) = n/m",
+                        explanation: "α = number of entries / number of buckets (array size). MEASURES HOW FULL the hash table is. Typical threshold: α = 0.75. When load factor exceeds threshold, PERFORMANCE DEGRADES (chains get longer, probes get longer). Time to RESIZE!",
+                        search_term: "load factor n over m threshold 0.75"
+                    },
+                    {
+                        heading: "Rehashing (Resizing)",
+                        explanation: "When load factor too high: CREATE a new, larger array (typically DOUBLE size), REHASH all existing entries into new array (recompute hash indices because capacity changed), then discard old array. EXPENSIVE (O(N)), but amortized over many operations, still O(1) average. This keeps α low and performance fast.",
+                        search_term: "rehash double capacity reinsert all entries"
+                    }
+                ]
+            },
+            {
+                title: "Hash Table Operations & Time Complexity",
+                search_term: "hash table insert delete lookup average O(1)",
+                points: [
+                    {
+                        heading: "Average Case: O(1)",
+                        explanation: "INSERT, DELETE, LOOKUP are all O(1) AVERAGE case. This is why hash tables are MAGICAL! Under good hash function + low load factor + good collision resolution: chains are short, probes are few. Hash tables enable 'instant' lookup of values by key — foundational for databases, caches, symbol tables.",
+                        search_term: "hash table average O(1) constant time magic"
+                    },
+                    {
+                        heading: "Worst Case: O(N)",
+                        explanation: "In WORST case (everything hashes to same index), hash table degenerates to linked list: O(N) time. This can happen with: (1) Terrible hash function, (2) Malicious input (hash flooding attack), (3) Forgetting to rehash. In practice, well-implemented hash tables like Java HashMap, Python dict avoid this with good design and (in some languages) randomized hashing.",
+                        search_term: "hash table worst case O(N) linked list"
+                    }
+                ]
+            }
+        ];
+        
+        keyConcepts = [
+            {
+                concept: "Hash Function",
+                simple_explanation: "Converts key to array index.",
+                detailed_explanation: "A deterministic function mapping keys to integers in range [0, capacity-1]. Uniform distribution is critical — minimizes collisions. For strings: often process each character with polynomial rolling hash. Example: hash = 0; for each char: hash = (hash * BASE + charCode) % CAPACITY.",
+                search_term: "hash function key to integer uniform distribution"
+            },
+            {
+                concept: "Collision",
+                simple_explanation: "Different keys → same index.",
+                detailed_explanation: "Unavoidable because the set of possible keys is much larger than array capacity. Must have resolution strategy: separate chaining (most common in practice) or open addressing. Collisions don't break correctness, but degrade performance if frequent.",
+                search_term: "collision different keys same index unavoidable"
+            },
+            {
+                concept: "Load Factor & Rehashing",
+                simple_explanation: "How full is too full? Resize when needed.",
+                detailed_explanation: "Load factor α = entries/buckets. When α exceeds threshold (typically 0.75), the table is resized (usually doubled) and all entries are rehashed. This keeps α low and ensures average O(1) performance. Without rehashing, chains grow and O(1) becomes O(N).",
+                search_term: "load factor 0.75 resize double capacity"
+            },
+            {
+                concept: "Separate Chaining",
+                simple_explanation: "Each bucket has a linked list.",
+                detailed_explanation: "Most practical collision resolution. When keys collide, they're added to a list at that index. Java's HashMap (before Java 8) used linked lists; Java 8+ uses balanced BST when chain gets too long. Performance depends on average chain length, which is α when uniformly distributed.",
+                search_term: "separate chaining linked list java hashmap"
+            }
+        ];
+    }
+    else if(topicLower.includes("dynamic programming") || topicLower.includes("dp")){
+        introDef = "Dynamic Programming (DP) is an algorithmic technique for solving optimization problems by breaking them into simpler subproblems. Key idea: if you already solved a subproblem, DON'T solve it again — STORE (memoize) the result. DP applies when problem has: (1) OVERLAPPING SUBPROBLEMS (same subproblem repeats), (2) OPTIMAL SUBSTRUCTURE (optimal solution can be built from optimal sub-solutions).";
+        introSimple = "Think of climbing stairs: how many ways to reach step N if you can take 1 or 2 steps at a time? To reach step 10, you must have come from step 9 (then +1) OR step 8 (then +2). So ways(10) = ways(9) + ways(8). But naive recursion calculates ways(5) many times! DP: compute once, store forever.";
+        
+        sections = [
+            {
+                title: "DP Identifying Characteristics",
+                search_term: "DP overlapping subproblems optimal substructure",
+                points: [
+                    {
+                        heading: "Overlapping Subproblems",
+                        explanation: "The same subproblem is solved MULTIPLE times. Example: Fib(5) = Fib(4)+Fib(3), Fib(4) = Fib(3)+Fib(2). Fib(3) computed twice! This is why naive recursion is EXPONENTIAL. DP recognizes this wastefulness and stores results. No overlapping subproblems? Use divide and conquer instead (like Merge Sort — subproblems are unique, no DP benefit).",
+                        search_term: "overlapping subproblems repeated calculation waste"
+                    },
+                    {
+                        heading: "Optimal Substructure",
+                        explanation: "The OPTIMAL solution to the main problem can be CONSTRUCTED from OPTIMAL solutions to its subproblems. Example: Shortest path from A to C through B: shortest(A,C) = shortest(A,B) + shortest(B,C). If you need OPTIMAL (min/max/longest/shortest/fewest) AND problem can be broken into subproblems with optimal answers that combine — DP is likely applicable.",
+                        search_term: "optimal substructure main from subproblems optimal"
+                    },
+                    {
+                        heading: "When to NOT Use DP",
+                        explanation: "DP doesn't work if: (1) No overlapping subproblems (subproblems unique), (2) No optimal substructure, (3) Greedy choice property holds (locally optimal choice leads to globally optimal — then use Greedy which is simpler/faster). Example: Activity Selection can use Greedy but not DP (or DP would work but Greedy is simpler). Fractional Knapsack = Greedy, 0/1 Knapsack = DP.",
+                        search_term: "when not to use DP greedy better no overlap"
+                    }
+                ]
+            },
+            {
+                title: "Two DP Approaches",
+                search_term: "top down memoization bottom up tabulation",
+                points: [
+                    {
+                        heading: "Top-Down (Memoization)",
+                        explanation: "RECURSION + MEMOIZATION (cache). Approach: (1) Write recursive solution FIRST, (2) Add a memo table (array/hash map) to store computed results, (3) At start of function: check memo — if already computed, return it; (4) If not, compute recursively, then STORE in memo before returning. Intuitive (follows recursive structure) but has recursion overhead.",
+                        search_term: "top down memoization recursion cache table"
+                    },
+                    {
+                        heading: "Bottom-Up (Tabulation)",
+                        explanation: "ITERATIVE, builds table from smallest subproblems upward. Approach: (1) Identify the ORDER in which subproblems must be solved, (2) Create DP array of appropriate size, (3) Fill BASE CASES first, (4) Fill rest of table iteratively using previously computed values. No recursion, often faster, no stack overflow risk, but may be harder to think about.",
+                        search_term: "bottom up tabulation iterative fill table base cases"
+                    },
+                    {
+                        heading: "Comparing Top-Down vs Bottom-Up",
+                        explanation: "TOP-DOWN: Easier to think/write (follows recursion). Only computes subproblems that are ACTUALLY NEEDED (lazy). Has function call overhead. Risk of stack overflow for very deep recursion. BOTTOM-UP: No recursion overhead. Often faster in practice. Forces you to think about order. Solves ALL subproblems whether needed or not (but usually fine). Space can sometimes be optimized (rolling array).",
+                        search_term: "top down vs bottom up recursion iterative lazy"
+                    }
+                ]
+            },
+            {
+                title: "Classic DP Problems & Patterns",
+                search_term: "DP classic problems fibonacci knapsack LIS LCS",
+                points: [
+                    {
+                        heading: "Fibonacci & Climbing Stairs",
+                        explanation: "The simplest DP. DP[i] = DP[i-1] + DP[i-2]. Shows overlapping subproblems dramatically. Naive: O(2^N). DP: O(N) time, O(N) space — or O(1) space with optimized variables! If you can take 1, 2, or 3 steps: DP[i] = DP[i-1] + DP[i-2] + DP[i-3]. The foundation for understanding DP.",
+                        search_term: "fibonacci climbing stairs DP i-1 i-2 O(N)"
+                    },
+                    {
+                        heading: "0/1 Knapsack",
+                        explanation: "Given weights and values, select items to maximize value without exceeding weight capacity. Each item: either TAKE it (if weight permits) or LEAVE it. Can't fractionally take items. DP[i][w] = max value using first i items with capacity w. Recurrence: if weight[i] > w: DP[i][w] = DP[i-1][w]; else: max(DP[i-1][w], value[i] + DP[i-1][w-weight[i]]). Space can be optimized to O(W).",
+                        search_term: "01 knapsack take or leave weight value max"
+                    },
+                    {
+                        heading: "Longest Increasing Subsequence (LIS)",
+                        explanation: "Given array, find length of longest strictly (or non-strictly) increasing subsequence. O(N²) DP approach: DP[i] = length of LIS ending at index i. For each i, DP[i] = 1 + max(DP[j]) for all j < i where arr[j] < arr[i]. Answer = max(DP array). Can be optimized to O(N log N) using patience sorting with binary search.",
+                        search_term: "LIS longest increasing subsequence DP[j] < arr[i]"
+                    },
+                    {
+                        heading: "Longest Common Subsequence (LCS)",
+                        explanation: "Given two strings, find length of longest subsequence present in both. DP[i][j] = LCS of first i chars of str1 and first j chars of str2. If str1[i-1] == str2[j-1]: DP[i][j] = 1 + DP[i-1][j-1]. Else: DP[i][j] = max(DP[i-1][j], DP[i][j-1]). Base: DP[i][0] = DP[0][j] = 0. Used in diff tools, DNA sequence analysis.",
+                        search_term: "LCS longest common subsequence two strings equal max"
+                    },
+                    {
+                        heading: "Coin Change",
+                        explanation: "Two variants: (1) MINIMUM coins to make amount, (2) NUMBER of ways to make amount. Variant 1: DP[amount] = min over coins: 1 + DP[amount - coin]. Variant 2: unbounded knapsack-like — DP[amount] = sum of DP[amount - coin] for each coin. Important: ORDER matters for minimum vs combinations vs permutations.",
+                        search_term: "coin change minimum coins number of ways unbounded"
+                    }
+                ]
+            }
+        ];
+        
+        keyConcepts = [
+            {
+                concept: "Overlapping Subproblems",
+                simple_explanation: "Same subproblem solved many times.",
+                detailed_explanation: "The SIGNAL that DP can help. In naive recursion, this causes exponential time. With DP, each subproblem is solved EXACTLY ONCE. How to identify: try small examples manually or draw recursion tree — if you see repeated subproblems, DP applies.",
+                search_term: "overlapping subproblems repeated solve once"
+            },
+            {
+                concept: "Optimal Substructure",
+                simple_explanation: "Optimal main = optimal subparts combined.",
+                detailed_explanation: "For a problem to be solvable by DP, the OPTIMAL answer to the big problem must be CONSTRUCTIBLE from OPTIMAL answers to smaller problems. Example: shortest path has this, but longest path in graph with cycles does NOT (cycles can be traversed infinitely).",
+                search_term: "optimal substructure combine subproblem optimal"
+            },
+            {
+                concept: "Memoization",
+                simple_explanation: "Cache computed results for reuse.",
+                detailed_explanation: "Top-down DP technique: at each recursive call, first check if result already in cache. If yes, return immediately. If no, compute and store before returning. Transforms exponential O(2^N) to linear O(N) or polynomial. Typically uses array (if indices known) or hash map.",
+                search_term: "memoization cache lookup store return"
+            },
+            {
+                concept: "DP State & Transition",
+                simple_explanation: "What does DP[i] represent? How to compute it?",
+                detailed_explanation: "STATE: The meaning of DP[i] or DP[i][j]. Must be defined precisely. Example: DP[i] = min coins to make amount i. TRANSITION: The formula relating DP[current] to smaller DP values. Example: DP[i] = min(1 + DP[i-coin]) for each coin. State definition is the HARDEST and most important part of DP.",
+                search_term: "DP state definition transition formula i j"
+            }
+        ];
+    }
+    else if(topicLower.includes("string") || topicLower.includes("strings")){
+        introDef = "Strings are sequences of characters. String manipulation is one of the most common programming tasks — used in text processing, parsing, pattern matching, data validation, and information retrieval. Key operations include: concatenation, comparison, substring extraction, searching, and pattern matching using sophisticated algorithms like KMP, Rabin-Karp.";
+        introSimple = "Think of strings as arrays of characters with special behaviors. Unlike arrays, strings are IMMUTABLE in many languages (Java, JavaScript, Python, C# strings). Modifying a string actually creates a NEW string — important for performance! StringBuilder/StringBuffer help with efficient modifications.";
+        
+        sections = [
+            {
+                title: "String Fundamentals",
+                search_term: "string immutability char array index comparison",
+                points: [
+                    {
+                        heading: "Immutability",
+                        explanation: "In many languages (Java, C#, Python, JavaScript), strings are IMMUTABLE — once created, they cannot be changed. Operations like str.toUpperCase(), str.replace(), or str + 'more' create ENTIRELY NEW strings. This has performance implications: concatenating in a loop creates O(N²) intermediate strings and is SLOW. Use StringBuilder/StringBuffer for heavy string building.",
+                        search_term: "string immutability create new stringbuilder performance"
+                    },
+                    {
+                        heading: "String Comparison",
+                        explanation: "== vs equals() in Java: == compares REFERENCES (memory addresses), equals() compares ACTUAL CHARACTERS. In JavaScript: == and === both compare values for strings (primitive comparison), but for String objects, they compare references. LEXICOGRAPHIC comparison: strcmp returns negative/zero/positive based on Unicode values. 'Apple' < 'Banana', but 'apple' > 'Banana' (lowercase has higher Unicode).",
+                        search_term: "string comparison equals lexicographic unicode reference"
+                    },
+                    {
+                        heading: "Substring, Slice, Splice",
+                        explanation: "Methods to extract parts of strings. SLICE (most consistent): slice(start, end?) — negative indices work from end. SUBSTRING: substring(start, end?) — negative indices treated as 0. SUBSTR (deprecated): substr(start, length?). Important: in many languages, these return NEW strings (due to immutability), not views — so can be O(k) time where k = length of substring.",
+                        search_term: "substring slice negative indices new string"
+                    }
+                ]
+            },
+            {
+                title: "Pattern Matching Algorithms",
+                search_term: "pattern matching KMP Rabin-Karp naive O(N×M)",
+                points: [
+                    {
+                        heading: "Naive (Brute Force) Pattern Matching",
+                        explanation: "Given text T of length N, pattern P of length M. For every possible starting index i in T (0 to N-M), compare T[i..i+M-1] with P[0..M-1]. Time: O(N×M) worst case. Worst when T = 'AAAAAA...A' and P = 'AAAAB' — many almost-matches. Simple to implement but inefficient for large texts or repeated searches.",
+                        search_term: "naive pattern matching brute force O(N×M) compare all"
+                    },
+                    {
+                        heading: "KMP Algorithm (Knuth-Morris-Pratt)",
+                        explanation: "Achieves O(N + M) linear time by avoiding character re-comparisons. Key insight: when a mismatch occurs after matching k characters, we don't need to go back to i+1 — we can jump based on what we already know. Preprocesses pattern into a LPS array (Longest Prefix which is also Suffix). LPS tells us: where to resume matching after mismatch. No backtracking in text!",
+                        search_term: "KMP LPS array linear no backtracking prefix suffix"
+                    },
+                    {
+                        heading: "Rabin-Karp (Rolling Hash)",
+                        explanation: "Uses HASHING for pattern matching. Idea: compute hash of pattern, then compute ROLLING hash of every M-length window in text. If hashes match, do full comparison (to handle hash collisions). Rolling hash: when window slides by 1, new_hash = (old_hash - (left_char × base^(M-1))) × base + right_char. This makes each hash update O(1). Average O(N+M), worst O(N×M) with many hash collisions.",
+                        search_term: "Rabin-Karp rolling hash O(1) update collision"
+                    },
+                    {
+                        heading: "KMP LPS Array Construction",
+                        explanation: "LPS[i] = length of longest proper prefix of P[0..i] that is also suffix. Proper = cannot be entire substring. How to build: Initialize len=0 (length of previous longest prefix suffix), i=1. While i < M: if P[i]==P[len]: len++, LPS[i]=len, i++. Else if len≠0: len = LPS[len-1] (CRITICAL: don't go to 0!). Else: LPS[i]=0, i++. This is O(M) — the KMP magic!",
+                        search_term: "LPS array longest prefix suffix len LPS len-1"
+                    }
+                ]
+            },
+            {
+                title: "String DP Problems",
+                search_term: "string DP LCS edit distance palindrome substring",
+                points: [
+                    {
+                        heading: "Longest Common Subsequence (LCS)",
+                        explanation: "Given two strings, find length of longest subsequence present in both. DP table: dp[i][j] = LCS of first i chars of s1 and first j chars of s2. If s1[i-1] == s2[j-1]: dp[i][j] = 1 + dp[i-1][j-1]. Else: dp[i][j] = max(dp[i-1][j], dp[i][j-1]). Time/space: O(N×M). Space can be optimized to O(min(N,M)) since each row only needs previous row.",
+                        search_term: "LCS DP two strings equal max dp i-1 j-1"
+                    },
+                    {
+                        heading: "Longest Palindromic Substring",
+                        explanation: "Find longest substring (contiguous!) that reads same forwards/backwards. APPROACH 1: Expand Around Centers — for each center (odd length: i,i; even length: i,i+1), expand as long as equal. Time O(N²), space O(1). APPROACH 2: DP — dp[i][j] = true if s[i..j] is palindrome. Base: single chars = true, two equal chars = true. Fill for lengths 3+: if ends equal and inner is palindrome. O(N²) both.",
+                        search_term: "longest palindromic substring expand around center DP"
+                    },
+                    {
+                        heading: "Edit Distance (Levenshtein Distance)",
+                        explanation: "Minimum number of operations (insert, delete, replace) to convert string1 to string2. Classic DP: dp[i][j] = min operations for first i chars of s1 and first j chars of s2. If s1[i-1] == s2[j-1]: dp[i][j] = dp[i-1][j-1] (no operation needed). Else: dp[i][j] = 1 + min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]) — min of delete, insert, replace. Used in spell checkers, diff tools.",
+                        search_term: "edit distance levenshtein insert delete replace min"
+                    },
+                    {
+                        heading: "Word Break",
+                        explanation: "Given string s and dictionary of words, can s be segmented into space-separated dictionary words? DP approach: dp[i] = true if s[0..i-1] can be segmented. Base: dp[0] = true. For each position i, check all j < i: if dp[j] is true AND s[j..i-1] is in dictionary → dp[i] = true. Variants: find any one segmentation, find ALL segmentations, find min/max number of words, count number of ways.",
+                        search_term: "word break DP dictionary j i segment true"
+                    }
+                ]
+            }
+        ];
+        
+        keyConcepts = [
+            {
+                concept: "Immutability",
+                simple_explanation: "Cannot change — modification creates new.",
+                detailed_explanation: "Strings in Java, C#, Python, JavaScript are immutable. Every 'modification' actually allocates a new string and copies characters. Loop concatenation creates O(N²) garbage and is slow. Use StringBuilder (non-thread-safe) or StringBuffer (thread-safe) in Java, or array join in JS for efficient building.",
+                search_term: "string immutable new allocation stringbuilder"
+            },
+            {
+                concept: "Subsequence vs Substring",
+                simple_explanation: "Subsequence: may not be contiguous. Substring: must be contiguous.",
+                detailed_explanation: "SUBSEQUENCE: Characters appear in same order but not necessarily consecutively. 'ACE' is subsequence of 'ABCDE'. SUBSTRING (or SUBARRAY): Characters are CONTIGUOUS. 'ABC' is substring of 'ABCDE', 'ACE' is NOT. This distinction is critical: LCS (subsequence) vs Longest Palindromic Substring.",
+                search_term: "subsequence vs substring contiguous order"
+            },
+            {
+                concept: "KMP LPS Array",
+                simple_explanation: "Avoids backtracking in KMP algorithm.",
+                detailed_explanation: "Longest Prefix Suffix: for each position in pattern, length of longest proper prefix that is also a suffix. When mismatch occurs at position i in pattern, we don't restart from 0 — we set pattern index to LPS[i-1] and continue comparing from SAME text position. This is why KMP is O(N+M) — no text backtracking!",
+                search_term: "LPS KMP longest prefix suffix no backtrack"
+            },
+            {
+                concept: "Rolling Hash (Rabin-Karp)",
+                simple_explanation: "Update hash in O(1) as window slides.",
+                detailed_explanation: "Precompute base^(M-1). When window slides: remove contribution of character leaving left: hash = hash - (leftChar × power), shift everything: hash = hash × base, add contribution of new character entering right: hash = hash + rightChar. All operations O(1). With mod to keep numbers manageable (but introduces collision risk).",
+                search_term: "rolling hash base power O(1) update slide window"
+            }
+        ];
+    }
+    else {
+        sections = [
+            {
+                title: "Definition & Core Concepts",
+                search_term: topic + " definition core concepts",
+                points: [
+                    {
+                        heading: "What is " + topic + "?",
+                        explanation: introDef,
+                        search_term: topic + " what is definition"
+                    },
+                    {
+                        heading: "Key Characteristics",
+                        explanation: topic + " has several important characteristics that define its behavior and usage patterns. Understanding these fundamental properties is essential for effective application in problem-solving and system design.",
+                        search_term: topic + " characteristics properties"
+                    }
+                ]
+            },
+            {
+                title: "How It Works",
+                search_term: topic + " how it works mechanism",
+                points: [
+                    {
+                        heading: "Working Mechanism",
+                        explanation: "The internal mechanism of " + topic + " involves a systematic approach to processing or organizing information. Each step builds upon the previous one, creating an efficient pipeline or structure that enables the desired functionality.",
+                        search_term: topic + " mechanism internal working"
+                    },
+                    {
+                        heading: "Step-by-Step Process",
+                        explanation: "Understanding the step-by-step process of " + topic + " reveals the underlying logic. Start with initialization, proceed through core operations, and conclude with result generation or cleanup. Each phase has specific objectives and constraints.",
+                        search_term: topic + " step by step process"
+                    }
+                ]
+            },
+            {
+                title: "Types & Variations",
+                search_term: topic + " types variations",
+                points: [
+                    {
+                        heading: "Common Types",
+                        explanation: "There are several types or variations of " + topic + ", each optimized for specific scenarios. These variations may trade off different characteristics like performance, memory usage, simplicity, or specific feature sets.",
+                        search_term: topic + " types common variations"
+                    },
+                    {
+                        heading: "Comparison of Approaches",
+                        explanation: "Different approaches to implementing or using " + topic + " have different trade-offs. Understanding when to use which variation is key to effective engineering. Factors to consider include: time complexity, space requirements, implementation complexity, and specific problem constraints.",
+                        search_term: topic + " comparison approaches trade offs"
+                    }
+                ]
+            },
+            {
+                title: "Applications & Use Cases",
+                search_term: topic + " real world applications uses",
+                points: [
+                    {
+                        heading: "Real-World Applications",
+                        explanation: topic + " finds applications across various domains of computer science and software engineering. Its versatility makes it suitable for everything from low-level system programming to high-level application development and data processing.",
+                        search_term: topic + " applications real world uses"
+                    },
+                    {
+                        heading: "Practical Examples",
+                        explanation: "Concrete examples demonstrate " + topic + " in action. These practical scenarios show how the theoretical concepts translate into tangible solutions for everyday programming challenges and system design problems.",
+                        search_term: topic + " practical examples scenarios"
+                    }
+                ]
+            },
+            {
+                title: "Advantages & Limitations",
+                search_term: topic + " advantages disadvantages limitations pros cons",
+                points: [
+                    {
+                        heading: "Key Advantages",
+                        explanation: topic + " offers several compelling advantages that make it a popular choice. These may include performance characteristics, simplicity, efficiency in certain scenarios, or specific properties that make it ideal for particular problem domains.",
+                        search_term: topic + " advantages benefits pros"
+                    },
+                    {
+                        heading: "Limitations & Trade-offs",
+                        explanation: "No technology is without trade-offs. " + topic + " has limitations that make it less suitable for certain scenarios. Understanding these constraints is crucial for making informed architectural decisions and choosing the right tool for each job.",
+                        search_term: topic + " limitations disadvantages cons trade offs"
+                    }
+                ]
+            }
+        ];
+        
+        keyConcepts = [
+            {
+                concept: "Core Definition",
+                simple_explanation: "Fundamental understanding of " + topic,
+                detailed_explanation: topic + " is an important concept in computer science and software engineering. Understanding its core definition, purpose, and basic structure is the foundation for deeper learning and effective application.",
+                search_term: topic + " definition purpose"
+            },
+            {
+                concept: "Practical Application",
+                simple_explanation: "How to use " + topic + " in real problems",
+                detailed_explanation: "Theoretical knowledge must be complemented by practical application. Knowing WHEN and HOW to apply " + topic + " is often more important than memorizing its definition. Look for patterns in problems where this concept is the natural fit.",
+                search_term: topic + " how to use when to apply"
+            }
+        ];
+    }
+    
+    const notesData = {
+        topic: topic,
+        introduction: {
+            title: "Introduction to " + topic,
+            definition: introDef,
+            simple_explanation: introSimple,
+            search_term: topic.toLowerCase() + " introduction overview"
+        },
+        sections: sections,
+        key_concepts: keyConcepts
+    };
+    
+    return JSON.stringify(notesData, null, 2);
 }
 
 function captureFrame(){
@@ -4484,115 +6127,192 @@ return null;
 }
 }
 
-function buildVisualNotesHTML(data, topic){
+function buildVisualNotesHTML(data, topic, images = []){
 let html = "";
+let globalImageIndex = 0;
 
-if(data.hero){
+window.__galleryImages = images || [];
+
+function renderInlineImage(sectionTitle, fallbackSearchTerm = ""){
+  if(globalImageIndex >= images.length) return "";
+  
+  const img = images[globalImageIndex];
+  if(!img || !img.imageUrl) {
+    globalImageIndex++;
+    return "";
+  }
+  
+  const currentIdx = globalImageIndex;
+  globalImageIndex++;
+  
+  const sequenceLabel = img.sequenceLabel || "📷 Visual";
+  const imgTitle = img.sectionTitle || img.fullTitle || sectionTitle || img.title || "Visual";
+  const imgQuery = img.query || fallbackSearchTerm || imgTitle;
+  
+  return `
+<div onclick="openImageModal(${currentIdx})" style="border-radius:14px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);overflow:hidden;cursor:pointer;transition:all 0.3s;margin:16px 0;" onmouseover="this.style.borderColor='rgba(139,92,246,0.3)';this.style.background='rgba(139,92,246,0.05)';" onmouseout="this.style.borderColor='rgba(255,255,255,0.05)';this.style.background='rgba(255,255,255,0.02)';">
+  <div style="position:relative;overflow:hidden;background:#0f172a;min-height:140px;display:flex;align-items:center;justify-content:center;">
+    <div style="position:absolute;top:10px;left:10px;padding:6px 12px;border-radius:8px;background:linear-gradient(135deg,#8b5cf6,#3b82f6);color:white;font-size:12px;font-weight:700;z-index:10;">${escapeHtml(sequenceLabel)}</div>
+    <div style="position:absolute;top:10px;right:10px;padding:6px 10px;border-radius:8px;background:rgba(0,0,0,0.6);color:white;font-size:11px;font-weight:600;z-index:10;">🔍 Click to enlarge</div>
+    <img src="${escapeHtml(img.imageUrl)}" 
+         alt="${escapeHtml(imgTitle)}" 
+         style="width:100%;height:auto;max-height:200px;object-fit:contain;"
+         onerror="this.style.display='none';this.parentNode.innerHTML='<div style=\\'padding:30px;text-align:center;color:#94a3b8;\\'>🖼️ Visual not available</div>';">
+  </div>
+  <div style="padding:12px 14px;">
+    <div style="font-size:14px;font-weight:700;color:#c4b5fd;margin-bottom:4px;">${escapeHtml(imgTitle)}</div>
+    ${imgQuery ? `<div style="font-size:11px;color:#a78bfa;">🔍 ${escapeHtml(imgQuery)}</div>` : ""}
+  </div>
+</div>`;
+}
+
+if(data.introduction){
+const intro = data.introduction;
+const heroTitle = intro.title || topic;
+const heroSubtitle = intro.simple_explanation || intro.definition || "";
+
 html += `
 <div class="card" style="text-align:center;padding:40px;">
 <div style="font-size:48px;font-weight:900;margin-bottom:16px;background:linear-gradient(to right,#a78bfa,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
-${escapeHtml(data.hero.title || topic)}
+${escapeHtml(heroTitle)}
 </div>
 <p style="font-size:20px;color:#dbeafe;line-height:1.6;max-width:700px;margin:0 auto;">
-${escapeHtml(data.hero.subtitle || "")}
+${escapeHtml(heroSubtitle)}
 </p>
+${intro.definition ? `<p style="font-size:16px;color:#94a3b8;line-height:1.6;max-width:700px;margin:16px auto 0 auto;">
+<strong style="color:#a78bfa;">📖 Definition:</strong> ${escapeHtml(intro.definition)}
+</p>` : ""}
 </div>`;
+
+html += renderInlineImage("Introduction", data.introduction.search_term || topic);
 }
 
-if(data.quick_understanding && data.quick_understanding.length){
+if(data.sections && data.sections.length){
+for(let sIdx=0;sIdx<data.sections.length;sIdx++){
+const section = data.sections[sIdx];
+const sectionTitle = section.title || `Section ${sIdx + 1}`;
+
 html += `
 <div class="card">
-<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">⚡ Quick Understanding</h2>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;">
-${data.quick_understanding.map((item,i)=>`
-<div style="padding:18px;border-radius:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);display:flex;align-items:start;gap:12px;">
-<div style="min-width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#3b82f6);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;">${i+1}</div>
-<div style="color:#dbeafe;font-size:15px;line-height:1.6;">${escapeHtml(item)}</div>
-</div>
-`).join("")}
-</div>
+<h2 style="font-size:32px;font-weight:900;margin-bottom:12px;">📚 ${escapeHtml(sectionTitle)}</h2>`;
+
+html += renderInlineImage(sectionTitle, section.search_term || sectionTitle);
+
+html += `<div style="display:grid;gap:16px;margin-top:16px;">`;
+
+if(section.points && section.points.length){
+for(let pIdx=0;pIdx<section.points.length;pIdx++){
+const point = section.points[pIdx];
+const pointTitle = point.heading || `Step ${pIdx + 1}`;
+
+html += `
+<div style="padding:20px;border-radius:18px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);">
+<h3 style="font-size:20px;font-weight:800;margin-bottom:10px;color:#c4b5fd;">${escapeHtml(pointTitle)}</h3>`;
+
+const pointImg = renderInlineImage(pointTitle, point.search_term || pointTitle);
+if(pointImg){
+  html += pointImg;
+}
+
+html += `<p style="color:#dbeafe;line-height:1.8;font-size:15px;">${escapeHtml(point.explanation || "")}</p>
 </div>`;
 }
+}
 
-if(data.visual_story && data.visual_story.length){
-window.__visStoryScenes = data.visual_story;
-html += '<div class="card">';
-html += '<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">🎬 Visual Story</h2>';
-html += '<div id="visStoryContainer" style="border-radius:20px;background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);overflow:hidden;padding:24px;">';
-html += '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;align-items:center;">';
-html += '<div id="visStoryStep" style="font-size:15px;color:#94a3b8;font-weight:600;">Scene 1/' + data.visual_story.length + '</div>';
-html += '<div style="flex:1;min-width:100px;height:6px;border-radius:3px;background:rgba(255,255,255,0.1);max-width:300px;"><div id="visStoryBar" style="height:100%;width:' + Math.round(100/data.visual_story.length) + '%;border-radius:3px;background:linear-gradient(90deg,#8b5cf6,#3b82f6);transition:width 0.5s;"></div></div>';
-html += '<button class="btn" onclick="visStoryPrev()" id="visStoryPrevBtn" style="background:rgba(255,255,255,0.08);color:white;padding:10px 20px;border-radius:14px;border:1px solid rgba(255,255,255,0.1);font-size:14px;cursor:pointer;opacity:0.5;" disabled>◀ Prev</button>';
-html += '<button class="btn" onclick="visStoryNext()" id="visStoryNextBtn" style="background:linear-gradient(135deg,#8b5cf6,#3b82f6);color:white;padding:10px 20px;border-radius:14px;border:none;font-size:14px;cursor:pointer;font-weight:700;">Next ▶</button>';
-html += '</div>';
-html += '<div id="visStoryScene" style="padding:0;min-height:100px;"></div>';
-html += '</div></div>';
-
-var storyTopic = (data.topic || topic || "").toLowerCase();
-if(storyTopic.includes("array") || storyTopic === "arrays"){
-html += '<div class="card">';
-html += '<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">⚡ Interactive Array Lab</h2>';
-html += '<div id="arrayVisualizerContainer" style="border-radius:20px;background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);overflow:hidden;"><div style="padding:24px;">';
-html += '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;align-items:center;">';
-html += '<div id="arrayStepIndicator" style="font-size:15px;color:#94a3b8;font-weight:600;">Array Operations</div>';
-html += '<button class="btn" onclick="arrayVisReset()" style="background:rgba(239,68,68,0.2);color:#fca5a5;padding:10px 20px;border-radius:14px;border:1px solid rgba(239,68,68,0.3);font-size:14px;cursor:pointer;">🔄 Reset</button>';
-html += '</div>';
-html += '<div id="arrayVisStatus" style="font-size:16px;color:#93c5fd;font-weight:600;margin-bottom:16px;min-height:24px;">💡 Try the operations below</div>';
-html += '<div id="arrayVisBoxes" style="display:flex;gap:10px;flex-wrap:wrap;min-height:80px;padding:20px;border-radius:16px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.06);align-items:center;justify-content:center;"><div style="color:#64748b;font-size:14px;">Empty Array []</div></div>';
-html += '<div id="arrayLengthDisplay" style="font-size:13px;color:#64748b;margin-top:12px;text-align:center;">Length: 0</div>';
-html += '<div style="margin-top:16px;display:flex;gap:12px;flex-wrap:wrap;align-items:end;">';
-html += '<div style="flex:1;min-width:150px;"><div style="font-size:12px;color:#64748b;margin-bottom:4px;">Value</div><input type="text" id="arrayCustomValue" style="padding:10px 14px;font-size:14px;width:100%;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:white;outline:none;" placeholder="Enter value"></div>';
-html += '<button class="btn" onclick="arrayVisCustomPush()" style="background:rgba(34,197,94,0.2);color:#86efac;padding:10px 20px;border-radius:14px;border:1px solid rgba(34,197,94,0.3);font-size:14px;cursor:pointer;">➕ Push</button>';
-html += '<button class="btn" onclick="arrayVisCustomPop()" style="background:rgba(248,113,113,0.2);color:#fca5a5;padding:10px 20px;border-radius:14px;border:1px solid rgba(248,113,113,0.3);font-size:14px;cursor:pointer;">➖ Pop</button>';
-html += '<button class="btn" onclick="arrayVisCustomUpdate()" style="background:rgba(251,191,36,0.2);color:#fde68a;padding:10px 20px;border-radius:14px;border:1px solid rgba(251,191,36,0.3);font-size:14px;cursor:pointer;">✏️ Update First</button>';
-html += '</div></div></div></div>';
+html += `</div></div>`;
 }
 }
 
-if(data.core_concepts && data.core_concepts.length){
+if(data.key_concepts && data.key_concepts.length){
 html += `
 <div class="card">
-<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">📚 Core Concepts</h2>
-<div style="display:grid;gap:20px;">
-${data.core_concepts.map(concept=>`
+<h2 style="font-size:32px;font-weight:900;margin-bottom:12px;">🔬 Key Concepts</h2>`;
+
+html += renderInlineImage("Key Concepts", "key concepts " + topic);
+
+html += `<div style="display:grid;gap:20px;margin-top:16px;">
+${data.key_concepts.map((concept, idx)=>{
+  const conceptImg = renderInlineImage(concept.concept || `Concept ${idx+1}`, concept.search_term || concept.concept);
+  return `
 <div style="padding:22px;border-radius:18px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);">
-<h3 style="font-size:22px;font-weight:800;margin-bottom:12px;color:#c4b5fd;">${escapeHtml(concept.concept || "")}</h3>
-<div style="margin-bottom:10px;"><span style="color:#94a3b8;">🧒 Simple:</span> <span style="color:#dbeafe;">${escapeHtml(concept.simple || concept.simple_explanation || "")}</span></div>
-<div style="margin-bottom:10px;"><span style="color:#94a3b8;">🔬 Technical:</span> <span style="color:#93c5fd;">${escapeHtml(concept.technical || concept.technical_explanation || "")}</span></div>
-${concept.visual_understanding ? '<div style="margin-bottom:10px;"><span style="color:#94a3b8;">👁️ Visualize:</span> <span style="color:#dbeafe;">' + escapeHtml(concept.visual_understanding) + '</span></div>' : ''}
-${concept.real_world_example ? '<div style="margin-top:12px;padding:12px;border-radius:12px;background:rgba(99,102,241,0.1);"><span style="color:#818cf8;">🌍 Real World:</span> <span style="color:#dbeafe;">' + escapeHtml(concept.real_world_example) + '</span></div>' : ''}
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+<div style="min-width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#3b82f6);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;color:white;">${idx+1}</div>
+<h3 style="font-size:22px;font-weight:800;margin:0;color:#c4b5fd;">${escapeHtml(concept.concept || "")}</h3>
+</div>
+${conceptImg}
+${concept.simple_explanation ? `
+<div style="margin-bottom:12px;padding:14px;border-radius:14px;background:rgba(34,197,94,0.05);border:1px solid rgba(34,197,94,0.1);">
+<span style="color:#86efac;font-weight:600;">🧒 Simple Explanation:</span>
+<span style="color:#dbeafe;"> ${escapeHtml(concept.simple_explanation)}</span>
+</div>` : ''}
+${concept.detailed_explanation ? `
+<div style="margin-bottom:10px;">
+<span style="color:#94a3b8;font-weight:600;">📝 Detailed:</span>
+<span style="color:#93c5fd;"> ${escapeHtml(concept.detailed_explanation)}</span>
+</div>` : ''}
+</div>
+`;
+}).join("")}
+</div>
+</div>`;
+}
+
+if(data.examples && data.examples.length){
+html += `
+<div class="card">
+<h2 style="font-size:32px;font-weight:900;margin-bottom:12px;">💡 Examples</h2>`;
+
+html += renderInlineImage("Examples", "examples of " + topic);
+
+html += `<div style="display:grid;gap:16px;margin-top:16px;">
+${data.examples.map((ex, idx)=>`
+<div style="padding:20px;border-radius:18px;background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.1);">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+<span style="font-size:24px;">🎯</span>
+<h3 style="font-size:20px;font-weight:800;margin:0;color:#93c5fd;">${escapeHtml(ex.title || "Example " + (idx+1))}</h3>
+</div>
+${renderInlineImage(ex.title || `Example ${idx+1}`, ex.search_term || ex.title)}
+<p style="color:#dbeafe;line-height:1.8;font-size:15px;margin:0;">${escapeHtml(ex.explanation || "")}</p>
 </div>
 `).join("")}
 </div>
 </div>`;
 }
 
-if(data.comparison_table && data.comparison_table.headers && data.comparison_table.rows && data.comparison_table.rows.length){
+if(data.comparison_table && data.comparison_table.headers && data.comparison_table.rows){
+html += renderComparisonTable(data.comparison_table);
+}
+
+if(data.advantages && data.advantages.length){
 html += `
 <div class="card">
-<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">📊 Comparison</h2>
-<div style="overflow:auto;border-radius:16px;border:1px solid rgba(255,255,255,0.06);">
-<table style="width:100%;border-collapse:collapse;">
-<thead>
-<tr>${data.comparison_table.headers.map(h=>`<th style="padding:14px 18px;background:rgba(139,92,246,0.2);font-weight:700;text-align:left;color:#c4b5fd;border-bottom:1px solid rgba(255,255,255,0.06);">${escapeHtml(h)}</th>`).join("")}</tr>
-</thead>
-<tbody>
-${data.comparison_table.rows.map(row=>`<tr>${row.map((cell,i)=>`<td style="padding:12px 18px;border-bottom:1px solid rgba(255,255,255,0.04);color:#dbeafe;${i===0?'font-weight:600;':''}">${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}
-</tbody>
-</table>
+<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">✅ Advantages</h2>
+<div style="display:grid;gap:12px;">
+${data.advantages.map(adv=>`
+<div style="display:flex;gap:12px;padding:16px 18px;border-radius:14px;background:rgba(34,197,94,0.05);border:1px solid rgba(34,197,94,0.1);">
+<span style="color:#4ade80;font-size:20px;">✓</span>
+<div>
+<span style="color:#4ade80;font-weight:700;">${escapeHtml(adv.point || "")}</span>
+${adv.explanation ? `<p style="color:#94a3b8;font-size:14px;margin:4px 0 0 0;line-height:1.6;">${escapeHtml(adv.explanation)}</p>` : ""}
+</div>
+</div>
+`).join("")}
 </div>
 </div>`;
 }
 
-if(data.applications && data.applications.length){
+if(data.disadvantages && data.disadvantages.length){
 html += `
 <div class="card">
-<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">🌍 Real-World Applications</h2>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;">
-${data.applications.map(app=>`
-<div style="padding:16px;border-radius:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);">
-<span style="font-size:24px;margin-right:8px;">🚀</span>
-<span style="color:#dbeafe;">${escapeHtml(app)}</span>
+<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">❌ Disadvantages</h2>
+<div style="display:grid;gap:12px;">
+${data.disadvantages.map(adv=>`
+<div style="display:flex;gap:12px;padding:16px 18px;border-radius:14px;background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.1);">
+<span style="color:#f87171;font-size:20px;">✗</span>
+<div>
+<span style="color:#f87171;font-weight:700;">${escapeHtml(adv.point || "")}</span>
+${adv.explanation ? `<p style="color:#94a3b8;font-size:14px;margin:4px 0 0 0;line-height:1.6;">${escapeHtml(adv.explanation)}</p>` : ""}
+</div>
 </div>
 `).join("")}
 </div>
@@ -4602,12 +6322,12 @@ ${data.applications.map(app=>`
 if(data.important_points && data.important_points.length){
 html += `
 <div class="card">
-<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">⭐ Important Points</h2>
+<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">⭐ Important Points for Exam</h2>
 <div style="display:grid;gap:12px;">
-${data.important_points.map(p=>`
+${data.important_points.map((p, idx)=>`
 <div style="display:flex;gap:12px;padding:14px 18px;border-radius:12px;background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.1);">
-<span style="color:#fde68a;">⭐</span>
-<span style="color:#dbeafe;">${escapeHtml(p)}</span>
+<span style="color:#fde68a;font-weight:700;font-size:16px;">${idx+1}.</span>
+<span style="color:#dbeafe;line-height:1.6;">${escapeHtml(p)}</span>
 </div>
 `).join("")}
 </div>
@@ -4647,207 +6367,103 @@ notesOutput.innerHTML =
 const extractedText =
 await extractFileText(file);
 
-const prompt = `You are an ELITE UNIVERSAL AI VISUAL SIMULATION ENGINE.
+const prompt = `You are an EXPERT TEACHER and EXAM NOTES GENERATOR.
 
-Your job is to transform ANY topic in the world into:
-- realistic visual learning
-- cinematic educational storytelling
-- animated step-by-step simulations
-- beginner-friendly visual explanations
-- immersive educational experiences
+Create comprehensive, structured exam-ready notes for the topic below.
 
-IMPORTANT:
+TOPIC: ${topic}
 
-The student should feel:
-- the topic is happening in real life
-- they are watching a cinematic documentary
-- they are seeing the process visually
-- they are experiencing a real dry run
-- they understand concepts visually instead of memorizing theory
+${extractedText ? "EXTRA CONTEXT FROM UPLOADED FILE: " + extractedText : ""}
 
-==================================================
+IMPORTANT RULES:
+1. Return ONLY VALID JSON - no markdown, no explanations outside JSON
+2. Make sure each concept is explained clearly for exam preparation
+3. Use simple language that students can understand
+4. Each concept should have a clear "search_term" that can be used to find related images
+5. If the topic involves comparing different things (e.g., types of something, before/after, methods), include a comparison_table
 
-YOUR ROLE:
-
-You are NOT a normal notes generator.
-
-You are:
-- AI teacher
-- AI visual simulator
-- AI educational storyteller
-- AI cinematic learning engine
-
-==================================================
-
-CRITICAL RULES:
-
-1. Return ONLY VALID JSON.
-2. No markdown.
-3. No explanations outside JSON.
-4. Keep scenes realistic and visual.
-5. Every scene should feel alive.
-6. Every scene should show motion and process.
-7. Make concepts visually understandable.
-8. Keep explanations short and beginner-friendly.
-9. Maximum 5 scenes only.
-10. Optimize for token limits.
-11. Adapt automatically for ANY topic in the world.
-12. Focus on VISUAL UNDERSTANDING first.
-13. Every topic should feel immersive.
-
-==================================================
-
-IMPORTANT LEARNING STYLE:
-
-Teach like:
-- cinematic documentary
-- visual storytelling
-- real-world simulation
-- educational movie
-- interactive dry run
-
-Students should feel:
-
-"I SAW the topic happen."
-
-==================================================
-
-TOPIC TYPES HANDLING:
-
-IF topic is:
-- coding → show data structures visually moving
-- biology → show realistic body processes
-- history → show cinematic historical recreations
-- networking → show packets/data movement
-- blockchain → show blocks and transactions visually
-- physics → show realistic force/motion simulations
-- chemistry → show molecular reactions
-- geography → show realistic earth/environment visuals
-- economy → show money flow and systems visually
-
-Automatically adapt visuals to topic type.
-
-==================================================
-
-RETURN FORMAT:
-
+RETURN FORMAT (JSON):
 {
-  "topic":"Topic Name",
-
-  "topic_type":"Detected topic category",
-
-  "learning_style":"Type of visual learning used",
-
-  "hero_scene":{
-    "title":"Opening cinematic title",
-
-    "subtitle":"Very simple beginner understanding",
-
-    "visual":"What visually appears",
-
-    "environment":"Scene environment",
-
-    "camera":"Opening camera style",
-
-    "mood":"Visual mood",
-
-    "video_prompt":"Detailed cinematic AI video prompt"
+  "topic": "Full topic name",
+  
+  "introduction": {
+    "title": "Introduction",
+    "definition": "Clear definition of the topic",
+    "simple_explanation": "Very simple explanation in 1-2 sentences",
+    "search_term": "Search term for images about this introduction"
   },
-
-  "real_world_connection":{
-    "analogy":"Real-life comparison",
-
-    "why_it_matters":"Why topic matters in real world"
-  },
-
-  "visual_dry_run":[
+  
+  "sections": [
     {
-      "scene_number":1,
-
-      "title":"Scene title",
-
-      "real_world_action":"What happens in real life",
-
-      "visual":"What student should visually see",
-
-      "animation":"What movement happens",
-
-      "camera_motion":"How camera moves",
-
-      "environment":"Scene environment",
-
-      "voiceover":"Short educational narration",
-
-      "sound_effect":"Scene sounds",
-
-      "understanding_goal":"What student should understand visually",
-
-      "video_prompt":"Detailed realistic cinematic AI video generation prompt"
+      "title": "Section 1 title (e.g., 'How It Works')",
+      "search_term": "Search term for images about this section",
+      "points": [
+        {
+          "heading": "Point heading",
+          "explanation": "Detailed explanation",
+          "search_term": "Search term for images about this point"
+        }
+      ]
     }
   ],
-
-  "core_concepts":[
+  
+  "key_concepts": [
     {
-      "concept":"Concept name",
-
-      "simple_explanation":"Very easy explanation",
-
-      "visual_understanding":"How to mentally visualize concept",
-
-      "real_world_example":"Real example"
+      "concept": "Concept name",
+      "simple_explanation": "Simple explanation",
+      "detailed_explanation": "Detailed explanation for exams",
+      "search_term": "Search term for images about this concept"
     }
   ],
-
-  "important_points":[
-    "Important point 1",
-    "Important point 2"
+  
+  "examples": [
+    {
+      "title": "Example title",
+      "explanation": "How this example works",
+      "search_term": "Search term for images about this example"
+    }
   ],
-
-  "summary":"Short visual memory summary"
+  
+  "comparison_table": {
+    "headers": ["Column 1", "Column 2", "Column 3"],
+    "rows": [
+      ["Row 1 Col 1", "Row 1 Col 2", "Row 1 Col 3"],
+      ["Row 2 Col 1", "Row 2 Col 2", "Row 2 Col 3"]
+    ]
+  },
+  
+  "advantages": [
+    {
+      "point": "Advantage point",
+      "explanation": "Detailed explanation"
+    }
+  ],
+  
+  "disadvantages": [
+    {
+      "point": "Disadvantage point",
+      "explanation": "Detailed explanation"
+    }
+  ],
+  
+  "important_points": [
+    "Important point 1 for exams",
+    "Important point 2 for exams",
+    "Important point 3 for exams",
+    "Important point 4 for exams",
+    "Important point 5 for exams"
+  ],
+  
+  "summary": "Complete summary of the topic in 3-4 sentences"
 }
 
-==================================================
-
-VISUAL QUALITY RULES:
-
-- photorealistic
-- cinematic
-- immersive
-- documentary style
-- realistic movement
-- realistic environments
-- realistic humans when needed
-- realistic physics
-- realistic lighting
-- no cartoon
-- no anime
-- no illustration
-- no childish style
-
-==================================================
-
-IMPORTANT:
-
-The AI should automatically decide:
-- what visuals fit topic
-- what simulation style fits topic
-- what real-world scenes fit topic
-- how students can best visualize topic
-
-==================================================
-
-GOAL:
-
-Turn ANY topic into:
-a visually understandable cinematic learning experience.
-
-==================================================
-
-TOPIC:
-${topic}
-
-EXTRA CONTENT:
-${extractedText || "No extra content provided."}`;
+Make sure:
+- sections has 3-5 sections covering the main parts of the topic
+- key_concepts has 5-8 important concepts
+- examples has 2-4 real-world examples
+- comparison_table is ONLY included if the topic benefits from comparison (like comparing types, methods, before/after)
+- search_term for each item should be specific enough to find relevant educational images
+- All explanations are clear and exam-focused`;
 
 const result =
 await askAI(prompt,"",4000);
@@ -4862,81 +6478,123 @@ const cleaned = String(result ?? "")
 data = JSON.parse(cleaned);
 isJson = true;
 
-// Transform new video format to legacy format
-var scenes = data.video_scenes || data.simulation_flow || data.visual_dry_run;
-if(scenes){
-  data.visual_story = scenes.map(function(s){
-    var expl = s.voiceover || s.visual;
-    var goal = s.understanding_goal || s.visual_goal;
-    if(goal) expl = expl + " 🎯 " + goal;
-    var visText = s.visual || "";
-    if(s.real_world_action) visText = s.real_world_action + ": " + visText;
-    if(s.camera_view) visText = "[" + s.camera_view + "] " + visText;
-    return {
-      scene_number: s.step_number || s.scene_number || s.scene_number,
-      title: s.title,
-      visual: (s.camera_motion || s.camera || "Cinematic shot") + ": " + visText + (s.animation ? ". " + s.animation : ""),
-      animation: s.animation || s.camera_motion || s.camera || "",
-      explanation: expl,
-      image_prompt: s.video_prompt || s.visual
-    };
-  });
-  if(data.hero_scene){
-    data.hero = {
-      title: data.hero_scene.title,
-      subtitle: data.hero_scene.subtitle || data.hero_scene.visual,
-      hero_image_prompt: (scenes[0]?.video_prompt || data.hero_scene.video_prompt || data.hero_scene.visual)
-    };
-  }
-  if(scenes.length){
-    data.quick_understanding = scenes.slice(0,3).map(function(s){ return s.visual; });
-  }
-  if(data.real_world_connection){
-    if(!data.quick_understanding) data.quick_understanding = [];
-    data.quick_understanding.unshift("🌍 " + data.real_world_connection.analogy + " — " + data.real_world_connection.why_it_matters);
-  }
-}
-if(data.summary && !data.ending_scene){
-  data.ending_scene = { visual: data.summary, voiceover: data.summary };
-}
-  if(data.ending_scene){
-    data.summary = data.ending_scene.voiceover || data.ending_scene.visual;
-  }
-  if(data.final_understanding){
-    if(data.summary) data.summary = data.summary + "\n\n" + data.final_understanding;
-    else data.summary = data.final_understanding;
-  }
-  if(data.real_world_example){
-    if(!data.quick_understanding) data.quick_understanding = [];
-    data.quick_understanding.unshift("🌍 Real-world example: " + data.real_world_example);
-  }
-  if(!data.core_concepts) data.core_concepts = [];
-  data.comparison_table = null;
-  data.applications = [];
-  if(!data.important_points) data.important_points = [];
+if(!data.sections) data.sections = [];
+if(!data.key_concepts) data.key_concepts = [];
+if(!data.examples) data.examples = [];
+if(!data.advantages) data.advantages = [];
+if(!data.disadvantages) data.disadvantages = [];
+if(!data.important_points) data.important_points = [];
+
 }catch(parseError){
 console.log("JSON parse failed, using markdown fallback", parseError);
 }
 
 let visualHtml = "";
 let mermaidCode = "";
-let conceptDiagramHtml = "";
+let topicImages = [];
+let imageSequenceData = [];
 
 if(isJson && data){
-visualHtml = buildVisualNotesHTML(data, topic);
+  imageSequenceData = [];
+  const searchTerms = [];
+  
+  if(data.introduction){
+    if(data.introduction.search_term){
+      searchTerms.push(data.introduction.search_term);
+      imageSequenceData.push({
+        search_term: data.introduction.search_term,
+        title: data.introduction.title || "Introduction",
+        sequenceLabel: "📖 Introduction",
+        fullTitle: "Introduction: " + (data.introduction.title || topic)
+      });
+    }
+  }
+  
+  if(data.sections && Array.isArray(data.sections)){
+    for(let sIdx=0;sIdx<data.sections.length;sIdx++){
+      const s = data.sections[sIdx];
+      const sectionNum = sIdx + 1;
+      
+      if(s.search_term){
+        searchTerms.push(s.search_term);
+        imageSequenceData.push({
+          search_term: s.search_term,
+          title: s.title || `Section ${sectionNum}`,
+          sequenceLabel: `📚 Section ${sectionNum}`,
+          fullTitle: s.title || `Section ${sectionNum}`
+        });
+      }
+      
+      if(s.points && Array.isArray(s.points)){
+        for(let pIdx=0;pIdx<s.points.length;pIdx++){
+          const p = s.points[pIdx];
+          const pointNum = pIdx + 1;
+          
+          if(p.search_term){
+            searchTerms.push(p.search_term);
+            imageSequenceData.push({
+              search_term: p.search_term,
+              title: p.heading || `Step ${pointNum}`,
+              sequenceLabel: `⚡ Step ${pointNum}`,
+              fullTitle: p.heading || `Step ${pointNum} in ${s.title || 'process'}`
+            });
+          }
+        }
+      }
+    }
+  }
+  
+  if(data.key_concepts && Array.isArray(data.key_concepts)){
+    for(let cIdx=0;cIdx<data.key_concepts.length;cIdx++){
+      const c = data.key_concepts[cIdx];
+      const conceptNum = cIdx + 1;
+      
+      if(c.search_term){
+        searchTerms.push(c.search_term);
+        imageSequenceData.push({
+          search_term: c.search_term,
+          title: c.concept || `Concept ${conceptNum}`,
+          sequenceLabel: `🔬 Concept ${conceptNum}`,
+          fullTitle: c.concept || `Key Concept ${conceptNum}`
+        });
+      }
+    }
+  }
+  
+  if(data.examples && Array.isArray(data.examples)){
+    for(let eIdx=0;eIdx<data.examples.length;eIdx++){
+      const e = data.examples[eIdx];
+      const exampleNum = eIdx + 1;
+      
+      if(e.search_term){
+        searchTerms.push(e.search_term);
+        imageSequenceData.push({
+          search_term: e.search_term,
+          title: e.title || `Example ${exampleNum}`,
+          sequenceLabel: `💡 Example ${exampleNum}`,
+          fullTitle: e.title || `Real-world Example ${exampleNum}`
+        });
+      }
+    }
+  }
+  
+  console.log("📋 Image sequence data:", imageSequenceData);
+  console.log("🔍 Search terms in order:", searchTerms);
+  
+  try{
+    topicImages = await generateTopicDiagrams(topic, data, imageSequenceData);
+    console.log("📸 Generated", topicImages.length, "topic-related diagrams");
+  }catch(e){
+    console.log("Diagram generation skipped:", e.message);
+    topicImages = [];
+  }
+
+visualHtml = buildVisualNotesHTML(data, topic, topicImages);
 
 mermaidCode = await generateDetailedMindMap(
 topic,
 `${topic}\n${extractedText}\n${JSON.stringify(data)}`
 );
-
- try{
-conceptDiagramHtml = await generateConceptDiagram(
-topic,
-`${topic}\n${extractedText}\n${JSON.stringify(data)}`,
-data
-);
-}catch(e){ console.log(e); }
 }
 
 let formatted = "";
@@ -4960,8 +6618,6 @@ class="upload-preview"
 notesOutput.innerHTML = `
 
 ${preview}
-
-${conceptDiagramHtml}
 
 ${mermaidCode ? `
 <div class="ai-diagram-card" style="margin-bottom:30px;">
@@ -5018,6 +6674,12 @@ notesOutput.scrollIntoView({
 behavior:"smooth"
 });
 
+const audioControls = document.getElementById("audioControls");
+if(audioControls){
+audioControls.style.display = "flex";
+populateVoiceList();
+}
+
 appData.notesGenerated++;
 appData.xp += 10;
 updateUI();
@@ -5027,6 +6689,359 @@ console.error(error);
 notesOutput.innerHTML = `<div style="padding:30px;text-align:center;color:#ef4444;font-size:18px;">❌ Error generating notes: ${error.message || "Please try again"}</div>`;
 }
 }
+
+let currentSpeechUtterance = null;
+let isSpeechPaused = false;
+let selectedVoice = null;
+let speechRate = 1;
+
+function populateVoiceList(){
+const voiceSelect = document.getElementById("voiceSelect");
+if(!voiceSelect) return;
+
+const voices = speechSynthesis.getVoices();
+voiceSelect.innerHTML = "";
+
+const hindiVoices = voices.filter(v => v.lang && v.lang.toLowerCase().includes('hi'));
+const englishVoices = voices.filter(v => v.lang && v.lang.toLowerCase().includes('en'));
+const otherVoices = voices.filter(v => !v.lang || (!v.lang.toLowerCase().includes('hi') && !v.lang.toLowerCase().includes('en')));
+
+const allVoices = [...hindiVoices, ...englishVoices, ...otherVoices];
+
+if(allVoices.length === 0){
+voiceSelect.innerHTML = '<option value="">Loading voices...</option>';
+return;
+}
+
+for(let i=0;i<allVoices.length;i++){
+const voice = allVoices[i];
+const option = document.createElement("option");
+option.value = i;
+option.textContent = `${voice.name} (${voice.lang})`;
+if(i === 0){
+option.selected = true;
+selectedVoice = voice;
+}
+voiceSelect.appendChild(option);
+}
+}
+
+if('speechSynthesis' in window){
+speechSynthesis.onvoiceschanged = populateVoiceList;
+}
+
+function changeVoice(){
+const voiceSelect = document.getElementById("voiceSelect");
+if(!voiceSelect) return;
+
+const voices = speechSynthesis.getVoices();
+const selectedIndex = parseInt(voiceSelect.value);
+if(voices[selectedIndex]){
+selectedVoice = voices[selectedIndex];
+}
+}
+
+function changeSpeechRate(){
+const rateSlider = document.getElementById("speechRate");
+const rateValue = document.getElementById("speechRateValue");
+if(rateSlider && rateValue){
+speechRate = parseFloat(rateSlider.value);
+rateValue.textContent = speechRate + "x";
+}
+}
+
+function getNotesTextForSpeech(){
+const notesOutput = document.getElementById("notesOutput");
+if(!notesOutput) return "";
+
+let text = "";
+const headings = notesOutput.querySelectorAll("h1, h2, h3");
+for(const h of headings){
+text += h.textContent + ". ";
+}
+
+const paragraphs = notesOutput.querySelectorAll("p");
+for(const p of paragraphs){
+text += p.textContent + " ";
+}
+
+const listItems = notesOutput.querySelectorAll("li");
+for(const li of listItems){
+text += li.textContent + ". ";
+}
+
+if(!text || text.trim().length < 10){
+text = notesOutput.textContent || "";
+}
+
+return text.substring(0, 5000);
+}
+
+function toggleAudioPlay(){
+const playBtn = document.getElementById("audioPlayBtn");
+const pauseBtn = document.getElementById("audioPauseBtn");
+
+if(!currentSpeechUtterance || isSpeechPaused === false && !speechSynthesis.speaking){
+playAudio();
+}else if(isSpeechPaused){
+resumeAudio();
+}
+}
+
+function playAudio(){
+if(!('speechSynthesis' in window)){
+alert("Text-to-speech not supported in your browser");
+return;
+}
+
+const text = getNotesTextForSpeech();
+if(!text || text.trim().length < 5){
+alert("Generate notes first to play audio");
+return;
+}
+
+if(speechSynthesis.speaking){
+speechSynthesis.cancel();
+}
+
+currentSpeechUtterance = new SpeechSynthesisUtterance(text);
+currentSpeechUtterance.rate = speechRate;
+currentSpeechUtterance.pitch = 1;
+currentSpeechUtterance.volume = 1;
+
+if(selectedVoice){
+currentSpeechUtterance.voice = selectedVoice;
+}
+
+currentSpeechUtterance.onstart = function(){
+const playBtn = document.getElementById("audioPlayBtn");
+const pauseBtn = document.getElementById("audioPauseBtn");
+if(playBtn) playBtn.style.display = "none";
+if(pauseBtn) pauseBtn.style.display = "inline-block";
+isSpeechPaused = false;
+};
+
+currentSpeechUtterance.onend = function(){
+const playBtn = document.getElementById("audioPlayBtn");
+const pauseBtn = document.getElementById("audioPauseBtn");
+if(playBtn) playBtn.style.display = "inline-block";
+if(pauseBtn) pauseBtn.style.display = "none";
+currentSpeechUtterance = null;
+isSpeechPaused = false;
+};
+
+currentSpeechUtterance.onerror = function(){
+const playBtn = document.getElementById("audioPlayBtn");
+const pauseBtn = document.getElementById("audioPauseBtn");
+if(playBtn) playBtn.style.display = "inline-block";
+if(pauseBtn) pauseBtn.style.display = "none";
+currentSpeechUtterance = null;
+isSpeechPaused = false;
+};
+
+speechSynthesis.speak(currentSpeechUtterance);
+}
+
+function pauseAudio(){
+if(speechSynthesis.speaking && !isSpeechPaused){
+speechSynthesis.pause();
+isSpeechPaused = true;
+const playBtn = document.getElementById("audioPlayBtn");
+const pauseBtn = document.getElementById("audioPauseBtn");
+if(playBtn){
+playBtn.style.display = "inline-block";
+playBtn.textContent = "▶ Resume";
+}
+if(pauseBtn) pauseBtn.style.display = "none";
+}
+}
+
+function resumeAudio(){
+if(isSpeechPaused){
+speechSynthesis.resume();
+isSpeechPaused = false;
+const playBtn = document.getElementById("audioPlayBtn");
+const pauseBtn = document.getElementById("audioPauseBtn");
+if(playBtn){
+playBtn.style.display = "none";
+playBtn.textContent = "▶ Play Audio";
+}
+if(pauseBtn) pauseBtn.style.display = "inline-block";
+}
+}
+
+function stopAudio(){
+if('speechSynthesis' in window){
+speechSynthesis.cancel();
+currentSpeechUtterance = null;
+isSpeechPaused = false;
+const playBtn = document.getElementById("audioPlayBtn");
+const pauseBtn = document.getElementById("audioPauseBtn");
+if(playBtn){
+playBtn.style.display = "inline-block";
+playBtn.textContent = "▶ Play Audio";
+}
+if(pauseBtn) pauseBtn.style.display = "none";
+}
+}
+
+let __currentModalIndex = 0;
+let __autoPlayInterval = null;
+let __isAutoPlaying = false;
+
+function openImageModal(index){
+const images = window.__galleryImages || [];
+if(images.length === 0) return;
+
+__currentModalIndex = index;
+updateModalDisplay();
+
+const modal = document.getElementById("imageModal");
+if(modal){
+modal.style.display = "flex";
+}
+
+document.body.style.overflow = "hidden";
+}
+
+function updateModalDisplay(){
+const images = window.__galleryImages || [];
+if(images.length === 0) return;
+
+const img = images[__currentModalIndex];
+if(!img || !img.imageUrl) return;
+
+const modalImg = document.getElementById("modalImage");
+const modalCounter = document.getElementById("modalCounter");
+const modalTitle = document.getElementById("modalTitle");
+const modalSearchTerm = document.getElementById("modalSearchTerm");
+const prevBtn = document.getElementById("modalPrevBtn");
+const nextBtn = document.getElementById("modalNextBtn");
+
+if(modalImg){
+modalImg.src = img.imageUrl;
+}
+
+const sequenceLabel = img.sequenceLabel || (`Image ${__currentModalIndex + 1}`);
+const displayTitle = img.sectionTitle || img.fullTitle || img.title || (`Visual ${__currentModalIndex + 1}`);
+
+if(modalCounter){
+modalCounter.textContent = `${sequenceLabel}  •  ${__currentModalIndex + 1} / ${images.length}`;
+}
+
+if(modalTitle){
+modalTitle.textContent = displayTitle;
+}
+
+if(modalSearchTerm){
+modalSearchTerm.textContent = img.query ? `🔍 Search: ${img.query}` : "Topic-related visual";
+}
+
+if(prevBtn){
+prevBtn.style.opacity = __currentModalIndex === 0 ? "0.4" : "1";
+prevBtn.disabled = __currentModalIndex === 0;
+}
+
+if(nextBtn){
+nextBtn.style.opacity = __currentModalIndex === images.length - 1 ? "0.4" : "1";
+nextBtn.disabled = __currentModalIndex === images.length - 1;
+}
+}
+
+function closeImageModal(){
+const modal = document.getElementById("imageModal");
+if(modal){
+modal.style.display = "none";
+}
+document.body.style.overflow = "auto";
+
+stopAutoPlay();
+}
+
+function prevImageModal(){
+const images = window.__galleryImages || [];
+if(__currentModalIndex > 0){
+__currentModalIndex--;
+updateModalDisplay();
+}
+}
+
+function nextImageModal(){
+const images = window.__galleryImages || [];
+if(__currentModalIndex < images.length - 1){
+__currentModalIndex++;
+updateModalDisplay();
+} else if(__isAutoPlaying){
+stopAutoPlay();
+}
+}
+
+function toggleAutoPlay(){
+if(__isAutoPlaying){
+stopAutoPlay();
+} else {
+startAutoPlay();
+}
+}
+
+function startAutoPlay(){
+if(__autoPlayInterval){
+clearInterval(__autoPlayInterval);
+}
+
+__isAutoPlaying = true;
+
+const speedSlider = document.getElementById("modalSpeed");
+const speed = speedSlider ? parseInt(speedSlider.value) : 3;
+const delay = (11 - speed) * 300;
+
+const autoBtn = document.getElementById("modalAutoPlayBtn");
+if(autoBtn){
+autoBtn.textContent = "⏸ Pause";
+autoBtn.style.background = "rgba(251,191,36,0.2)";
+autoBtn.style.color = "#fde68a";
+autoBtn.style.borderColor = "rgba(251,191,36,0.3)";
+}
+
+__autoPlayInterval = setInterval(function(){
+const images = window.__galleryImages || [];
+if(__currentModalIndex < images.length - 1){
+nextImageModal();
+} else {
+stopAutoPlay();
+}
+}, delay);
+}
+
+function stopAutoPlay(){
+if(__autoPlayInterval){
+clearInterval(__autoPlayInterval);
+__autoPlayInterval = null;
+}
+
+__isAutoPlaying = false;
+
+const autoBtn = document.getElementById("modalAutoPlayBtn");
+if(autoBtn){
+autoBtn.textContent = "▶ Play";
+autoBtn.style.background = "rgba(34,197,94,0.2)";
+autoBtn.style.color = "#4ade80";
+autoBtn.style.borderColor = "rgba(34,197,94,0.3)";
+}
+}
+
+document.addEventListener("keydown", function(e){
+const modal = document.getElementById("imageModal");
+if(!modal || modal.style.display === "none") return;
+
+if(e.key === "Escape"){
+closeImageModal();
+} else if(e.key === "ArrowLeft"){
+prevImageModal();
+} else if(e.key === "ArrowRight"){
+nextImageModal();
+}
+});
 
 function downloadNotes(){
 const notesEl =
@@ -6762,6 +8777,36 @@ setDifficulty("medium");
 );
 
 </script>
+
+<div id="imageModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:999999;justify-content:center;align-items:center;flex-direction:column;">
+  
+  <button onclick="closeImageModal()" style="position:absolute;top:20px;right:20px;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;font-size:28px;cursor:pointer;display:flex;justify-content:center;align-items:center;transition:all 0.3s;" onmouseover="this.style.background='rgba(239,68,68,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">✕</button>
+  
+  <div id="modalImageContainer" style="position:relative;display:flex;align-items:center;justify-content:center;flex:1;padding:80px 20px;max-width:90vw;max-height:80vh;">
+    <img id="modalImage" src="" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:12px;box-shadow:0 0 60px rgba(139,92,246,0.3);">
+  </div>
+  
+  <div id="modalNav" style="display:flex;align-items:center;gap:20px;padding:20px;background:rgba(255,255,255,0.03);border-top:1px solid rgba(255,255,255,0.08);width:100%;justify-content:center;">
+    
+    <button id="modalPrevBtn" onclick="prevImageModal()" style="padding:12px 24px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;color:white;font-weight:700;font-size:14px;cursor:pointer;transition:all 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">◀ Previous</button>
+    
+    <div id="modalCounter" style="min-width:100px;text-align:center;font-size:16px;font-weight:700;color:#c4b5fd;">1 / 6</div>
+    
+    <button id="modalNextBtn" onclick="nextImageModal()" style="padding:12px 24px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;color:white;font-weight:700;font-size:14px;cursor:pointer;transition:all 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">Next ▶</button>
+    
+    <div style="margin-left:20px;display:flex;align-items:center;gap:10px;">
+      <span style="color:#94a3b8;font-size:13px;">Auto-play:</span>
+      <button id="modalAutoPlayBtn" onclick="toggleAutoPlay()" style="padding:8px 16px;border-radius:8px;background:rgba(34,197,94,0.2);border:1px solid rgba(34,197,94,0.3);color:#4ade80;font-weight:600;font-size:13px;cursor:pointer;">▶ Play</button>
+      <input type="range" id="modalSpeed" min="1" max="10" value="3" style="width:80px;">
+    </div>
+  </div>
+  
+  <div id="modalInfo" style="position:absolute;bottom:100px;left:50%;transform:translateX(-50%);padding:12px 24px;border-radius:12px;background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.3);text-align:center;max-width:600px;">
+    <div id="modalTitle" style="font-weight:700;color:#c4b5fd;margin-bottom:4px;">Image Title</div>
+    <div id="modalSearchTerm" style="font-size:13px;color:#94a3b8;">Search term used</div>
+  </div>
+  
+</div>
 
 </body>
 </html>
