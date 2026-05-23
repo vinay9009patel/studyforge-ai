@@ -3334,27 +3334,25 @@ async function generateConceptDiagram(topic, contextText){
         <h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">🖼️ Concept Gallery - ${escapeHtml(topic)}</h2>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;">`;
       
-      for(var i=0;i<images.length;i++){
+       for(var i=0;i<images.length;i++){
         var img = images[i];
         var expl = defaultExplanations[i] || "Educational illustration";
         var title = img.title || ("Illustration " + (i+1));
         
         html += `<div style="border-radius:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);overflow:hidden;">
-          <a href="${escapeHtml(img.pageUrl || '#')}" target="_blank" rel="noopener" style="display:block;text-decoration:none;">
-            <div style="position:relative;overflow:hidden;background:#0f172a;min-height:180px;display:flex;align-items:center;justify-content:center;">
-              <img src="${escapeHtml(img.imageUrl)}" 
-                   alt="${escapeHtml(title)}" 
-                   style="width:100%;height:auto;max-height:250px;object-fit:contain;"
-                   onerror="this.style.display='none';this.parentNode.innerHTML='<div style=\\'padding:40px;text-align:center;color:#94a3b8;\\'>🖼️ Image</div>';">
-            </div>
-          </a>
+          <div style="position:relative;overflow:hidden;background:#0f172a;min-height:180px;display:flex;align-items:center;justify-content:center;">
+            <img src="${escapeHtml(img.imageUrl)}" 
+                 alt="${escapeHtml(title)}" 
+                 style="width:100%;height:auto;max-height:250px;object-fit:contain;"
+                 onerror="this.style.display='none';this.parentNode.innerHTML='<div style=\\'padding:40px;text-align:center;color:#94a3b8;\\'>🖼️ Image</div>';">
+          </div>
           <div style="padding:16px;">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
               <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#3b82f6);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:white;">${i+1}</div>
               <h3 style="font-size:16px;font-weight:700;color:#c4b5fd;margin:0;">${escapeHtml(title)}</h3>
             </div>
             <p style="font-size:13px;color:#94a3b8;line-height:1.6;margin:0;">${escapeHtml(expl)}</p>
-            ${img.query ? `<div style="margin-top:8px;padding:6px 10px;border-radius:8px;background:rgba(139,92,246,0.1);font-size:11px;color:#a78bfa;">🔍 Search: "${escapeHtml(img.query)}"</div>` : ""}
+            ${img.query ? `<div style="margin-top:8px;padding:6px 10px;border-radius:8px;background:rgba(139,92,246,0.1);font-size:11px;color:#a78bfa;">🔍 ${escapeHtml(title)}</div>` : ""}
           </div>
         </div>`;
       }
@@ -3363,7 +3361,7 @@ async function generateConceptDiagram(topic, contextText){
         <div style="margin-top:16px;padding:14px;border-radius:12px;background:rgba(99,102,241,0.05);border:1px solid rgba(99,102,241,0.1);">
           <div style="display:flex;align-items:center;gap:8px;">
             <span style="font-size:16px;">📚</span>
-            <span style="font-size:13px;color:#818cf8;">Images from Wikipedia Commons • Click any image to learn more on Wikipedia</span>
+            <span style="font-size:13px;color:#818cf8;">Images from Wikipedia Commons</span>
           </div>
         </div>
       </div>`;
@@ -4313,15 +4311,22 @@ if(geminiResult) return geminiResult;
 console.log("Gemini also failed, using local fallback");
 
 let fallbackTopic = "Topic";
-const qMatch = prompt.match(/["""]([^"""]+)["""]/);
-if(qMatch) fallbackTopic = qMatch[1].trim();
-else if(!fallbackTopic || fallbackTopic==="Topic"){
-  const tMatch = prompt.match(/Topic:\s*(.+)/i);
-  if(tMatch) fallbackTopic = tMatch[1].trim();
+
+const topicMatch = prompt.match(/^TOPIC:\s*(.+?)(?:\n|$)/im);
+if(topicMatch){
+  fallbackTopic = topicMatch[1].trim();
+} else {
+  const simpleTopicMatch = prompt.match(/Topic:\s*(.+?)(?:\n|$)/i);
+  if(simpleTopicMatch){
+    fallbackTopic = simpleTopicMatch[1].trim();
+  }
 }
-if(!fallbackTopic || fallbackTopic==="Topic" || fallbackTopic.length>60){
+
+if(!fallbackTopic || fallbackTopic==="Topic" || fallbackTopic.length>60 || fallbackTopic.length<2){
   fallbackTopic = "Topic";
 }
+
+window.__lastFallbackTopic = fallbackTopic;
 
 return `# ${fallbackTopic}
 
