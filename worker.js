@@ -18,6 +18,15 @@ export default {
       });
     }
 
+    if (request.method === "GET" && url.pathname.includes("/test-multi")) {
+      const queries = ["binary search", "search algorithm", "divide and conquer algorithm", "array data structure", "computer science algorithm"];
+      const result = await searchMultipleWikimediaImages(queries);
+      return new Response(JSON.stringify(result), { 
+        status: 200, 
+        headers: { "Content-Type": "application/json", ...cors } 
+      });
+    }
+
     if (request.method !== "POST") return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers: { "Content-Type": "application/json", ...cors } });
 
     let body;
@@ -26,8 +35,16 @@ export default {
     }
 
     try {
-      if (url.pathname.includes("gemini-image")) {
+      if (url.pathname.includes("gemini-image") || url.pathname.includes("image-search")) {
         const prompt = body.prompt || "education";
+        
+        if (body.queries && Array.isArray(body.queries)) {
+          const result = await searchMultipleWikimediaImages(body.queries);
+          return new Response(JSON.stringify(result), { 
+            status: 200, 
+            headers: { "Content-Type": "application/json", ...cors } 
+          });
+        }
         
         const wikimediaResult = await searchWikimediaImage(prompt);
         if (wikimediaResult && wikimediaResult.success) {
@@ -41,9 +58,48 @@ export default {
           }), { status: 200, headers: { "Content-Type": "application/json", ...cors } });
         }
         
+        if (env.GEMINI_API_KEY) {
+          const models = [
+            "gemini-2.0-flash-exp-image-generation",
+            "gemini-2.5-flash",
+            "gemini-2.5-pro"
+          ];
+          
+          for (const model of models) {
+            try {
+              const genConfig = model.includes("exp-image") ? {} : { responseModalities: ["IMAGE", "TEXT"] };
+              const bodyData = { contents: [{ parts: [{ text: "Create a photorealistic educational image: " + prompt }] }] };
+              if (Object.keys(genConfig).length) bodyData.generationConfig = genConfig;
+              
+              const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + env.GEMINI_API_KEY, {
+                method: "POST", 
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(bodyData)
+              });
+              
+              const d = await r.json();
+              if (!r.ok) continue;
+              
+              const parts = d?.candidates?.[0]?.content?.parts || [];
+              let img = "", alt = "";
+              for (const p of parts) { if (p.inlineData) img = p.inlineData.data; if (p.text) alt = p.text; }
+              
+              if (img) {
+                return new Response(JSON.stringify({ 
+                  imageBase64: img, 
+                  altText: alt, 
+                  success: true, 
+                  modelUsed: model,
+                  source: "gemini"
+                }), { status: 200, headers: { "Content-Type": "application/json", ...cors } });
+              }
+            } catch (e) { continue; }
+          }
+        }
+        
         return new Response(JSON.stringify({ 
           success: false, 
-          error: "Wikimedia search failed: " + (wikimediaResult?.error || "unknown"),
+          error: "All image sources failed: " + (wikimediaResult?.error || "unknown"),
           fallback: "canvas",
           searchQuery: extractKeywords(prompt)
         }), { status: 200, headers: { "Content-Type": "application/json", ...cors } });
@@ -126,7 +182,9 @@ async function searchWikimediaImage(prompt) {
             imageUrl: page.thumbnail.source,
             thumbnailUrl: page.thumbnail.source,
             title: page.title,
-            pageUrl: `https://en.wikipedia.org/wiki/${encodeURIComponent(page.title)}`
+            pageUrl: `https://en.wikipedia.org/wiki/${encodeURIComponent(page.title)}`,
+            width: page.thumbnail?.width || 600,
+            height: page.thumbnail?.height || 400
           };
         }
       }
@@ -136,5 +194,40 @@ async function searchWikimediaImage(prompt) {
     return { success: false, error: "Invalid response structure" };
   } catch (e) {
     return { success: false, error: "Exception: " + e.message };
+  }
+}
+
+async function searchMultipleWikimediaImages(queries) {
+  try {
+    const results = [];
+    
+    for (const query of queries) {
+      if (results.length >= 6) break;
+      
+      const result = await searchWikimediaImage(query);
+      
+      if (result.success) {
+        const alreadyExists = results.some(r => r.title === result.title || r.imageUrl === result.imageUrl);
+        if (!alreadyExists) {
+          results.push({
+            ...result,
+            query: query,
+            index: results.length
+          });
+        }
+      }
+    }
+    
+    return {
+      success: results.length > 0,
+      images: results,
+      count: results.length
+    };
+  } catch (e) {
+    return {
+      success: false,
+      error: e.message,
+      images: []
+    };
   }
 }

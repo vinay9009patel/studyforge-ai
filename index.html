@@ -3286,18 +3286,91 @@ async function drawCanvasDiagram(topic, concepts){
   return canvas.toDataURL("image/png", 0.9);
 }
 
+async function searchWikimediaImagesForTopic(topic, count = 6){
+  try{
+    const baseQueries = [
+      topic,
+      topic + " diagram",
+      topic + " illustration",
+      topic + " algorithm",
+      topic + " process",
+      topic + " structure",
+      topic + " explained",
+      "what is " + topic,
+      topic + " example"
+    ];
+    
+    const resp = await fetch(WORKER_URL + "/gemini-image", {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ queries: baseQueries, prompt: topic })
+    });
+    
+    const result = await resp.json();
+    return result;
+  }catch(e){
+    console.log("Wikimedia search error:", e);
+    return { success: false, images: [], error: e.message };
+  }
+}
+
 async function generateConceptDiagram(topic, contextText){
   try{
-    const geminiResult = await generateGeminiImage(`Educational infographic diagram for topic "${topic}". Create a detailed textbook-style illustration showing definition, key components, working mechanism, types, real-world applications, and important facts. Use clear labels, arrows, hierarchy, color coding, and visual elements. Include 6-8 concept areas with connections shown. Style: professional educational chart.`);
-
-    if(geminiResult.success){
-      return `<div class="ai-diagram-card" style="margin-bottom:30px;">
-        <div class="ai-diagram-title">🎨 AI Generated Concept Diagram</div>
-        <img src="data:image/png;base64,${geminiResult.imageBase64}" alt="Concept diagram for ${topic}" style="width:100%;display:block;border-radius:0 0 28px 28px;">
-        ${geminiResult.altText ? `<div style="padding:12px 20px;color:#94a3b8;font-size:13px;border-top:1px solid rgba(255,255,255,0.06);">${escapeHtml(geminiResult.altText)}</div>` : ""}
+    const imageResult = await searchWikimediaImagesForTopic(topic, 6);
+    
+    if(imageResult.success && imageResult.images && imageResult.images.length > 0){
+      const images = imageResult.images.slice(0, 6);
+      
+      const defaultExplanations = [
+        "Visual representation of the core concept",
+        "How the process works step-by-step",
+        "Key components and their relationships",
+        "Real-world application examples",
+        "Comparison with similar concepts",
+        "Summary and important takeaways"
+      ];
+      
+      let html = `<div class="card" style="margin-bottom:30px;">
+        <h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">🖼️ Concept Gallery - ${escapeHtml(topic)}</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;">`;
+      
+      for(var i=0;i<images.length;i++){
+        var img = images[i];
+        var expl = defaultExplanations[i] || "Educational illustration";
+        var title = img.title || ("Illustration " + (i+1));
+        
+        html += `<div style="border-radius:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);overflow:hidden;">
+          <a href="${escapeHtml(img.pageUrl || '#')}" target="_blank" rel="noopener" style="display:block;text-decoration:none;">
+            <div style="position:relative;overflow:hidden;background:#0f172a;min-height:180px;display:flex;align-items:center;justify-content:center;">
+              <img src="${escapeHtml(img.imageUrl)}" 
+                   alt="${escapeHtml(title)}" 
+                   style="width:100%;height:auto;max-height:250px;object-fit:contain;"
+                   onerror="this.style.display='none';this.parentNode.innerHTML='<div style=\\'padding:40px;text-align:center;color:#94a3b8;\\'>🖼️ Image</div>';">
+            </div>
+          </a>
+          <div style="padding:16px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+              <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#3b82f6);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:white;">${i+1}</div>
+              <h3 style="font-size:16px;font-weight:700;color:#c4b5fd;margin:0;">${escapeHtml(title)}</h3>
+            </div>
+            <p style="font-size:13px;color:#94a3b8;line-height:1.6;margin:0;">${escapeHtml(expl)}</p>
+            ${img.query ? `<div style="margin-top:8px;padding:6px 10px;border-radius:8px;background:rgba(139,92,246,0.1);font-size:11px;color:#a78bfa;">🔍 Search: "${escapeHtml(img.query)}"</div>` : ""}
+          </div>
+        </div>`;
+      }
+      
+      html += `</div>
+        <div style="margin-top:16px;padding:14px;border-radius:12px;background:rgba(99,102,241,0.05);border:1px solid rgba(99,102,241,0.1);">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:16px;">📚</span>
+            <span style="font-size:13px;color:#818cf8;">Images from Wikipedia Commons • Click any image to learn more on Wikipedia</span>
+          </div>
+        </div>
       </div>`;
+      
+      return html;
     }
-  }catch(e){ console.log("Gemini fail:", e); }
+  }catch(e){ console.log("Wikimedia gallery fail:", e); }
 
   try{
     const raw = await askAI(`List 6 key educational concepts about "${topic}" as JSON. Format: [{"label":"short name","desc":"1-line explanation max 8 words"}] covering: definition, types, working, uses, pros/cons, example. Return ONLY valid JSON array.`, "Return JSON only.");
