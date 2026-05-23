@@ -2337,33 +2337,47 @@ function showFallbackVisual(scene){
 }
 
 async function generateSceneImage(scene, index, onSuccess){
-  var promptText = scene.video_prompt || scene.image_prompt || scene.visual || "Educational scene " + (index+1);
+  var promptText = scene.video_prompt || scene.image_prompt || scene.visual || scene.title || "Educational scene " + (index+1);
   var lowerTxt = (scene.title + " " + promptText).toLowerCase();
   var isMedical = lowerTxt.indexOf("digest")!==-1||lowerTxt.indexOf("heart")!==-1||lowerTxt.indexOf("brain")!==-1||lowerTxt.indexOf("cell")!==-1||lowerTxt.indexOf("body")!==-1||lowerTxt.indexOf("organ")!==-1||lowerTxt.indexOf("human")!==-1||lowerTxt.indexOf("anatomy")!==-1;
   var isTechnical = lowerTxt.indexOf("code")!==-1||lowerTxt.indexOf("algorithm")!==-1||lowerTxt.indexOf("program")!==-1||lowerTxt.indexOf("array")!==-1||lowerTxt.indexOf("data")!==-1||lowerTxt.indexOf("blockchain")!==-1;
   var styleDesc = isMedical ? "Medical documentary quality, ultra realistic human anatomy photograph, real tissue textures, surgical lighting, medical textbook quality."
     : isTechnical ? "Clean technical diagram, infographic style, modern flat design, detailed labeled diagram, educational illustration."
     : "Ultra realistic, photorealistic, cinematic, real world photograph, National Geographic style, real textures, real lighting. No cartoon, no illustration.";
-  var fullPrompt = "Create an educational " + (isMedical?"medical anatomy":"technical illustration") + " image: " + promptText + ". " + styleDesc;
+  var fullPrompt = promptText;
   try{
+    console.log("🎨 Generating image for:", promptText.substring(0, 50));
     var resp = await fetch(WORKER_URL + "/gemini-image", {
       method: "POST", headers: { "Content-Type": "text/plain" },
       body: JSON.stringify({ prompt: fullPrompt })
     });
     var result = await resp.json();
-    if(result.success && result.imageBase64){
-      var imgData = "data:image/png;base64," + result.imageBase64;
+    console.log("📸 Image response:", result.success ? "SUCCESS" : "FAILED", result.source || "");
+    
+    var imgSrc = null;
+    
+    if(result.success){
+      if(result.imageBase64){
+        imgSrc = "data:image/png;base64," + result.imageBase64;
+      } else if(result.imageUrl){
+        imgSrc = result.imageUrl;
+      }
+    }
+    
+    if(imgSrc){
       var images = window.__visStoryImages || [];
-      images[index] = imgData;
+      images[index] = imgSrc;
       window.__visStoryImages = images;
+      console.log("✅ Image cached at index:", index);
       if(onSuccess) onSuccess();
       if(visStoryCurrentScene === index){
-        replaceCanvasWithImage(imgData);
+        replaceCanvasWithImage(imgSrc);
       }
       return;
     }
-    console.log("Gemini image failed:", result.error);
-  }catch(e){ console.log("Gemini scene image error:", e); }
+    
+    console.log("⚠️ No image generated:", result.error);
+  }catch(e){ console.log("❌ Scene image error:", e); }
 }
 
 function replaceCanvasWithImage(imgSrc){
