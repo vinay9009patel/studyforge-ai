@@ -18,7 +18,7 @@ export default {
     try {
       if (url.pathname.includes("gemini-image")) {
         if (!env.GEMINI_API_KEY) return new Response(JSON.stringify({ success: false, error: "GEMINI_API_KEY missing" }), { status: 200, headers: { "Content-Type": "application/json", ...cors } });
-        const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=" + env.GEMINI_API_KEY, {
+        const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=" + env.GEMINI_API_KEY, {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ contents: [{ parts: [{ text: "Create an educational illustration: " + (body.prompt || "") }] }], generationConfig: { responseModalities: ["IMAGE", "TEXT"] } })
         });
