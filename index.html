@@ -1293,6 +1293,10 @@ border:1px solid rgba(255,255,255,0.06);
 0%,100%{transform:scale(1);opacity:0.8;}
 50%{transform:scale(1.06);opacity:1;}
 }
+@keyframes pulseWidth{
+0%,100%{width:30%;}
+50%{width:70%;}
+}
 
 .interviewer-head{
 display:none;
@@ -2240,6 +2244,230 @@ let currentInterviewAvatarUrl = "";
 let currentInterviewAvatarFallbacks = [];
 let interviewerGender = "male";
 let facialScores = [];
+
+// ===== Visual Story Player =====
+var visStoryCurrentScene = 0;
+var visStoryAnimFrame = null;
+
+function initVisualStoryPlayer(){
+  visStoryCurrentScene = 0;
+  renderVisStoryScene();
+}
+
+function renderVisStoryScene(){
+  if(visStoryAnimFrame){ cancelAnimationFrame(visStoryAnimFrame); visStoryAnimFrame = null; }
+  var scenes = window.__visStoryScenes || [];
+  if(!scenes.length) return;
+  var scene = scenes[visStoryCurrentScene];
+  var container = document.getElementById("visStoryScene");
+  var stepEl = document.getElementById("visStoryStep");
+  var barEl = document.getElementById("visStoryBar");
+  var prevBtn = document.getElementById("visStoryPrevBtn");
+  var nextBtn = document.getElementById("visStoryNextBtn");
+  if(!container || !stepEl || !barEl) return;
+  var total = scenes.length;
+  stepEl.textContent = "Scene " + (visStoryCurrentScene + 1) + "/" + total;
+  barEl.style.width = Math.round(((visStoryCurrentScene + 1) / total) * 100) + "%";
+  if(prevBtn){ prevBtn.disabled = visStoryCurrentScene === 0; prevBtn.style.opacity = visStoryCurrentScene === 0 ? "0.5" : "1"; }
+  if(nextBtn){ nextBtn.textContent = visStoryCurrentScene === total - 1 ? "✅ Complete" : "Next ▶"; }
+  var sc = scene;
+  var hasCachedImage = window.__visStoryImages && window.__visStoryImages[visStoryCurrentScene];
+  var html = '';
+  if(hasCachedImage){
+    html += '<img src="' + window.__visStoryImages[visStoryCurrentScene] + '" style="width:100%;height:auto;border-radius:16px;display:block;border:1px solid rgba(255,255,255,0.06);margin-bottom:16px;" alt="Scene visual" class="scene-gemini-image">';
+  } else {
+    html += '<canvas id="visStoryCanvas" width="700" height="380" style="width:100%;height:auto;border-radius:16px;display:block;background:#0f172a;border:1px solid rgba(255,255,255,0.06);margin-bottom:16px;"></canvas>';
+  }
+  html += '<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">';
+  html += '<div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#8b5cf6,#3b82f6);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;">' + (visStoryCurrentScene + 1) + '</div>';
+  html += '<h3 style="font-size:24px;font-weight:800;margin:0;color:white;">' + escapeHtml(sc.title || "") + '</h3></div>';
+  html += '<div style="padding:16px;border-radius:14px;background:rgba(139,92,246,0.1);margin-bottom:12px;"><div style="color:#94a3b8;font-size:12px;text-transform:uppercase;margin-bottom:4px;">👁️ Visual</div><div style="color:#dbeafe;font-size:16px;line-height:1.7;">' + escapeHtml(sc.visual || "") + '</div></div>';
+  if(sc.animation){
+    html += '<div style="padding:12px 16px;border-radius:14px;background:rgba(59,130,246,0.08);margin-bottom:12px;"><span style="color:#94a3b8;font-size:12px;text-transform:uppercase;">🎞️ Animation:</span> <span style="color:#93c5fd;">' + escapeHtml(sc.animation) + '</span></div>';
+  }
+  html += '<div style="font-size:16px;color:#dbeafe;line-height:1.8;padding:8px 0;">' + escapeHtml(sc.explanation || "") + '</div>';
+  container.innerHTML = html;
+  container.style.opacity = "1";
+  container.style.transform = "translateY(0)";
+  container.style.transition = "all 0.4s ease";
+  if(!hasCachedImage){
+    var canvas = document.getElementById("visStoryCanvas");
+    if(canvas) startSceneAnim(canvas, scene);
+  }
+}
+
+function startSceneAnim(canvas, scene){
+  var ctx = canvas.getContext("2d"), w = canvas.width, h = canvas.height, start = Date.now(), CYCLE = 6;
+  var title = scene.title || "", num = visStoryCurrentScene + 1;
+  var tc = [["#8b5cf6","#a78bfa","#1e1b4b","#312e81"],["#ef4444","#fca5a5","#1c1917","#292524"],["#3b82f6","#93c5fd","#0f172a","#1e293b"],["#10b981","#6ee7b7","#052e16","#065f46"],["#a855f7","#c084fc","#1a0a2e","#2d1b69"],["#06b6d4","#67e8f9","#083344","#155e75"]][(num-1)%6];
+  var fallbackTimeout = setTimeout(function(){ showFallbackVisual(scene); }, 20000);
+  function anim(){
+    var t = ((Date.now()-start)%(CYCLE*1000))/1000;
+    ctx.clearRect(0,0,w,h);
+    var bg = ctx.createRadialGradient(w/2,h/2,0,w/2,h/2,w*0.7);
+    bg.addColorStop(0,tc[0]+"33"); bg.addColorStop(1,tc[3]);
+    ctx.fillStyle = bg; ctx.fillRect(0,0,w,h);
+    ctx.fillStyle="rgba(255,255,255,0.04)"; ctx.font="bold 16px sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText("🖼️ Generating photorealistic scene...", w/2, h/2-20);
+    ctx.fillStyle="rgba(255,255,255,0.12)"; ctx.font="13px sans-serif";
+    ctx.fillText(title, w/2, h/2+10);
+    visStoryAnimFrame = requestAnimationFrame(anim);
+  }
+  anim();
+  generateSceneImage(scene, visStoryCurrentScene, function(){ clearTimeout(fallbackTimeout); });
+}
+
+function showFallbackVisual(scene){
+  if(visStoryAnimFrame){ cancelAnimationFrame(visStoryAnimFrame); visStoryAnimFrame = null; }
+  var canvas = document.getElementById("visStoryCanvas");
+  if(!canvas) return;
+  var ctx = canvas.getContext("2d"), w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+  var bg = ctx.createRadialGradient(w/2,h/2,0,w/2,h/2,w*0.7);
+  bg.addColorStop(0,"rgba(99,102,241,0.2)"); bg.addColorStop(1,"#020617");
+  ctx.fillStyle = bg; ctx.fillRect(0,0,w,h);
+  ctx.fillStyle = "rgba(255,255,255,0.06)"; ctx.font = "bold 14px sans-serif";
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText("📖 " + (scene.title || ""), w/2, h/2-40);
+  ctx.fillStyle = "rgba(255,255,255,0.04)"; ctx.font = "12px sans-serif";
+  var lines = [], words = (scene.visual || "").split(" "), cl = "";
+  for(var i=0;i<words.length;i++){ var tl = cl?cl+" "+words[i]:words[i]; if(ctx.measureText(tl).width>w-80){ lines.push(cl); cl=words[i]; } else cl=tl; }
+  if(cl) lines.push(cl);
+  for(var li=0;li<lines.length;li++) ctx.fillText(lines[li], w/2, h/2+li*18);
+}
+
+async function generateSceneImage(scene, index, onSuccess){
+  var promptText = scene.video_prompt || scene.image_prompt || scene.visual || "Educational scene " + (index+1);
+  var lowerTxt = (scene.title + " " + promptText).toLowerCase();
+  var isMedical = lowerTxt.indexOf("digest")!==-1||lowerTxt.indexOf("heart")!==-1||lowerTxt.indexOf("brain")!==-1||lowerTxt.indexOf("cell")!==-1||lowerTxt.indexOf("body")!==-1||lowerTxt.indexOf("organ")!==-1||lowerTxt.indexOf("human")!==-1||lowerTxt.indexOf("anatomy")!==-1;
+  var isTechnical = lowerTxt.indexOf("code")!==-1||lowerTxt.indexOf("algorithm")!==-1||lowerTxt.indexOf("program")!==-1||lowerTxt.indexOf("array")!==-1||lowerTxt.indexOf("data")!==-1||lowerTxt.indexOf("blockchain")!==-1;
+  var styleDesc = isMedical ? "Medical documentary quality, ultra realistic human anatomy photograph, real tissue textures, surgical lighting, medical textbook quality."
+    : isTechnical ? "Clean technical diagram, infographic style, modern flat design, detailed labeled diagram, educational illustration."
+    : "Ultra realistic, photorealistic, cinematic, real world photograph, National Geographic style, real textures, real lighting. No cartoon, no illustration.";
+  var fullPrompt = "Create an educational " + (isMedical?"medical anatomy":"technical illustration") + " image: " + promptText + ". " + styleDesc;
+  try{
+    var resp = await fetch(WORKER_URL + "/gemini-image", {
+      method: "POST", headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ prompt: fullPrompt })
+    });
+    var result = await resp.json();
+    if(result.success && result.imageBase64){
+      var imgData = "data:image/png;base64," + result.imageBase64;
+      var images = window.__visStoryImages || [];
+      images[index] = imgData;
+      window.__visStoryImages = images;
+      if(onSuccess) onSuccess();
+      if(visStoryCurrentScene === index){
+        replaceCanvasWithImage(imgData);
+      }
+      return;
+    }
+    console.log("Gemini image failed:", result.error);
+  }catch(e){ console.log("Gemini scene image error:", e); }
+}
+
+function replaceCanvasWithImage(imgSrc){
+  if(visStoryAnimFrame){ cancelAnimationFrame(visStoryAnimFrame); visStoryAnimFrame = null; }
+  var canvas = document.getElementById("visStoryCanvas");
+  if(!canvas) return;
+  var parent = canvas.parentNode;
+  var img = document.createElement("img");
+  img.src = imgSrc;
+  img.style.cssText = "width:100%;height:auto;border-radius:16px;display:block;border:1px solid rgba(255,255,255,0.06);margin-bottom:16px;";
+  img.alt = "Scene visual";
+  img.className = "scene-gemini-image";
+  parent.insertBefore(img, canvas);
+  canvas.style.display = "none";
+}
+
+function visStoryNext(){
+  var scenes = window.__visStoryScenes || [];
+  if(visStoryCurrentScene < scenes.length - 1){
+    visStoryCurrentScene++;
+    renderVisStoryScene();
+  } else {
+    if(visStoryAnimFrame){ cancelAnimationFrame(visStoryAnimFrame); visStoryAnimFrame = null; }
+    var container = document.getElementById("visStoryScene");
+    var nextBtn = document.getElementById("visStoryNextBtn");
+    if(container){
+      container.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#86efac;font-size:20px;font-weight:700;">🎉 You completed the visual story!</div>';
+    }
+    if(nextBtn){ nextBtn.disabled = true; nextBtn.style.opacity = "0.5"; }
+  }
+}
+
+function visStoryPrev(){
+  if(visStoryCurrentScene > 0){
+    visStoryCurrentScene--;
+    renderVisStoryScene();
+  }
+}
+
+// ===== Interactive Array Lab =====
+var arrayData = [];
+
+function initArrayVisualizer(){ arrayData = []; }
+
+function renderArrayBoxes(){
+  var container = document.getElementById("arrayVisBoxes");
+  var lengthEl = document.getElementById("arrayLengthDisplay");
+  var statusEl = document.getElementById("arrayVisStatus");
+  if(!container) return;
+  if(!arrayData.length){
+    container.innerHTML = '<div style="color:#64748b;font-size:14px;">Empty Array []</div>';
+    if(lengthEl) lengthEl.textContent = "Length: 0";
+    return;
+  }
+  var html = '<div style="font-size:13px;color:#64748b;margin-right:8px;font-weight:600;">[</div>';
+  arrayData.forEach(function(val, i){
+    html += '<div style="background:linear-gradient(135deg,#1e3a5f,#1a1a3e);border:2px solid #3b82f6;border-radius:12px;padding:12px 14px;text-align:center;min-width:50px;transition:all 0.3s;position:relative;">';
+    html += '<div style="font-size:18px;font-weight:800;color:#93c5fd;">' + escapeHtml(String(val)) + '</div>';
+    html += '<div style="font-size:10px;color:#64748b;margin-top:4px;">' + i + '</div></div>';
+  });
+  html += '<div style="font-size:13px;color:#64748b;margin-left:8px;font-weight:600;">]</div>';
+  container.innerHTML = html;
+  if(lengthEl) lengthEl.textContent = "Length: " + arrayData.length;
+  if(statusEl) statusEl.textContent = "📦 " + arrayData.length + " element" + (arrayData.length !== 1 ? "s" : "");
+}
+
+function arrayVisReset(){
+  arrayData = [];
+  renderArrayBoxes();
+  var el = document.getElementById("arrayVisStatus");
+  if(el) el.textContent = "🔄 Array reset to empty";
+}
+
+function arrayVisCustomPush(){
+  var input = document.getElementById("arrayCustomValue");
+  var val = input ? input.value.trim() : "";
+  if(val === "") return;
+  arrayData.push(val);
+  renderArrayBoxes();
+  var el = document.getElementById("arrayVisStatus");
+  if(el) el.textContent = "➕ Pushed '" + escapeHtml(val) + "'";
+  if(input) input.value = "";
+  input.focus();
+}
+
+function arrayVisCustomPop(){
+  if(!arrayData.length) return;
+  var val = arrayData.pop();
+  renderArrayBoxes();
+  var el = document.getElementById("arrayVisStatus");
+  if(el) el.textContent = "➖ Popped '" + escapeHtml(String(val)) + "'";
+}
+
+function arrayVisCustomUpdate(){
+  if(!arrayData.length) return;
+  var input = document.getElementById("arrayCustomValue");
+  var val = input ? input.value.trim() : "";
+  if(val === "") return;
+  arrayData[0] = val;
+  renderArrayBoxes();
+  var el = document.getElementById("arrayVisStatus");
+  if(el) el.textContent = "✏️ Index 0 → '" + escapeHtml(val) + "'";
+  if(input) input.value = "";
+}
 
 function escapeHtml(value){
 return String(value ?? "")
@@ -4125,26 +4353,38 @@ ${data.quick_understanding.map((item,i)=>`
 }
 
 if(data.visual_story && data.visual_story.length){
-html += `
-<div class="card">
-<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">🎬 Visual Story</h2>
-<div style="display:grid;gap:20px;">
-${data.visual_story.map((scene)=>`
-<div style="padding:24px;border-radius:20px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);">
-<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
-<div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#8b5cf6,#3b82f6);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;">${scene.scene_number || (data.visual_story.indexOf(scene)+1)}</div>
-<h3 style="font-size:24px;font-weight:800;margin:0;">${escapeHtml(scene.title || "")}</h3>
-</div>
-<div style="padding:16px;border-radius:14px;background:rgba(139,92,246,0.1);margin-bottom:12px;">
-<div style="color:#94a3b8;font-size:12px;text-transform:uppercase;margin-bottom:4px;">👁️ Visual</div>
-<div style="color:#dbeafe;font-size:16px;">${escapeHtml(scene.visual || "")}</div>
-</div>
-${scene.animation ? `<div style="padding:12px 16px;border-radius:14px;background:rgba(59,130,246,0.08);margin-bottom:12px;"><span style="color:#94a3b8;font-size:12px;text-transform:uppercase;">🎞️ Animation:</span> <span style="color:#93c5fd;">${escapeHtml(scene.animation)}</span></div>` : ""}
-<div style="font-size:16px;color:#dbeafe;line-height:1.8;">${escapeHtml(scene.explanation || "")}</div>
-</div>
-`).join("")}
-</div>
-</div>`;
+window.__visStoryScenes = data.visual_story;
+html += '<div class="card">';
+html += '<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">🎬 Visual Story</h2>';
+html += '<div id="visStoryContainer" style="border-radius:20px;background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);overflow:hidden;padding:24px;">';
+html += '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;align-items:center;">';
+html += '<div id="visStoryStep" style="font-size:15px;color:#94a3b8;font-weight:600;">Scene 1/' + data.visual_story.length + '</div>';
+html += '<div style="flex:1;min-width:100px;height:6px;border-radius:3px;background:rgba(255,255,255,0.1);max-width:300px;"><div id="visStoryBar" style="height:100%;width:' + Math.round(100/data.visual_story.length) + '%;border-radius:3px;background:linear-gradient(90deg,#8b5cf6,#3b82f6);transition:width 0.5s;"></div></div>';
+html += '<button class="btn" onclick="visStoryPrev()" id="visStoryPrevBtn" style="background:rgba(255,255,255,0.08);color:white;padding:10px 20px;border-radius:14px;border:1px solid rgba(255,255,255,0.1);font-size:14px;cursor:pointer;opacity:0.5;" disabled>◀ Prev</button>';
+html += '<button class="btn" onclick="visStoryNext()" id="visStoryNextBtn" style="background:linear-gradient(135deg,#8b5cf6,#3b82f6);color:white;padding:10px 20px;border-radius:14px;border:none;font-size:14px;cursor:pointer;font-weight:700;">Next ▶</button>';
+html += '</div>';
+html += '<div id="visStoryScene" style="padding:0;min-height:100px;"></div>';
+html += '</div></div>';
+
+var storyTopic = (data.topic || topic || "").toLowerCase();
+if(storyTopic.includes("array") || storyTopic === "arrays"){
+html += '<div class="card">';
+html += '<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">⚡ Interactive Array Lab</h2>';
+html += '<div id="arrayVisualizerContainer" style="border-radius:20px;background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);overflow:hidden;"><div style="padding:24px;">';
+html += '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;align-items:center;">';
+html += '<div id="arrayStepIndicator" style="font-size:15px;color:#94a3b8;font-weight:600;">Array Operations</div>';
+html += '<button class="btn" onclick="arrayVisReset()" style="background:rgba(239,68,68,0.2);color:#fca5a5;padding:10px 20px;border-radius:14px;border:1px solid rgba(239,68,68,0.3);font-size:14px;cursor:pointer;">🔄 Reset</button>';
+html += '</div>';
+html += '<div id="arrayVisStatus" style="font-size:16px;color:#93c5fd;font-weight:600;margin-bottom:16px;min-height:24px;">💡 Try the operations below</div>';
+html += '<div id="arrayVisBoxes" style="display:flex;gap:10px;flex-wrap:wrap;min-height:80px;padding:20px;border-radius:16px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.06);align-items:center;justify-content:center;"><div style="color:#64748b;font-size:14px;">Empty Array []</div></div>';
+html += '<div id="arrayLengthDisplay" style="font-size:13px;color:#64748b;margin-top:12px;text-align:center;">Length: 0</div>';
+html += '<div style="margin-top:16px;display:flex;gap:12px;flex-wrap:wrap;align-items:end;">';
+html += '<div style="flex:1;min-width:150px;"><div style="font-size:12px;color:#64748b;margin-bottom:4px;">Value</div><input type="text" id="arrayCustomValue" style="padding:10px 14px;font-size:14px;width:100%;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:white;outline:none;" placeholder="Enter value"></div>';
+html += '<button class="btn" onclick="arrayVisCustomPush()" style="background:rgba(34,197,94,0.2);color:#86efac;padding:10px 20px;border-radius:14px;border:1px solid rgba(34,197,94,0.3);font-size:14px;cursor:pointer;">➕ Push</button>';
+html += '<button class="btn" onclick="arrayVisCustomPop()" style="background:rgba(248,113,113,0.2);color:#fca5a5;padding:10px 20px;border-radius:14px;border:1px solid rgba(248,113,113,0.3);font-size:14px;cursor:pointer;">➖ Pop</button>';
+html += '<button class="btn" onclick="arrayVisCustomUpdate()" style="background:rgba(251,191,36,0.2);color:#fde68a;padding:10px 20px;border-radius:14px;border:1px solid rgba(251,191,36,0.3);font-size:14px;cursor:pointer;">✏️ Update First</button>';
+html += '</div></div></div></div>';
+}
 }
 
 if(data.core_concepts && data.core_concepts.length){
@@ -4157,6 +4397,8 @@ ${data.core_concepts.map(concept=>`
 <h3 style="font-size:22px;font-weight:800;margin-bottom:12px;color:#c4b5fd;">${escapeHtml(concept.concept || "")}</h3>
 <div style="margin-bottom:10px;"><span style="color:#94a3b8;">🧒 Simple:</span> <span style="color:#dbeafe;">${escapeHtml(concept.simple || concept.simple_explanation || "")}</span></div>
 <div style="margin-bottom:10px;"><span style="color:#94a3b8;">🔬 Technical:</span> <span style="color:#93c5fd;">${escapeHtml(concept.technical || concept.technical_explanation || "")}</span></div>
+${concept.visual_understanding ? '<div style="margin-bottom:10px;"><span style="color:#94a3b8;">👁️ Visualize:</span> <span style="color:#dbeafe;">' + escapeHtml(concept.visual_understanding) + '</span></div>' : ''}
+${concept.real_world_example ? '<div style="margin-top:12px;padding:12px;border-radius:12px;background:rgba(99,102,241,0.1);"><span style="color:#818cf8;">🌍 Real World:</span> <span style="color:#dbeafe;">' + escapeHtml(concept.real_world_example) + '</span></div>' : ''}
 </div>
 `).join("")}
 </div>
@@ -4243,57 +4485,142 @@ notesOutput.innerHTML =
 const extractedText =
 await extractFileText(file);
 
-const prompt = `You are an AI Visual Story Learning Engine.
+const prompt = `You are an ELITE UNIVERSAL AI VISUAL SIMULATION ENGINE.
 
-Your job is to convert ANY topic into:
-- animated learning scenes
-- visual storytelling
-- interactive educational flow
-- beginner-friendly visual explanation
+Your job is to transform ANY topic in the world into:
+- realistic visual learning
+- cinematic educational storytelling
+- animated step-by-step simulations
+- beginner-friendly visual explanations
+- immersive educational experiences
 
 IMPORTANT:
 
-Students should feel:
-"I can SEE the topic happening."
-
-NOT:
-"I am reading boring notes."
+The student should feel:
+- the topic is happening in real life
+- they are watching a cinematic documentary
+- they are seeing the process visually
+- they are experiencing a real dry run
+- they understand concepts visually instead of memorizing theory
 
 ==================================================
 
-Return ONLY valid JSON.
+YOUR ROLE:
 
-FORMAT:
+You are NOT a normal notes generator.
+
+You are:
+- AI teacher
+- AI visual simulator
+- AI educational storyteller
+- AI cinematic learning engine
+
+==================================================
+
+CRITICAL RULES:
+
+1. Return ONLY VALID JSON.
+2. No markdown.
+3. No explanations outside JSON.
+4. Keep scenes realistic and visual.
+5. Every scene should feel alive.
+6. Every scene should show motion and process.
+7. Make concepts visually understandable.
+8. Keep explanations short and beginner-friendly.
+9. Maximum 5 scenes only.
+10. Optimize for token limits.
+11. Adapt automatically for ANY topic in the world.
+12. Focus on VISUAL UNDERSTANDING first.
+13. Every topic should feel immersive.
+
+==================================================
+
+IMPORTANT LEARNING STYLE:
+
+Teach like:
+- cinematic documentary
+- visual storytelling
+- real-world simulation
+- educational movie
+- interactive dry run
+
+Students should feel:
+
+"I SAW the topic happen."
+
+==================================================
+
+TOPIC TYPES HANDLING:
+
+IF topic is:
+- coding → show data structures visually moving
+- biology → show realistic body processes
+- history → show cinematic historical recreations
+- networking → show packets/data movement
+- blockchain → show blocks and transactions visually
+- physics → show realistic force/motion simulations
+- chemistry → show molecular reactions
+- geography → show realistic earth/environment visuals
+- economy → show money flow and systems visually
+
+Automatically adapt visuals to topic type.
+
+==================================================
+
+RETURN FORMAT:
 
 {
   "topic":"Topic Name",
 
-  "hero":{
-    "title":"Topic title",
+  "topic_type":"Detected topic category",
 
-    "subtitle":"One-line simple understanding",
+  "learning_style":"Type of visual learning used",
 
-    "hero_image_prompt":"AI image prompt"
+  "hero_scene":{
+    "title":"Opening cinematic title",
+
+    "subtitle":"Very simple beginner understanding",
+
+    "visual":"What visually appears",
+
+    "environment":"Scene environment",
+
+    "camera":"Opening camera style",
+
+    "mood":"Visual mood",
+
+    "video_prompt":"Detailed cinematic AI video prompt"
   },
 
-  "quick_understanding":[
-    "Simple point 1",
-    "Simple point 2"
-  ],
+  "real_world_connection":{
+    "analogy":"Real-life comparison",
 
-  "visual_story":[
+    "why_it_matters":"Why topic matters in real world"
+  },
+
+  "visual_dry_run":[
     {
       "scene_number":1,
 
       "title":"Scene title",
 
-      "visual":"What visually appears",
+      "real_world_action":"What happens in real life",
+
+      "visual":"What student should visually see",
 
       "animation":"What movement happens",
 
-      "explanation":"Short beginner explanation",
+      "camera_motion":"How camera moves",
 
-      "image_prompt":"Prompt for AI image generation"
+      "environment":"Scene environment",
+
+      "voiceover":"Short educational narration",
+
+      "sound_effect":"Scene sounds",
+
+      "understanding_goal":"What student should understand visually",
+
+      "video_prompt":"Detailed realistic cinematic AI video generation prompt"
     }
   ],
 
@@ -4301,47 +4628,56 @@ FORMAT:
     {
       "concept":"Concept name",
 
-      "simple":"Easy explanation",
+      "simple_explanation":"Very easy explanation",
 
-      "technical":"Professional explanation"
+      "visual_understanding":"How to mentally visualize concept",
+
+      "real_world_example":"Real example"
     }
   ],
 
-  "comparison_table":{
-    "headers":["Feature","Type A","Type B"],
-
-    "rows":[
-      ["Example","Fast","Slow"]
-    ]
-  },
-
-  "applications":[
-    "Application 1",
-    "Application 2"
-  ],
-
   "important_points":[
-    "Point 1",
-    "Point 2"
+    "Important point 1",
+    "Important point 2"
   ],
 
-  "summary":"Quick revision summary"
+  "summary":"Short visual memory summary"
 }
 
 ==================================================
 
-RULES:
+VISUAL QUALITY RULES:
 
-1. Maximum 5 visual scenes.
-2. Every scene should feel animated.
-3. Keep explanations short.
-4. Make scenes visually understandable.
-5. Keep JSON valid.
-6. No markdown.
-7. No extra text.
-8. Optimize for API token limits.
-9. Make learning feel interactive.
-10. Make students mentally visualize the topic.
+- photorealistic
+- cinematic
+- immersive
+- documentary style
+- realistic movement
+- realistic environments
+- realistic humans when needed
+- realistic physics
+- realistic lighting
+- no cartoon
+- no anime
+- no illustration
+- no childish style
+
+==================================================
+
+IMPORTANT:
+
+The AI should automatically decide:
+- what visuals fit topic
+- what simulation style fits topic
+- what real-world scenes fit topic
+- how students can best visualize topic
+
+==================================================
+
+GOAL:
+
+Turn ANY topic into:
+a visually understandable cinematic learning experience.
 
 ==================================================
 
@@ -4363,6 +4699,60 @@ const cleaned = String(result ?? "")
 .trim();
 data = JSON.parse(cleaned);
 isJson = true;
+
+// Transform new video format to legacy format
+var scenes = data.video_scenes || data.simulation_flow || data.visual_dry_run;
+if(scenes){
+  data.visual_story = scenes.map(function(s){
+    var expl = s.voiceover || s.visual;
+    var goal = s.understanding_goal || s.visual_goal;
+    if(goal) expl = expl + " 🎯 " + goal;
+    var visText = s.visual || "";
+    if(s.real_world_action) visText = s.real_world_action + ": " + visText;
+    if(s.camera_view) visText = "[" + s.camera_view + "] " + visText;
+    return {
+      scene_number: s.step_number || s.scene_number || s.scene_number,
+      title: s.title,
+      visual: (s.camera_motion || s.camera || "Cinematic shot") + ": " + visText + (s.animation ? ". " + s.animation : ""),
+      animation: s.animation || s.camera_motion || s.camera || "",
+      explanation: expl,
+      image_prompt: s.video_prompt || s.visual
+    };
+  });
+  if(data.hero_scene){
+    data.hero = {
+      title: data.hero_scene.title,
+      subtitle: data.hero_scene.subtitle || data.hero_scene.visual,
+      hero_image_prompt: (scenes[0]?.video_prompt || data.hero_scene.video_prompt || data.hero_scene.visual)
+    };
+  }
+  if(scenes.length){
+    data.quick_understanding = scenes.slice(0,3).map(function(s){ return s.visual; });
+  }
+  if(data.real_world_connection){
+    if(!data.quick_understanding) data.quick_understanding = [];
+    data.quick_understanding.unshift("🌍 " + data.real_world_connection.analogy + " — " + data.real_world_connection.why_it_matters);
+  }
+}
+if(data.summary && !data.ending_scene){
+  data.ending_scene = { visual: data.summary, voiceover: data.summary };
+}
+  if(data.ending_scene){
+    data.summary = data.ending_scene.voiceover || data.ending_scene.visual;
+  }
+  if(data.final_understanding){
+    if(data.summary) data.summary = data.summary + "\n\n" + data.final_understanding;
+    else data.summary = data.final_understanding;
+  }
+  if(data.real_world_example){
+    if(!data.quick_understanding) data.quick_understanding = [];
+    data.quick_understanding.unshift("🌍 Real-world example: " + data.real_world_example);
+  }
+  if(!data.core_concepts) data.core_concepts = [];
+  data.comparison_table = null;
+  data.applications = [];
+  if(!data.important_points) data.important_points = [];
+}
 }catch(parseError){
 console.log("JSON parse failed, using markdown fallback", parseError);
 }
@@ -4427,6 +4817,16 @@ ${visualHtml}
 ${formatted}
 
 `;
+
+setTimeout(function(){
+  if(window.__visStoryScenes && document.getElementById("visStoryContainer")){
+    initVisualStoryPlayer();
+  }
+  if(document.getElementById("arrayVisualizerContainer")){
+    initArrayVisualizer();
+    renderArrayBoxes();
+  }
+}, 100);
 
 if(mermaidCode){
 try{

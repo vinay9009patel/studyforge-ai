@@ -18,18 +18,31 @@ export default {
     try {
       if (url.pathname.includes("gemini-image")) {
         if (!env.GEMINI_API_KEY) return new Response(JSON.stringify({ success: false, error: "GEMINI_API_KEY missing" }), { status: 200, headers: { "Content-Type": "application/json", ...cors } });
-        const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=" + env.GEMINI_API_KEY, {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contents: [{ parts: [{ text: "Create an educational illustration: " + (body.prompt || "") }] }], generationConfig: { responseModalities: ["IMAGE", "TEXT"] } })
-        });
-        const d = await r.json();
-        if (!r.ok) {
-          return new Response(JSON.stringify({ success: false, error: d?.error?.message || "Gemini API error" }), { status: 200, headers: { "Content-Type": "application/json", ...cors } });
+        const models = [
+          "gemini-2.0-flash-exp-image-generation",
+          "gemini-2.5-flash",
+          "gemini-2.5-pro"
+        ];
+        let lastError = "";
+        for (const model of models) {
+          try {
+            const genConfig = model.includes("exp-image") ? {} : { responseModalities: ["IMAGE", "TEXT"] };
+            const bodyData = { contents: [{ parts: [{ text: "Create a photorealistic educational image: " + (body.prompt || "") }] }] };
+            if (Object.keys(genConfig).length) bodyData.generationConfig = genConfig;
+            const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + env.GEMINI_API_KEY, {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(bodyData)
+            });
+            const d = await r.json();
+            if (!r.ok) { lastError = d?.error?.message || "Model " + model + " failed"; continue; }
+            const parts = d?.candidates?.[0]?.content?.parts || [];
+            let img = "", alt = "";
+            for (const p of parts) { if (p.inlineData) img = p.inlineData.data; if (p.text) alt = p.text; }
+            if (img) return new Response(JSON.stringify({ imageBase64: img, altText: alt, success: true, modelUsed: model }), { status: 200, headers: { "Content-Type": "application/json", ...cors } });
+            lastError = "No image in response from " + model;
+          } catch (e) { lastError = e.message; }
         }
-        const parts = d?.candidates?.[0]?.content?.parts || [];
-        let img = "", alt = "";
-        for (const p of parts) { if (p.inlineData) img = p.inlineData.data; if (p.text) alt = p.text; }
-        return new Response(JSON.stringify({ imageBase64: img, altText: alt, success: !!img }), { status: 200, headers: { "Content-Type": "application/json", ...cors } });
+        return new Response(JSON.stringify({ success: false, error: "All Gemini models failed: " + lastError }), { status: 200, headers: { "Content-Type": "application/json", ...cors } });
       }
 
       if (url.pathname.includes("gemini-text")) {
