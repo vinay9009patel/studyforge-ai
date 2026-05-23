@@ -2197,7 +2197,6 @@ Toggle Theme
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
-<script src="https://js.puter.com/v2/"></script>
 
 <script>
 
@@ -3334,49 +3333,18 @@ async function drawCanvasDiagram(topic, concepts){
   return canvas.toDataURL("image/png", 0.9);
 }
 
-let puterImageCache = {};
+let imageUrlCache = {};
 
 async function generateAIImage(prompt, seed = 123){
-  console.log("🖼️ Generating image for:", prompt.substring(0, 60) + "...");
-  
   const cacheKey = prompt + "_" + seed;
-  if(puterImageCache[cacheKey]){
-    console.log("   🔄 Using cached image");
-    return puterImageCache[cacheKey];
+  if(imageUrlCache[cacheKey]){
+    return imageUrlCache[cacheKey];
   }
   
-  try{
-    if(typeof puter !== 'undefined' && puter.ai && puter.ai.txt2img){
-      console.log("   🚀 Trying Puter.js (FREE - FLUX/GPT Image/DALL-E)");
-      
-      const fullPrompt = prompt + ", educational diagram, clean white background, labeled, professional, for students, high quality, infographic style";
-      
-      try{
-        const imgElement = await puter.ai.txt2img(fullPrompt, {
-          model: "black-forest-labs/flux-schnell",
-          quality: "low"
-        });
-        
-        if(imgElement && imgElement.src){
-          console.log("   ✅ Puter.js image generated:", imgElement.src.substring(0, 50) + "...");
-          puterImageCache[cacheKey] = imgElement.src;
-          return imgElement.src;
-        }
-      }catch(puterErr){
-        console.log("   ⚠️ Puter.js error (user not signed in?):", puterErr.message);
-        console.log("   🔄 Falling back to Pollinations.ai");
-      }
-    }
-  }catch(e){
-    console.log("   Puter.js not available, using fallback:", e.message);
-  }
-  
-  console.log("   🔗 Using Pollinations.ai FREE (no key)");
   const safePrompt = encodeURIComponent(prompt + ", educational diagram, clean white background");
   const imageUrl = `https://image.pollinations.ai/prompt/${safePrompt}?width=800&height=600&nologo=true&seed=${seed}`;
-  console.log("   📍 Image URL:", imageUrl);
   
-  puterImageCache[cacheKey] = imageUrl;
+  imageUrlCache[cacheKey] = imageUrl;
   return imageUrl;
 }
 
@@ -4551,46 +4519,10 @@ async function askAI(prompt, systemMsg, maxTok){
   ];
   
   console.log("🤖 === askAI called ===");
-  console.log("   System Msg:", systemMsg ? "YES" : "NO");
-  console.log("   Prompt length:", prompt.length);
   
   try{
-    if(typeof puter !== 'undefined' && puter.ai && puter.ai.chat){
-      console.log("   🚀 Trying Puter.js FREE API (GPT/Claude)...");
-      
-      try{
-        const fullPrompt = systemMsg ? (systemMsg + "\n\n" + prompt) : prompt;
-        
-        const chatResult = await puter.ai.chat(fullPrompt, {
-          model: "claude-sonnet-4-5"
-        });
-        
-        if(chatResult && chatResult.message && chatResult.message.content){
-          console.log("   ✅ Puter.js chat success!");
-          console.log("   📝 Response length:", chatResult.message.content.length);
-          return chatResult.message.content;
-        }else if(typeof chatResult === 'string'){
-          console.log("   ✅ Puter.js returned string directly!");
-          return chatResult;
-        }else if(chatResult && typeof chatResult === 'object'){
-          console.log("   📦 Puter.js returned object:", Object.keys(chatResult));
-          if(chatResult.content) return chatResult.content;
-          if(chatResult.text) return chatResult.text;
-        }
-        
-        console.log("   ⚠️ Puter.js returned unexpected format, trying next option...");
-        
-      }catch(puterErr){
-        console.log("   ⚠️ Puter.js error:", puterErr.message);
-        console.log("   (User may not be signed in to Puter)");
-      }
-    }
-  }catch(e){
-    console.log("   Puter.js not available:", e.message);
-  }
-  
-  console.log("   🌐 Trying Cloudflare Worker...");
-  try{
+    console.log("   🌐 Trying Cloudflare Worker...");
+    
     const response = await fetch(WORKER_URL + "/openai/v1/chat/completions",{
       method:"POST",
       headers:{ "Content-Type":"text/plain" },
@@ -4602,31 +4534,33 @@ async function askAI(prompt, systemMsg, maxTok){
       })
     });
     
-    if(!response.ok){
-      throw new Error("Worker API error: " + response.status);
+    if(response.ok){
+      const data = await response.json();
+      if(data?.choices?.[0]){
+        console.log("   ✅ Worker API success!");
+        return data.choices[0].message.content;
+      }
     }
     
-    const data = await response.json();
-    if(!data?.choices?.[0]) throw new Error("Invalid AI response");
-    console.log("   ✅ Worker API success!");
-    return data.choices[0].message.content;
+    console.log("   ❌ Worker failed with status:", response.status);
     
   }catch(workerErr){
-    console.log("   ❌ Worker failed:", workerErr.message);
+    console.log("   ❌ Worker error:", workerErr.message);
   }
   
   console.log("   🔄 Trying Gemini fallback...");
-  const geminiResult = await askGemini(prompt, systemMsg);
-  if(geminiResult){
-    console.log("   ✅ Gemini success!");
-    return geminiResult;
+  try{
+    const geminiResult = await askGemini(prompt, systemMsg);
+    if(geminiResult){
+      console.log("   ✅ Gemini success!");
+      return geminiResult;
+    }
+  }catch(gemErr){
+    console.log("   ❌ Gemini error:", gemErr.message);
   }
   
   console.log("   🧠 All APIs failed. Using SMART FALLBACK notes...");
-  
   const fallbackNotes = generateSmartFallbackNotes(prompt);
-  console.log("   📋 Generated fallback notes length:", fallbackNotes.length);
-  
   return fallbackNotes;
 }
 
