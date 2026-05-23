@@ -2988,6 +2988,7 @@ async function drawCanvasDiagram(topic, concepts){
       const x = startX + c * (bw + gapX);
       const y = startY + r * (bh + gapY) + 60;
       const cs = colors[idx];
+      const concept = concepts[idx];
 
       if(r === 0){
         ctx.strokeStyle = "rgba(139,92,246,0.2)";
@@ -3019,11 +3020,11 @@ async function drawCanvasDiagram(topic, concepts){
       ctx.font = "bold 14px Inter, sans-serif";
       ctx.textAlign = "left";
       ctx.textBaseline = "top";
-      ctx.fillText(cs.icon + " " + c.label, x + 16, y + 14);
+      ctx.fillText(cs.icon + " " + (concept?.label || ""), x + 16, y + 14);
 
       ctx.fillStyle = "#94a3b8";
       ctx.font = "11px Inter, sans-serif";
-      const words = (c.desc || "").split(" ");
+      const words = ((concept?.desc) || "").split(" ");
       let lines = [], line = "";
       words.forEach(w=>{
         if((line + " " + w).trim().length <= 28){ line = (line + " " + w).trim(); }
@@ -5314,6 +5315,8 @@ normalizeQuizText(opt)===normalizeQuizText(q.answer)
 )]){
 const idx = q.options.findIndex(opt=>
 normalizeQuizText(opt)===normalizeQuizText(q.answer)
+
+
 );
 const allOpts = document.querySelectorAll(".option");
 if(allOpts[idx]) allOpts[idx].classList.add("correct");
