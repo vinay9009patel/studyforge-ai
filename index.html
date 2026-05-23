@@ -3286,42 +3286,52 @@ async function drawCanvasDiagram(topic, concepts){
   return canvas.toDataURL("image/png", 0.9);
 }
 
-async function searchWikimediaImagesForTopic(topic, count = 6){
+async function searchWikimediaImagesForTopic(topic, conceptsData = null){
   try{
     let searchQueries = [];
+    let explanations = [];
     
-    try{
-      const aiPrompt = `For the topic "${topic}", list 6 specific visual concepts or components that are most important for understanding this topic. 
-
-Return ONLY a valid JSON array of strings. Each string should be a specific search query to find educational images.
-
-Example for "binary search":
-["binary search algorithm", "sorted array search", "divide and conquer algorithm", "search algorithm comparison", "binary search visualization", "array data structure"]
-
-Example for "DNA replication":
-["DNA double helix structure", "DNA replication process", "helicase enzyme", "DNA polymerase", "semi-conservative replication", "DNA nucleotides"]
-
-Now generate for "${topic}":
-`;
-      
-      const aiResponse = await askAI(aiPrompt, "Return ONLY a valid JSON array of strings. No explanations, no markdown.", 500);
-      
-      try{
-        const cleaned = String(aiResponse ?? "")
-          .replace(/```json/g,"")
-          .replace(/```/g,"")
-          .trim();
-        const aiQueries = JSON.parse(cleaned);
-        if(Array.isArray(aiQueries) && aiQueries.length >= 3){
-          searchQueries = aiQueries.slice(0, 8);
-          console.log("✅ AI generated search queries:", searchQueries);
+    if(conceptsData){
+      if(conceptsData.core_concepts && Array.isArray(conceptsData.core_concepts)){
+        for(const c of conceptsData.core_concepts){
+          if(c.concept){
+            searchQueries.push(c.concept);
+            searchQueries.push(c.concept + " diagram");
+            explanations.push(c.simple_explanation || c.simple || "Key concept");
+          }
         }
-      }catch(e){
-        console.log("AI query parse failed, using default:", e);
       }
-    }catch(e){
-      console.log("AI query generation failed:", e);
+      
+      if(conceptsData.visual_story && Array.isArray(conceptsData.visual_story)){
+        for(const s of conceptsData.visual_story){
+          if(s.title){
+            searchQueries.push(s.title);
+            explanations.push(s.explanation || s.voiceover || "Visual scene");
+          }
+          if(s.visual){
+            searchQueries.push(s.visual);
+          }
+        }
+      }
+      
+      if(conceptsData.visual_dry_run && Array.isArray(conceptsData.visual_dry_run)){
+        for(const s of conceptsData.visual_dry_run){
+          if(s.title){
+            searchQueries.push(s.title);
+            explanations.push(s.understanding_goal || s.voiceover || "Step-by-step scene");
+          }
+        }
+      }
+      
+      if(conceptsData.important_points && Array.isArray(conceptsData.important_points)){
+        for(const p of conceptsData.important_points){
+          searchQueries.push(p);
+          explanations.push("Important point");
+        }
+      }
     }
+    
+    searchQueries = searchQueries.slice(0, 15);
     
     if(searchQueries.length === 0){
       searchQueries = [
@@ -3330,9 +3340,34 @@ Now generate for "${topic}":
         topic + " illustration",
         topic + " process",
         topic + " structure",
-        topic + " example"
+        topic + " example",
+        topic + " visualization",
+        topic + " step by step"
+      ];
+      explanations = [
+        "Visual representation of " + topic,
+        "How " + topic + " works diagram",
+        "Illustration of " + topic,
+        topic + " process flow",
+        topic + " structure and components",
+        "Real-world example of " + topic,
+        "Visual understanding of " + topic,
+        "Step-by-step guide to " + topic
       ];
     }
+    
+    const uniqQueries = [];
+    const seen = new Set();
+    for(const q of searchQueries){
+      const lower = q.toLowerCase().trim();
+      if(!seen.has(lower) && lower.length > 2){
+        seen.add(lower);
+        uniqQueries.push(q);
+      }
+    }
+    searchQueries = uniqQueries;
+    
+    console.log("📸 Searching for images with queries:", searchQueries.slice(0, 8));
     
     const resp = await fetch(WORKER_URL + "/gemini-image", {
       method: "POST",
@@ -3341,6 +3376,7 @@ Now generate for "${topic}":
     });
     
     const result = await resp.json();
+    result.explanations = explanations;
     return result;
   }catch(e){
     console.log("Wikimedia search error:", e);
@@ -3348,14 +3384,14 @@ Now generate for "${topic}":
   }
 }
 
-async function generateConceptDiagram(topic, contextText){
+async function generateConceptDiagram(topic, contextText, conceptsData = null){
   try{
-    const imageResult = await searchWikimediaImagesForTopic(topic, 6);
+    const imageResult = await searchWikimediaImagesForTopic(topic, conceptsData);
     
     if(imageResult.success && imageResult.images && imageResult.images.length > 0){
       const images = imageResult.images.slice(0, 6);
       
-      const defaultExplanations = [
+      const defaultExplanations = imageResult.explanations || [
         "Visual representation of the core concept",
         "How the process works step-by-step",
         "Key components and their relationships",
@@ -4894,10 +4930,11 @@ topic,
 `${topic}\n${extractedText}\n${JSON.stringify(data)}`
 );
 
-try{
+ try{
 conceptDiagramHtml = await generateConceptDiagram(
 topic,
-`${topic}\n${extractedText}\n${JSON.stringify(data)}`
+`${topic}\n${extractedText}\n${JSON.stringify(data)}`,
+data
 );
 }catch(e){ console.log(e); }
 }
