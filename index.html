@@ -2375,6 +2375,8 @@ const DAILY_LIMITS = {
   interview: 2
 };
 
+const WORKER_LIMIT_URL = WORKER_URL + "/limit";
+
 function getCurrentUserEmail(){
   try{
     const u = JSON.parse(localStorage.getItem("user") || "{}");
@@ -2384,6 +2386,39 @@ function getCurrentUserEmail(){
 
 function isAdmin(){
   return getCurrentUserEmail() === ADMIN_EMAIL;
+}
+
+(async function(){
+  const u = JSON.parse(localStorage.getItem("user") || "{}");
+  if(u && u.email){
+    document.getElementById("authScreen").style.display = "none";
+    document.querySelector(".app").style.display = "block";
+    if(u.name) document.getElementById("welcomeText").innerText = "Welcome Back, " + u.name + " 👋";
+    if(u.email) document.getElementById("profileEmail").innerText = u.email;
+    if(u.name) document.getElementById("profileName").innerText = u.name;
+    if(u.photo) document.getElementById("profilePic").src = u.photo;
+  }
+})();
+
+async function fetchDailyUsage(email){
+  try{
+    const r = await fetch(WORKER_LIMIT_URL + "/get", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({email, date:getTodayKey()})
+    });
+    const d = await r.json();
+    if(d.success) return d.usage;
+  }catch(e){}
+  return null;
+}
+
+async function saveDailyUsageRemote(email, usage){
+  try{
+    await fetch(WORKER_LIMIT_URL + "/set", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({email, date:getTodayKey(), usage})
+    });
+  }catch(e){}
 }
 
 function getDailyUsageKey(){ return "du_" + getTodayKey(); }
@@ -2397,10 +2432,27 @@ function getDailyUsage(){
 
 function saveDailyUsage(usage){
   localStorage.setItem(getDailyUsageKey(), JSON.stringify(usage));
+  const email = getCurrentUserEmail();
+  if(email) saveDailyUsageRemote(email, usage);
 }
 
-function checkLimitAndTrack(type){
+async function checkLimitAndTrack(type){
   if(isAdmin()) return { allowed: true, remaining: 999 };
+  const email = getCurrentUserEmail();
+  if(email){
+    try{
+      const remote = await fetchDailyUsage(email);
+      if(remote){
+        const used = remote[type] || 0;
+        const limit = DAILY_LIMITS[type] || 999;
+        if(used >= limit) return { allowed: false, remaining: 0, used, limit };
+        remote[type] = used + 1;
+        await saveDailyUsageRemote(email, remote);
+        localStorage.setItem(getDailyUsageKey(), JSON.stringify(remote));
+        return { allowed: true, remaining: limit - used - 1, used: used + 1, limit };
+      }
+    }catch(e){}
+  }
   const usage = getDailyUsage();
   const used = usage[type] || 0;
   const limit = DAILY_LIMITS[type] || 999;
@@ -8982,7 +9034,11 @@ signInWithEmailAndPassword,
 
 signOut,
 
-onAuthStateChanged
+onAuthStateChanged,
+
+setPersistence,
+
+browserLocalPersistence
 
 }
 
@@ -9015,6 +9071,8 @@ initializeApp(firebaseConfig);
 
 const auth =
 getAuth(app);
+
+setPersistence(auth, browserLocalPersistence).catch(e=>console.warn("Persistence:",e));
 
 const provider =
 new GoogleAuthProvider();

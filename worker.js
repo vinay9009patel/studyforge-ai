@@ -10,6 +10,43 @@ export default {
     
     const url = new URL(request.url);
 
+    // === LIMIT ENDPOINTS (cross-device daily usage) ===
+    if (request.method === "POST" && url.pathname === "/limit/get") {
+      let body;
+      try { body = await request.json(); } catch(e) {
+        return new Response(JSON.stringify({ success: false, error: "Invalid JSON" }), { status: 400, headers: { "Content-Type": "application/json", ...cors } });
+      }
+      const email = body?.email;
+      const date = body?.date;
+      if (!email || !date) return new Response(JSON.stringify({ success: false, error: "email and date required" }), { status: 400, headers: { "Content-Type": "application/json", ...cors } });
+      try {
+        const key = `limit_${email}_${date}`;
+        const raw = await env.LIMITS.get(key);
+        const usage = raw ? JSON.parse(raw) : { notes:0, quiz:0, mentor:0, interview:0 };
+        return new Response(JSON.stringify({ success: true, usage, key }), { status: 200, headers: { "Content-Type": "application/json", ...cors } });
+      } catch(e) {
+        return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: { "Content-Type": "application/json", ...cors } });
+      }
+    }
+
+    if (request.method === "POST" && url.pathname === "/limit/set") {
+      let body;
+      try { body = await request.json(); } catch(e) {
+        return new Response(JSON.stringify({ success: false, error: "Invalid JSON" }), { status: 400, headers: { "Content-Type": "application/json", ...cors } });
+      }
+      const email = body?.email;
+      const date = body?.date;
+      const usage = body?.usage;
+      if (!email || !date || !usage) return new Response(JSON.stringify({ success: false, error: "email, date, and usage required" }), { status: 400, headers: { "Content-Type": "application/json", ...cors } });
+      try {
+        const key = `limit_${email}_${date}`;
+        await env.LIMITS.put(key, JSON.stringify(usage), { expirationTtl: 86400 });
+        return new Response(JSON.stringify({ success: true }), { status: 200, headers: { "Content-Type": "application/json", ...cors } });
+      } catch(e) {
+        return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: { "Content-Type": "application/json", ...cors } });
+      }
+    }
+
     if (request.method === "GET" && url.pathname.includes("/test-image")) {
       const result = await searchWikimediaImage("binary search algorithm");
       return new Response(JSON.stringify(result), { 

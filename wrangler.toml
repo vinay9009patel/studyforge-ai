@@ -1,3 +1,7 @@
 name = "gorq-proxy"
 main = "worker.js"
 compatibility_date = "2025-04-01"
+
+[[kv_namespaces]]
+binding = "LIMITS"
+id = "e8583716924c4777bc8e79cfdd331915"
