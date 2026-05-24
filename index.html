@@ -2420,10 +2420,23 @@ function isAdmin(){
       if(u.email === ADMIN_EMAIL){
         document.getElementById("welcomeText").innerHTML = "Welcome Back, " + u.name + " 👑 Admin";
         document.getElementById("adminBadge").style.display = "inline-block";
+        document.getElementById("profileAdminBadge").style.display = "inline";
       }
     }
     if(u.name) document.getElementById("profileName").innerText = u.name;
     if(u.photo) document.getElementById("profilePic").src = u.photo;
+    const legacy = localStorage.getItem('appData');
+    if(legacy){
+      try{ Object.assign(appData,JSON.parse(legacy)); }catch(e){}
+    }
+    const secure = localStorage.getItem('secureAppData');
+    if(secure && secure.includes('.')){
+      try{
+        const payload = JSON.parse(new TextDecoder().decode(b64urlDecode(secure.split('.')[0])));
+        Object.assign(appData,payload);
+      }catch(e){}
+    }
+    updateUI();
   }
 })();
 
