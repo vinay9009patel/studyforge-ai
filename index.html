@@ -6290,19 +6290,20 @@ ${extractedText ? "EXTRA CONTEXT: " + extractedText : ""}
 
 RULES:
 1. Return ONLY valid JSON. No markdown.
-2. Cover EVERYTHING: definition, all operations (insert/delete/update/search/etc with steps & complexity), types, real examples, code/pseudocode, pros/cons, common mistakes, interview Q&A, exam tips
+2. Cover EVERYTHING: definition, all aspects, types, real examples, pros/cons, common mistakes, interview Q&A, exam tips
 3. Each explanation must be DETAILED — assume student will write exam answers from this
-4. Include real-world applications, industry context, pro tips
+4. Include real-world applications, historical context, industry use
 5. Comparison table if topic has comparable aspects
+6. 💻 code_example and code_snippet fields: ONLY include for programming/technical topics (DS, Algo, coding concepts). For theory/history/non-coding topics, OMIT these fields entirely.
 
 JSON FORMAT:
 {
   "topic": "${topic}",
   "introduction": { "definition": "precise definition", "simple_explanation": "1-2 line easy explanation" },
-  "sections": [{ "title": "Section name", "points": [{ "heading": "Point", "explanation": "DETAILED explanation with code/steps" }] }],
-  "operations": [{ "name": "Operation", "description": "what it does", "algorithm_steps": ["Step 1","Step 2"], "time_complexity": "O(?)", "space_complexity": "O(?)", "code_example": "pseudocode", "example": "walkthrough" }],
+  "sections": [{ "title": "Section name", "points": [{ "heading": "Point", "explanation": "DETAILED explanation" }] }],
+  "operations": [{ "name": "Operation", "description": "what it does", "algorithm_steps": ["Step 1","Step 2"], "time_complexity": "O(?)", "space_complexity": "O(?)", "code_example": "pseudocode (ONLY for coding topics)", "example": "walkthrough" }],
   "types_or_variants": [{ "name": "Type", "explanation": "details", "characteristics": ["c1","c2"], "when_to_use": "when", "example": "example" }],
-  "key_concepts": [{ "concept": "name", "simple_explanation": "simple", "detailed_explanation": "exam-ready detail", "code_snippet": "code" }],
+  "key_concepts": [{ "concept": "name", "simple_explanation": "simple", "detailed_explanation": "exam-ready detail", "code_snippet": "code (ONLY for coding topics)" }],
   "examples": [{ "title": "title", "scenario": "real scenario", "explanation": "step-by-step", "visualization": "text diagram" }],
   "comparison_table": { "headers": ["A","B","C"], "rows": [["a1","b1","c1"]] },
   "advantages": [{ "point": "advantage", "explanation": "detail" }],
@@ -6363,6 +6364,8 @@ const geminiImprovePrompt = `You are a PROFESSOR fact-checking and expanding exa
 Fix errors, expand every section, add missing EXAMPLES (at least 4-6), and add any missing fields. Keep the same JSON structure.
 
 CRITICAL: If original lacks "examples" or has few, ADD 4-6 real-world examples with step-by-step explanation. ADD cheat_sheet if missing. ADD interview_questions (5-8) if missing.
+
+💻 IMPORTANT: ONLY add code_example/code_snippet fields if "${topic}" is a programming/technical topic (coding, DS, Algo, etc.). For theory/history/non-coding topics, leave code fields OUT.
 
 Return ONLY improved valid JSON. No markdown.
 
