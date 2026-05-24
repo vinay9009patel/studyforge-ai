@@ -4379,8 +4379,9 @@ async function askGemini(prompt, systemMsg){
   }
 }
 
-async function askAI(prompt, systemMsg, maxTok){
+async function askAI(prompt, systemMsg, maxTok, modelName){
   if(!maxTok) maxTok = 3500;
+  if(!modelName) modelName = "llama-3.1-8b-instant";
   
   const messages = systemMsg ? [
     {role:"system",content:systemMsg},
@@ -4398,7 +4399,7 @@ async function askAI(prompt, systemMsg, maxTok){
       method:"POST",
       headers:{ "Content-Type":"text/plain" },
       body: JSON.stringify({
-        model:"llama-3.1-8b-instant",
+        model:modelName,
         messages,
         temperature:0.3,
         max_tokens:maxTok,
@@ -6317,7 +6318,7 @@ JSON FORMAT:
 REQUIRED: minimum 8 sections covering ALL aspects, 6-10 key_concepts, 4-6 examples, 5-8 interview_questions, 3-5 faq, 3-5 common_mistakes, cheat_sheet ALWAYS included. Make every explanation EXAM-READY and INTERVIEW-READY. Include general knowledge and pro tips.`;
 
 const groqResult =
-await askAI(groqPrompt,"",8192);
+await askAI(groqPrompt,"",8192,"llama-3.3-70b-versatile");
 
 if(!groqResult || groqResult.startsWith("🔴")){
 const fallback = generateSmartFallbackNotes(topic);
