@@ -2563,6 +2563,19 @@ function arrayVisCustomUpdate(){
   if(input) input.value = "";
 }
 
+function extractJsonFromText(text){
+let cleaned = String(text ?? "")
+.replace(/```json\s*/gi,"")
+.replace(/```\s*/g,"")
+.trim();
+const jsonStart = cleaned.indexOf('{');
+const jsonEnd = cleaned.lastIndexOf('}');
+if(jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart){
+cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
+}
+return cleaned;
+}
+
 function escapeHtml(value){
 return String(value ?? "")
 .replace(/&/g,"&amp;")
@@ -6324,6 +6337,19 @@ ${iq.answer ? `<div style="padding:12px 16px;border-radius:10px;background:rgba(
 <span style="color:#94a3b8;font-weight:600;">Answer:</span>
 <span style="color:#dbeafe;line-height:1.6;"> ${escapeHtml(iq.answer)}</span>
 </div>` : ""}
+${iq.follow_up && iq.follow_up.length ? iq.follow_up.map((fu, fIdx)=>`
+<div style="margin-top:10px;margin-left:32px;padding:12px 16px;border-radius:10px;background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.15);">
+<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+<span style="font-size:14px;">🔁</span>
+<span style="font-weight:600;color:#fde68a;font-size:14px;">Follow-up ${fIdx+1}:</span>
+<span style="color:#dbeafe;font-size:14px;">${escapeHtml(fu.question || "")}</span>
+</div>
+${fu.answer ? `<div style="padding:8px 12px;border-radius:8px;background:rgba(255,255,255,0.02);margin-left:20px;">
+<span style="color:#94a3b8;font-size:13px;">Answer:</span>
+<span style="color:#dbeafe;font-size:13px;"> ${escapeHtml(fu.answer)}</span>
+</div>` : ""}
+</div>
+`) : ""}
 </div>`).join("")}
 </div>
 </div>`;
@@ -6481,7 +6507,7 @@ JSON FORMAT:
   "disadvantages": [{ "point": "disadvantage", "explanation": "detail" }],
   "important_points": ["point1","point2","point3","point4","point5","point6","point7","point8"],
   "common_mistakes": [{ "mistake": "mistake", "correction": "correction" }],
-  "interview_questions": [{ "question": "REAL exam/interview question for this topic", "answer": "Answer with a short story/example that makes it easy to remember", "difficulty": "easy/medium/hard" }],
+  "interview_questions": [{ "question": "REAL exam/interview question for this topic", "answer": "Answer with a short story/example that makes it easy to remember", "difficulty": "easy/medium/hard", "follow_up": [{ "question": "Follow-up question that digs deeper", "answer": "Expected follow-up answer" }] }],
   "faq": [{ "question": "REAL exam question frequently asked", "answer": "clear answer with example" }],
   "exam_pattern": [{ "question": "Question pattern that repeats in exams", "answer": "Step-by-step answer as expected in exam", "marks": "2/5/10 marks", "exam_tip": "How to write this answer to get full marks" }],
   "cheat_sheet": { "definition_line": "one-line def", "key_formulas": ["f1","f2"], "critical_points": ["p1","p2","p3","p4","p5"], "quick_recall": ["r1","r2"], "memory_tricks": [{"hint":"mnemonic","for":"what it helps"}] },
@@ -6503,10 +6529,7 @@ let data;
 let isJson = false;
 let groqData;
 try{
-const cleaned = String(groqResult ?? "")
-.replace(/```json/g,"")
-.replace(/```/g,"")
-.trim();
+const cleaned = extractJsonFromText(String(groqResult ?? ""));
 data = JSON.parse(cleaned);
 isJson = true;
 }catch(parseError){
@@ -6518,10 +6541,7 @@ const geminiPrompt = `Create comprehensive, structured exam-ready notes for topi
 try{
 const geminiResult = await askGemini(geminiPrompt, "You are an expert teacher. Return ONLY valid JSON.");
 if(geminiResult){
-const cleaned = String(geminiResult ?? "")
-.replace(/```json/g,"")
-.replace(/```/g,"")
-.trim();
+const cleaned = extractJsonFromText(String(geminiResult ?? ""));
 data = JSON.parse(cleaned);
 isJson = true;
 }
@@ -6535,7 +6555,7 @@ const geminiImprovePrompt = `You are a PROFESSOR fact-checking and expanding exa
 
 Fix errors, expand every section, add missing EXAMPLES (at least 4-6 in STORY format), and add any missing fields.
 
-CRITICAL: If original lacks "examples" or has few, ADD 4-6 real-world examples as mini-stories. ADD cheat_sheet if missing. ADD interview_questions (5-8 REAL exam/interview questions) if missing. ADD exam_pattern (3-5 questions) if missing.
+CRITICAL: If original lacks "examples" or has few, ADD 4-6 real-world examples as mini-stories. ADD cheat_sheet if missing. ADD interview_questions (5-8 REAL exam/interview questions) if missing. Each interview_question must include a "follow_up" array with 1-2 deeper follow-up questions and answers. ADD exam_pattern (3-5 questions) if missing.
 
 🎯 Write ALL explanations in STORY/NARRATIVE style — use analogies, real-life comparisons, memorable scenarios so students never forget.
 
@@ -6921,18 +6941,27 @@ if(status) status.textContent = "⏳ Creating story...";
 
 const langInstr = lang === "hindi" ? "पूरी कहानी सिर्फ हिंदी में लिखो, बिल्कुल अंग्रेजी नहीं" : lang === "hinglish" ? "Mix Hindi and English like Hinglish, writes as people speak" : "Write in English only";
 
-const prompt = `You are a FUN STORYTELLER. Tell a magical story about "${topic}" to a 10-year-old child.
+const prompt = `You are a FUN STORYTELLER TEACHER. Teach "${topic}" to a 10-year-old child through a story.
 
 ${langInstr}
 
+CRITICAL: The story MUST teach what "${topic}" actually IS. Every part of the story must explain a real concept of "${topic}". Do NOT write a generic fairy tale - the story itself IS the lesson.
+
+STRUCTURE:
+1. Introduce the main concept of ${topic} in a fun way ("Once upon a time, in the land of...")
+2. Show how it works through the story events (the characters' journey = the actual process of ${topic})
+3. Have characters face problems that demonstrate real aspects of ${topic}
+4. End with the characters succeeding because they understood ${topic}
+
 RULES:
 - Child knows NOTHING about this topic. Explain from zero.
-- Use simple words, fun characters, magical places, exciting adventures
-- Feel like a bedtime story or cartoon episode
+- Every paragraph must teach something real about ${topic}
+- Use simple words, fun characters, magical places
 - Add fun sounds: "Whoooosh!", "Tada! 🤩", "Boing!", "✨"
 - Short paragraphs (2-3 lines) for easy listening
 - End with "Now you know all about ${topic}! 🎉"
-- 400-800 words only`;
+- 400-800 words only
+- STRICT: If the story doesn't teach ${topic}, rewrite it. The story IS the lesson.`;
 
 try{
 if(status) status.textContent = "⏳ AI writing story...";
@@ -6942,7 +6971,7 @@ let finalStory = storyText;
 
 try{
 if(storyText && !storyText.startsWith("🔴")){
-const geminiPrompt = `Improve this story about "${topic}" for a 10-year-old child. Make it more engaging, add more fun elements, fix any errors, keep it simple and magical.
+const geminiPrompt = `Improve this educational story about "${topic}" for a 10-year-old child. CRITICAL: The story MUST teach what "${topic}" is. Every paragraph must explain a real concept of "${topic}". Make it more engaging, fix any errors, keep it simple and magical. If the story does not actually teach "${topic}", rewrite it to do so.
 
 Story:
 ${storyText}
@@ -6994,8 +7023,8 @@ storyUtterance = null;
 
 const text = content.textContent.substring(0, 4000);
 storyUtterance = new SpeechSynthesisUtterance(text);
-storyUtterance.rate = 0.85;
-storyUtterance.pitch = 1.4;
+storyUtterance.rate = 0.9;
+storyUtterance.pitch = 1.0;
 
 const lang = getStoryLang();
 const voices = speechSynthesis.getVoices();
