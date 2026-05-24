@@ -6533,12 +6533,14 @@ console.log("Gemini improvement skipped:", e.message);
 }
 }
 
+if(data){
 if(!data.sections) data.sections = [];
 if(!data.key_concepts) data.key_concepts = [];
 if(!data.examples) data.examples = [];
 if(!data.advantages) data.advantages = [];
 if(!data.disadvantages) data.disadvantages = [];
 if(!data.important_points) data.important_points = [];
+}
 
 let visualHtml = "";
 let mermaidCodeGroq = "";
