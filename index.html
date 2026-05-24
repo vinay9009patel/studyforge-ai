@@ -1015,6 +1015,105 @@ height:190px;
 }
 }
 
+@media(max-width:600px){
+.row{
+flex-direction:column !important;
+}
+#audioControls{
+flex-direction:column !important;
+align-items:stretch !important;
+}
+#audioControls .btn,
+#audioControls select,
+#audioControls input[type="range"]{
+width:100% !important;
+max-width:100% !important;
+}
+#audioControls div{
+justify-content:center !important;
+}
+.story-controls{
+flex-wrap:wrap !important;
+}
+.story-controls button{
+flex:1 !important;
+min-width:80px !important;
+}
+#voiceSelect,
+#storyLangSelect,
+#speechRate{
+max-width:100% !important;
+width:100% !important;
+}
+}
+
+@media(max-width:768px){
+.interview-shell{
+grid-template-columns:1fr !important;
+}
+.interviewer-stage{
+order:-1 !important;
+}
+.interview-metrics{
+grid-template-columns:1fr 1fr !important;
+}
+.interview-transcript{
+max-height:250px !important;
+}
+#interviewAnswer{
+min-height:100px !important;
+font-size:15px !important;
+}
+.interview-chat textarea{
+font-size:15px !important;
+}
+.topbar{
+flex-direction:column !important;
+align-items:stretch !important;
+gap:12px !important;
+}
+.topbar .btn{
+width:100% !important;
+}
+.stats{
+grid-template-columns:1fr 1fr !important;
+}
+.stat-value{
+font-size:28px !important;
+}
+.card h2{
+font-size:24px !important;
+}
+#quizOutput .card h2{
+font-size:22px !important;
+}
+#quizOutput .card h3{
+font-size:18px !important;
+}
+.option{
+padding:16px 18px !important;
+font-size:15px !important;
+}
+.profile-box{
+flex-direction:column !important;
+text-align:center !important;
+}
+.profile-box img{
+width:80px !important;
+height:80px !important;
+}
+.bottom-nav button{
+font-size:18px !important;
+padding:6px 10px !important;
+}
+#dailyUsageCard .card{
+padding:16px !important;
+}
+#dailyUsageCard h2{
+font-size:22px !important;
+}
+}
+
 
 .mermaid{
 
@@ -1847,7 +1946,7 @@ style="max-width:140px;padding:12px 16px;font-size:14px;">
 <button onclick="stopStoryMode()" style="margin-left:auto;padding:8px 16px;border-radius:10px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.2);color:#fca5a5;cursor:pointer;font-weight:600;font-size:13px;">✕ Close</button>
 </div>
 <div id="storyContent" style="color:#f0d9ff;line-height:2;font-size:17px;white-space:pre-wrap;"></div>
-<div style="display:flex;gap:12px;margin-top:16px;align-items:center;">
+<div style="display:flex;gap:12px;margin-top:16px;align-items:center;" class="story-controls">
 <button id="storyPlayBtn" onclick="toggleStoryAudio()" style="padding:10px 20px;border-radius:12px;background:linear-gradient(135deg,#ec4899,#8b5cf6);border:none;color:white;font-weight:700;font-size:14px;cursor:pointer;">🔊 Listen</button>
 <button id="storyPauseBtn" onclick="pauseStoryAudio()" style="padding:10px 20px;border-radius:12px;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.2);color:#fde68a;font-weight:700;font-size:14px;cursor:pointer;display:none;">⏸ Pause</button>
 <button id="storyStopBtn" onclick="stopStoryAudio()" style="padding:10px 20px;border-radius:12px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.2);color:#fca5a5;font-weight:700;font-size:14px;cursor:pointer;">⏹ Stop</button>
