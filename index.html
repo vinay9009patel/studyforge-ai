@@ -6202,6 +6202,7 @@ return;
 
 let data;
 let isJson = false;
+let groqData;
 try{
 const cleaned = String(groqResult ?? "")
 .replace(/```json/g,"")
@@ -6230,6 +6231,7 @@ isJson = true;
 
 if(isJson && data){
 notesOutput.innerHTML = "";
+groqData = JSON.parse(JSON.stringify(data));
 const geminiImprovePrompt = `You are a PROFESSOR fact-checking and improving exam notes created by another AI.
 
 Below is the JSON notes generated for topic "${topic}". Review each section carefully:
@@ -6270,16 +6272,53 @@ if(!data.disadvantages) data.disadvantages = [];
 if(!data.important_points) data.important_points = [];
 
 let visualHtml = "";
-let mermaidCode = "";
+let mermaidCodeGroq = "";
+let mermaidCodeGemini = "";
 
 if(isJson && data){
 
 visualHtml = buildVisualNotesHTML(data, topic);
 
-mermaidCode = await generateDetailedMindMap(
-topic,
-`${topic}\n${extractedText}\n${JSON.stringify(data)}`
+  mermaidCodeGroq = await generateDetailedMindMap(
+  topic,
+  `${topic}\n${extractedText}\n${JSON.stringify(groqData)}`
 );
+}
+
+if(isJson && data){
+const geminiMapPrompt = `Create a CHEAT SHEET style MIND MAP for "${topic}".
+
+Topic: ${topic}
+Source: ${topic}\n${extractedText}\n${JSON.stringify(data)}
+
+CRITICAL: This is the PRIMARY study tool. Each node = 1-3 words max. Must cover topic fully in compact form.
+
+Structure — 8-10 branches with 3-5 sub-points each, 2 levels deep:
+1. Definition — what it is in few words
+2. Key Features — 4-5 core traits
+3. Types — main categories with 1 example each
+4. How It Works — process steps (3-4 points)
+5. Applications — 3-4 real uses
+6. Pros & Cons — 3 each
+7. Key Terms — 4-5 terms with 2-3 word meaning
+8. Quick Summary — main takeaway in 1-2 points
+
+RULES:
+- Labels: 1-3 words per node (real cheat sheet style)
+- Specific: use real examples, not generic words
+- No empty branches — every node must have content
+- First line: mindmap | Valid Mermaid syntax | No markdown fences
+- English only
+- GOAL: 5 minutes of looking = full topic understanding`;
+
+try{
+const geminiMapResult = await askGemini(geminiMapPrompt, "You are a mindmap generator. Write in English.");
+if(geminiMapResult){
+mermaidCodeGemini = normalizeMindMapCode(geminiMapResult, topic, `${topic}\n${extractedText}\n${JSON.stringify(data)}`);
+}
+}catch(e){
+console.log("Gemini mind map skipped:", e.message);
+}
 }
 
 let formatted = "";
@@ -6304,16 +6343,28 @@ notesOutput.innerHTML = `
 
 ${preview}
 
-${mermaidCode ? `
-<div class="ai-diagram-card" style="margin-bottom:30px;">
+${mermaidCodeGroq ? `
+<div class="row" style="display:flex;gap:20px;margin-bottom:30px;">
+<div class="ai-diagram-card" style="flex:1;">
 <div class="ai-diagram-title">
-AI Generated Mind Map
+🤖 Groq Mind Map
 </div>
-<div class="mermaid" id="notesMindMap">
-${mermaidCode}
+<div class="mermaid" id="notesMindMapGroq">
+${mermaidCodeGroq}
 </div>
 </div>
 ` : ""}
+${mermaidCodeGemini ? `
+<div class="ai-diagram-card" style="flex:1;">
+<div class="ai-diagram-title">
+🧠 Gemini Mind Map (Improved)
+</div>
+<div class="mermaid" id="notesMindMapGemini">
+${mermaidCodeGemini}
+</div>
+</div>
+` : ""}
+${mermaidCodeGroq || mermaidCodeGemini ? `</div>` : ""}
 
 ${visualHtml}
 
@@ -6331,7 +6382,7 @@ setTimeout(function(){
   }
 }, 100);
 
-if(mermaidCode){
+if(mermaidCodeGroq || mermaidCodeGemini){
 try{
 mermaid.initialize({
 startOnLoad:false,
@@ -6339,18 +6390,23 @@ securityLevel:"loose",
 theme:"dark",
 mindmap:{}
 });
+const selectors = [];
+if(mermaidCodeGroq) selectors.push("#notesMindMapGroq");
+if(mermaidCodeGemini) selectors.push("#notesMindMapGemini");
 await mermaid.run({
-querySelector:".mermaid"
+querySelector: selectors.join(",")
 });
 }catch(error){
 console.log(error);
-const fallbackMindMap = buildFallbackMindMap(
-topic,
-`${topic}\n${extractedText}\n${isJson ? JSON.stringify(data) : result}`
-);
-const mermaidContainer = notesOutput.querySelector("#notesMindMap");
-if(mermaidContainer){
-mermaidContainer.outerHTML = renderFallbackMindMapHtml(fallbackMindMap);
+if(mermaidCodeGroq){
+const fallbackGroq = buildFallbackMindMap(topic, `${topic}\n${extractedText}\n${isJson ? JSON.stringify(groqData) : groqResult}`);
+const groqContainer = notesOutput.querySelector("#notesMindMapGroq");
+if(groqContainer) groqContainer.outerHTML = renderFallbackMindMapHtml(fallbackGroq);
+}
+if(mermaidCodeGemini){
+const fallbackGemini = buildFallbackMindMap(topic, `${topic}\n${extractedText}\n${isJson ? JSON.stringify(data) : ""}`);
+const geminiContainer = notesOutput.querySelector("#notesMindMapGemini");
+if(geminiContainer) geminiContainer.outerHTML = renderFallbackMindMapHtml(fallbackGemini);
 }
 }
 }
