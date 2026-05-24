@@ -6283,9 +6283,17 @@ notesOutput.innerHTML =
 const extractedText =
 await extractFileText(file);
 
-const groqPrompt = `You are an EXPERT TEACHER and EXAM NOTES GENERATOR producing ULTRA-DETAILED notes.
+const groqPrompt = `You are an EXPERT TEACHER, INTERVIEW COACH, and GENERAL KNOWLEDGE ENRICHER.
 
-COVER THE TOPIC COMPLETELY: "${topic}"
+Generate ULTRA-DETAILED, EXAM-READY, INTERVIEW-READY notes for "${topic}".
+
+CONTENT MUST:
+- Be DEEP and COMPLETE — cover every aspect, sub-topic, and edge case
+- Include GENERAL KNOWLEDGE context — real-world applications, historical context, industry use-cases, latest trends
+- Be EXAM-FOCUSED — exactly what a student needs to write in exams (definitions, explanations, diagrams in text, comparisons)
+- Be INTERVIEW-READY — practical implementation details, coding questions, common interview traps, best practices
+- INCREASE IQ — include thought-provoking insights, why-things-work, deeper understanding, not just surface-level facts
+- Every concept must connect theory → practical → real-world
 
 ${extractedText ? "EXTRA CONTEXT FROM UPLOADED FILE: " + extractedText : ""}
 
@@ -6435,7 +6443,9 @@ REQUIREMENTS:
 - faq: 3-5 frequently asked exam questions with answers
 - comparison_table: Include if topic has comparable aspects
 - cheat_sheet: REQUIRED — a quick revision card with one-liners, formulas, and memory aids
-- Every explanation must be DETAILED, EXAM-FOCUSED and INTERVIEW-READY — assume student needs to write answers in exams AND answer interview questions`;
+- Every section must include GENERAL KNOWLEDGE context (real-world use, industry practices, historical background) to increase IQ and understanding
+- Every explanation must be DETAILED, EXAM-FOCUSED and INTERVIEW-READY — assume student needs to write answers in exams AND answer interview questions
+- Add "💡 Pro Tip:" or "🧠 Deep Insight:" in explanations wherever it adds real value`;
 
 const groqResult =
 await askAI(groqPrompt,"",8192);
@@ -6478,13 +6488,17 @@ isJson = true;
 if(isJson && data){
 notesOutput.innerHTML = "";
 groqData = JSON.parse(JSON.stringify(data));
-const geminiImprovePrompt = `You are a PROFESSOR fact-checking, expanding, and improving exam notes.
+const geminiImprovePrompt = `You are a PROFESSOR, INTERVIEW MENTOR, and KNOWLEDGE ENRICHER fact-checking, expanding, and improving exam notes.
 
 Below is the JSON notes generated for topic "${topic}". Your job is to:
 
 1. FIX any factual errors or inaccuracies
 2. EXPAND every section — add more detail, more steps, more clarity
-3. ADD missing content:
+3. ADD GENERAL KNOWLEDGE & IQ-BOOSTING CONTENT:
+   - Add real-world applications, industry context, historical insights
+   - Add "💡 Pro Tip:" or "🧠 Deep Insight:" style enrichments inside explanations
+   - Connect theory → practice in every section
+4. ADD missing content:
    - If topic has operations (insert/delete/update/search/etc), ADD an "operations" array
    - If topic has types/variants, ADD a "types_or_variants" array
    - ADD "common_mistakes" (3-5) with corrections
@@ -6493,9 +6507,9 @@ Below is the JSON notes generated for topic "${topic}". Your job is to:
    - ADD "cheat_sheet" with definition_line, key_formulas, critical_points (5+), quick_recall (3+), memory_tricks (3+ mnemonics/acronyms/shortcuts)
    - Add "code_snippet" to key_concepts where relevant
    - Add more "important_points" (at least 8)
-4. Make every explanation EXAM-READY — assume student needs to write long answers
-5. Add time/space complexity info in operations where relevant
-6. Keep the exact same JSON structure but IMPROVE and EXPAND the content
+5. Make every explanation EXAM-READY and INTERVIEW-READY — deep enough to increase IQ
+6. Add time/space complexity info in operations where relevant
+7. Keep the exact same JSON structure but IMPROVE and EXPAND the content
 
 Return ONLY the improved valid JSON. No markdown, no explanations.
 
