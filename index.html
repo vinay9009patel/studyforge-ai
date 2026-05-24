@@ -6162,6 +6162,43 @@ ${m.correction ? `<div style="padding:10px 14px;border-radius:8px;background:rgb
 </div>`;
 }
 
+if(data.interview_questions && data.interview_questions.length){
+html += `
+<div class="card">
+<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">💼 Interview Questions</h2>
+<div style="display:grid;gap:16px;">
+${data.interview_questions.map((iq, idx)=>`
+<div style="padding:18px;border-radius:14px;background:rgba(59,130,246,0.04);border:1px solid rgba(59,130,246,0.1);">
+<div style="display:flex;gap:12px;margin-bottom:10px;">
+<span style="font-size:20px;">❓</span>
+<div style="flex:1;">
+<div style="font-weight:700;color:#93c5fd;font-size:16px;">${escapeHtml(iq.question || `Question ${idx+1}`)}</div>
+${iq.difficulty ? `<span style="font-size:12px;padding:2px 10px;border-radius:6px;background:${iq.difficulty === 'hard' ? 'rgba(239,68,68,0.2)' : iq.difficulty === 'medium' ? 'rgba(251,191,36,0.2)' : 'rgba(34,197,94,0.2)'};color:${iq.difficulty === 'hard' ? '#fca5a5' : iq.difficulty === 'medium' ? '#fde68a' : '#86efac'};font-weight:600;margin-left:8px;">${escapeHtml(iq.difficulty)}</span>` : ""}
+</div>
+</div>
+${iq.answer ? `<div style="padding:12px 16px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);margin-left:32px;">
+<span style="color:#94a3b8;font-weight:600;">Answer:</span>
+<span style="color:#dbeafe;line-height:1.6;"> ${escapeHtml(iq.answer)}</span>
+</div>` : ""}
+</div>`).join("")}
+</div>
+</div>`;
+}
+
+if(data.faq && data.faq.length){
+html += `
+<div class="card">
+<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">❓ Frequently Asked Questions</h2>
+<div style="display:grid;gap:12px;">
+${data.faq.map((f, idx)=>`
+<div style="padding:16px 20px;border-radius:12px;background:rgba(139,92,246,0.04);border:1px solid rgba(139,92,246,0.1);">
+<div style="font-weight:700;color:#c4b5fd;margin-bottom:8px;">Q${idx+1}: ${escapeHtml(f.question || "")}</div>
+<div style="color:#dbeafe;line-height:1.7;padding-left:16px;border-left:3px solid rgba(139,92,246,0.3);">${escapeHtml(f.answer || "")}</div>
+</div>`).join("")}
+</div>
+</div>`;
+}
+
 if(data.summary){
 html += `
 <div class="card">
@@ -6358,6 +6395,21 @@ RETURN FORMAT (JSON):
     }
   ],
 
+  "interview_questions": [
+    {
+      "question": "Common interview question?",
+      "answer": "Concise but complete answer with example if possible",
+      "difficulty": "easy/medium/hard"
+    }
+  ],
+
+  "faq": [
+    {
+      "question": "Frequently asked question about this topic?",
+      "answer": "Clear, exam-focused answer"
+    }
+  ],
+
   "cheat_sheet": {
     "definition_line": "One-line definition",
     "key_formulas": ["Formula 1", "Formula 2"],
@@ -6379,9 +6431,11 @@ REQUIREMENTS:
 - key_concepts: 6-10 important concepts with code snippets
 - examples: 3-5 real-world examples with step-by-step walkthrough
 - common_mistakes: 3-5 common student mistakes with corrections
+- interview_questions: 5-8 common interview questions with answers (easy to hard)
+- faq: 3-5 frequently asked exam questions with answers
 - comparison_table: Include if topic has comparable aspects
 - cheat_sheet: REQUIRED — a quick revision card with one-liners, formulas, and memory aids
-- Every explanation must be DETAILED and EXAM-FOCUSED — assume student needs to write answers in exams`;
+- Every explanation must be DETAILED, EXAM-FOCUSED and INTERVIEW-READY — assume student needs to write answers in exams AND answer interview questions`;
 
 const groqResult =
 await askAI(groqPrompt,"",8192);
@@ -6434,6 +6488,8 @@ Below is the JSON notes generated for topic "${topic}". Your job is to:
    - If topic has operations (insert/delete/update/search/etc), ADD an "operations" array
    - If topic has types/variants, ADD a "types_or_variants" array
    - ADD "common_mistakes" (3-5) with corrections
+   - ADD "interview_questions" (5-8) with answers from easy to hard
+   - ADD "faq" (3-5) with exam-focused answers
    - ADD "cheat_sheet" with definition_line, key_formulas, critical_points (5+), quick_recall (3+), memory_tricks (3+ mnemonics/acronyms/shortcuts)
    - Add "code_snippet" to key_concepts where relevant
    - Add more "important_points" (at least 8)
