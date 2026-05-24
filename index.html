@@ -1757,6 +1757,7 @@ onclick="showPage('settings',this)">
 <h1 id="welcomeText">
 Welcome 👋
 </h1>
+<span id="adminBadge" style="display:none;font-size:13px;background:linear-gradient(135deg,#8b5cf6,#ec4899);color:white;padding:4px 14px;border-radius:20px;font-weight:700;margin-left:8px;">👑 Admin</span>
 
 <p style="color:#94a3b8;">
 Your AI learning workspace
@@ -2297,6 +2298,7 @@ style="
 color:#94a3b8;
 margin-bottom:10px;">
 email
+<span id="profileAdminBadge" style="display:none;font-size:11px;padding:2px 10px;border-radius:12px;background:linear-gradient(135deg,#8b5cf6,#ec4899);color:white;font-weight:700;margin-left:6px;">👑 Admin</span>
 </p>
 
 <p>
@@ -2403,7 +2405,13 @@ function isAdmin(){
     document.getElementById("authScreen").style.display = "none";
     document.querySelector(".app").style.display = "block";
     if(u.name) document.getElementById("welcomeText").innerText = "Welcome Back, " + u.name + " 👋";
-    if(u.email) document.getElementById("profileEmail").innerText = u.email;
+    if(u.email){
+      document.getElementById("profileEmail").innerText = u.email;
+      if(u.email === ADMIN_EMAIL){
+        document.getElementById("welcomeText").innerHTML = "Welcome Back, " + u.name + " 👑 Admin";
+        document.getElementById("adminBadge").style.display = "inline-block";
+      }
+    }
     if(u.name) document.getElementById("profileName").innerText = u.name;
     if(u.photo) document.getElementById("profilePic").src = u.photo;
   }
@@ -9315,6 +9323,12 @@ user.displayName || user.email.split("@")[0];
 
 profileEmail.innerText =
 user.email;
+
+if(user.email === ADMIN_EMAIL){
+document.getElementById("welcomeText").innerHTML = `Welcome Back, ${user.displayName || user.email.split("@")[0]} 👑 Admin`;
+document.getElementById("adminBadge").style.display = "inline-block";
+document.getElementById("profileAdminBadge").style.display = "inline";
+}
 
 if(user.photoURL){
 
