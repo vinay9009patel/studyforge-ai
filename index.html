@@ -1812,6 +1812,38 @@ style="width:100px;"
 onchange="changeSpeechRate()">
 <span id="speechRateValue" style="color:#94a3b8;font-size:14px;">1x</span>
 </div>
+
+<button
+id="storyModeBtn"
+class="btn"
+style="background:linear-gradient(135deg,#ec4899,#8b5cf6);color:white;padding:12px 24px;border-radius:14px;border:none;font-size:15px;cursor:pointer;font-weight:700;"
+onclick="startStoryMode()">
+🎧 Story Mode
+</button>
+
+<select
+id="storyLangSelect"
+class="input dark-select"
+style="max-width:140px;padding:12px 16px;font-size:14px;">
+<option value="hindi">हिन्दी</option>
+<option value="english" selected>English</option>
+<option value="hinglish">Hinglish</option>
+</select>
+</div>
+
+<div id="storyContainer" style="display:none;margin-top:20px;padding:24px;border-radius:20px;background:linear-gradient(135deg,rgba(236,72,153,0.05),rgba(139,92,246,0.08));border:2px solid rgba(236,72,153,0.2);">
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+<span style="font-size:28px;">📖</span>
+<h3 style="font-size:22px;font-weight:900;margin:0;background:linear-gradient(to right,#ec4899,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Story Time!</h3>
+<button onclick="stopStoryMode()" style="margin-left:auto;padding:8px 16px;border-radius:10px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.2);color:#fca5a5;cursor:pointer;font-weight:600;font-size:13px;">✕ Close</button>
+</div>
+<div id="storyContent" style="color:#f0d9ff;line-height:2;font-size:17px;white-space:pre-wrap;"></div>
+<div style="display:flex;gap:12px;margin-top:16px;align-items:center;">
+<button id="storyPlayBtn" onclick="toggleStoryAudio()" style="padding:10px 20px;border-radius:12px;background:linear-gradient(135deg,#ec4899,#8b5cf6);border:none;color:white;font-weight:700;font-size:14px;cursor:pointer;">🔊 Listen</button>
+<button id="storyPauseBtn" onclick="pauseStoryAudio()" style="padding:10px 20px;border-radius:12px;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.2);color:#fde68a;font-weight:700;font-size:14px;cursor:pointer;display:none;">⏸ Pause</button>
+<button id="storyStopBtn" onclick="stopStoryAudio()" style="padding:10px 20px;border-radius:12px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.2);color:#fca5a5;font-weight:700;font-size:14px;cursor:pointer;">⏹ Stop</button>
+<span id="storyStatus" style="color:#94a3b8;font-size:13px;"></span>
+</div>
 </div>
 
 <div
@@ -6755,36 +6787,150 @@ if(pauseBtn) pauseBtn.style.display = "none";
 }
 }
 
-function resumeAudio(){
-if(isSpeechPaused){
-speechSynthesis.resume();
-isSpeechPaused = false;
-const playBtn = document.getElementById("audioPlayBtn");
-const pauseBtn = document.getElementById("audioPauseBtn");
-if(playBtn){
-playBtn.style.display = "none";
-playBtn.textContent = "▶ Play Audio";
+let storyUtterance = null;
+
+function getStoryLang(){
+const sel = document.getElementById("storyLangSelect");
+return sel ? sel.value : "english";
 }
-if(pauseBtn) pauseBtn.style.display = "inline-block";
+
+async function startStoryMode(){
+const topic = document.getElementById("topic").value.trim();
+if(!topic){ alert("Enter a topic first"); return; }
+
+const lang = getStoryLang();
+const container = document.getElementById("storyContainer");
+const content = document.getElementById("storyContent");
+const status = document.getElementById("storyStatus");
+if(container) container.style.display = "block";
+if(content) content.innerHTML = "🧸 Generating a fun story for you...";
+if(status) status.textContent = "⏳ Creating story...";
+
+const langInstr = lang === "hindi" ? "पूरी कहानी सिर्फ हिंदी में लिखो, बिल्कुल अंग्रेजी नहीं" : lang === "hinglish" ? "Mix Hindi and English like Hinglish, writes as people speak" : "Write in English only";
+
+const prompt = `You are a FUN STORYTELLER. Tell a magical story about "${topic}" to a 10-year-old child.
+
+${langInstr}
+
+RULES:
+- Child knows NOTHING about this topic. Explain from zero.
+- Use simple words, fun characters, magical places, exciting adventures
+- Feel like a bedtime story or cartoon episode
+- Add fun sounds: "Whoooosh!", "Tada! 🤩", "Boing!", "✨"
+- Short paragraphs (2-3 lines) for easy listening
+- End with "Now you know all about ${topic}! 🎉"
+- 400-800 words only`;
+
+try{
+if(status) status.textContent = "⏳ AI writing story...";
+const storyText = await askAI(prompt, "You are a fun storyteller for kids. Be cheerful.", 2500);
+if(storyText && !storyText.startsWith("🔴")){
+if(content) content.innerHTML = storyText.replace(/\n/g, "<br>");
+if(status) status.textContent = "✅ Ready! Press 🔊 Listen to hear 🎧";
+}else{
+if(content) content.innerHTML = "☹️ Oops! Could not create story. Try again!";
+if(status) status.textContent = "❌ Failed";
+}
+}catch(e){
+if(content) content.innerHTML = "☹️ Error: " + e.message;
+if(status) status.textContent = "❌ Error";
 }
 }
 
-function stopAudio(){
-if('speechSynthesis' in window){
+function stopStoryMode(){
+const container = document.getElementById("storyContainer");
+if(container) container.style.display = "none";
+stopStoryAudio();
+}
+
+function toggleStoryAudio(){
+if(!speechSynthesis.speaking){
+playStoryAudio();
+}else if(speechSynthesis.paused){
+resumeStoryAudio();
+}else{
+pauseStoryAudio();
+}
+}
+
+function playStoryAudio(){
+if(!('speechSynthesis' in window)){ alert("Voice not supported"); return; }
+const content = document.getElementById("storyContent");
+if(!content || !content.textContent.trim()) return;
+
 speechSynthesis.cancel();
-currentSpeechUtterance = null;
-isSpeechPaused = false;
-const playBtn = document.getElementById("audioPlayBtn");
-const pauseBtn = document.getElementById("audioPauseBtn");
-if(playBtn){
-playBtn.style.display = "inline-block";
-playBtn.textContent = "▶ Play Audio";
+storyUtterance = null;
+
+const text = content.textContent.substring(0, 4000);
+storyUtterance = new SpeechSynthesisUtterance(text);
+storyUtterance.rate = 0.85;
+storyUtterance.pitch = 1.4;
+
+const lang = getStoryLang();
+const voices = speechSynthesis.getVoices();
+
+if(lang === "hindi" || lang === "hinglish"){
+storyUtterance.lang = "hi-IN";
+const hf = voices.find(v => v.lang && v.lang.includes("hi") && (v.name.includes("Female") || v.name.includes("Google")));
+storyUtterance.voice = hf || voices.find(v => v.lang && v.lang.includes("hi")) || null;
+}else{
+storyUtterance.lang = "en-US";
+const ff = voices.find(v => v.lang && v.lang.includes("en") && (v.name.includes("Samantha") || v.name.includes("Female") || v.name.includes("Google US") || v.name.includes("Zira") || v.name.includes("Microsoft")));
+storyUtterance.voice = ff || null;
 }
+
+const playBtn = document.getElementById("storyPlayBtn");
+const pauseBtn = document.getElementById("storyPauseBtn");
+const status = document.getElementById("storyStatus");
+if(playBtn) playBtn.textContent = "⏸ Pause";
+if(pauseBtn) pauseBtn.style.display = "inline-block";
+if(status) status.textContent = "🔊 Playing... 🎵";
+
+storyUtterance.onend = function(){
+if(playBtn) { playBtn.textContent = "🔊 Listen"; playBtn.style.display = "inline-block"; }
 if(pauseBtn) pauseBtn.style.display = "none";
-}
+if(status) status.textContent = "✅ Done! 🎉";
+storyUtterance = null;
+};
+storyUtterance.onerror = function(){
+if(playBtn) playBtn.textContent = "🔊 Listen";
+if(pauseBtn) pauseBtn.style.display = "none";
+if(status) status.textContent = "";
+storyUtterance = null;
+};
+speechSynthesis.speak(storyUtterance);
 }
 
+function pauseStoryAudio(){
+speechSynthesis.pause();
+const playBtn = document.getElementById("storyPlayBtn");
+if(playBtn) playBtn.textContent = "▶ Resume";
+const pauseBtn = document.getElementById("storyPauseBtn");
+if(pauseBtn) pauseBtn.style.display = "none";
+const status = document.getElementById("storyStatus");
+if(status) status.textContent = "⏸ Paused";
+}
 
+function resumeStoryAudio(){
+speechSynthesis.resume();
+const playBtn = document.getElementById("storyPlayBtn");
+if(playBtn) playBtn.textContent = "⏸ Pause";
+const pauseBtn = document.getElementById("storyPauseBtn");
+if(pauseBtn) pauseBtn.style.display = "inline-block";
+const status = document.getElementById("storyStatus");
+if(status) status.textContent = "🔊 Playing... 🎵";
+}
+
+function stopStoryAudio(){
+speechSynthesis.cancel();
+storyUtterance = null;
+const playBtn = document.getElementById("storyPlayBtn");
+if(playBtn) playBtn.textContent = "🔊 Listen";
+const pauseBtn = document.getElementById("storyPauseBtn");
+if(pauseBtn) pauseBtn.style.display = "none";
+const status = document.getElementById("storyStatus");
+if(status) status.textContent = "";
+}
 
 function downloadNotes(){
 const notesEl =
