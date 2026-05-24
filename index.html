@@ -8952,13 +8952,21 @@ document.getElementById(
 "password"
 ).value;
 
-await createUserWithEmailAndPassword(
+try {
+const result = await createUserWithEmailAndPassword(
 auth,
 email,
 password
 );
-
+localStorage.setItem("user", JSON.stringify({
+name: result.user.email.split("@")[0],
+email: result.user.email,
+photo: ""
+}));
 location.reload();
+} catch(error) {
+alert("Signup failed: " + (error.message || error));
+}
 
 };
 
@@ -8975,13 +8983,21 @@ document.getElementById(
 "password"
 ).value;
 
-await signInWithEmailAndPassword(
+try {
+const result = await signInWithEmailAndPassword(
 auth,
 email,
 password
 );
-
+localStorage.setItem("user", JSON.stringify({
+name: result.user.email.split("@")[0],
+email: result.user.email,
+photo: result.user.photoURL || ""
+}));
 location.reload();
+} catch(error) {
+alert("Login failed: " + (error.message || error));
+}
 
 };
 
@@ -9006,6 +9022,12 @@ auth,
 (user)=>{
 
 if(user){
+
+localStorage.setItem("user", JSON.stringify({
+name: user.displayName || user.email.split("@")[0],
+email: user.email,
+photo: user.photoURL || ""
+}));
 
 document.getElementById(
 "authScreen"
