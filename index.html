@@ -2511,12 +2511,15 @@ function b64urlDecode(str){
 async function initSecureStore(uid){
     let hashStr = sessionStorage.getItem('sk_' + uid);
     if(!hashStr){
-        const salt = dcodeIO.bcrypt.genSaltSync(4);
-        hashStr = dcodeIO.bcrypt.hashSync(uid, salt);
+        hashStr = uid;
         sessionStorage.setItem('sk_' + uid, hashStr);
     }
     const keyBytes = new TextEncoder().encode(hashStr.slice(0,32));
-    signingKey = await crypto.subtle.importKey('raw',keyBytes,{name:'HMAC',hash:'SHA-256'},false,['sign','verify']);
+    try{
+        signingKey = await crypto.subtle.importKey('raw',keyBytes,{name:'HMAC',hash:'SHA-256'},false,['sign','verify']);
+    }catch(e){
+        signingKey = null;
+    }
     const token = localStorage.getItem('secureAppData');
     if(!token){
         const legacy = localStorage.getItem('appData');
@@ -2528,14 +2531,34 @@ async function initSecureStore(uid){
         return;
     }
     const parts = token.split('.');
-    if(parts.length!==2) return;
+    if(parts.length!==2){
+        const legacy = localStorage.getItem('appData');
+        if(legacy){
+            try{ Object.assign(appData,JSON.parse(legacy)); localStorage.removeItem('appData'); }catch(e){}
+        }
+        await secureSaveData(appData);
+        updateUI();
+        return;
+    }
     try{
         const valid = await crypto.subtle.verify('HMAC',signingKey,b64urlDecode(parts[1]),new TextEncoder().encode(parts[0]));
-        if(!valid){ console.warn("Data tampered! Resetting."); await secureSaveData(appData); updateUI(); return; }
+        if(!valid){
+            const legacy = localStorage.getItem('appData');
+            if(legacy){
+                try{ Object.assign(appData,JSON.parse(legacy)); localStorage.removeItem('appData'); }catch(e){}
+            }
+            await secureSaveData(appData); updateUI(); return;
+        }
         const data = JSON.parse(new TextDecoder().decode(b64urlDecode(parts[0])));
         Object.assign(appData,data);
         updateUI();
-    }catch(e){ console.warn("Failed to load secure data",e); }
+    }catch(e){
+        const legacy = localStorage.getItem('appData');
+        if(legacy){
+            try{ Object.assign(appData,JSON.parse(legacy)); localStorage.removeItem('appData'); }catch(e){}
+        }
+        await secureSaveData(appData); updateUI();
+    }
 }
 
 async function secureSaveData(data){
