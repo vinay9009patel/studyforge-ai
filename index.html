@@ -6200,6 +6200,33 @@ ${data.faq.map((f, idx)=>`
 </div>`;
 }
 
+if(data.exam_pattern && data.exam_pattern.length){
+html += `
+<div class="card">
+<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">📋 Exam Pattern Questions</h2>
+<div style="display:grid;gap:16px;">
+${data.exam_pattern.map((ep, idx)=>`
+<div style="padding:18px;border-radius:14px;background:rgba(251,191,36,0.04);border:1px solid rgba(251,191,36,0.12);">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+<span style="font-size:18px;">📌</span>
+<div style="flex:1;">
+<div style="font-weight:700;color:#fde68a;font-size:16px;">Q${idx+1}: ${escapeHtml(ep.question || "")}</div>
+${ep.marks ? `<span style="font-size:12px;padding:2px 10px;border-radius:6px;background:rgba(251,191,36,0.15);color:#fde68a;font-weight:600;">${escapeHtml(ep.marks)}</span>` : ""}
+</div>
+</div>
+${ep.answer ? `<div style="padding:12px 16px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);margin-bottom:8px;">
+<span style="color:#94a3b8;font-weight:600;">Answer:</span>
+<div style="color:#dbeafe;line-height:1.7;margin-top:4px;">${escapeHtml(ep.answer)}</div>
+</div>` : ""}
+${ep.exam_tip ? `<div style="padding:10px 14px;border-radius:8px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.1);">
+<span style="color:#4ade80;font-weight:600;">💡 Exam Tip:</span>
+<span style="color:#dbeafe;"> ${escapeHtml(ep.exam_tip)}</span>
+</div>` : ""}
+</div>`).join("")}
+</div>
+</div>`;
+}
+
 if(data.summary){
 html += `
 <div class="card">
@@ -6291,32 +6318,34 @@ ${extractedText ? "EXTRA CONTEXT: " + extractedText : ""}
 RULES:
 1. Return ONLY valid JSON. No markdown.
 2. Cover EVERYTHING: definition, all aspects, types, real examples, pros/cons, common mistakes, interview Q&A, exam tips
-3. Each explanation must be DETAILED — assume student will write exam answers from this
+3. 🎯 WRITE IN STORY FORMAT — use analogies, real-life comparisons, mini-stories to explain concepts. People understand better through stories. Example: "Think of array like a train with numbered compartments..." instead of dry definitions.
 4. Include real-world applications, historical context, industry use
 5. Comparison table if topic has comparable aspects
 6. 💻 code_example and code_snippet fields: ONLY include for programming/technical topics (DS, Algo, coding concepts). For theory/history/non-coding topics, OMIT these fields entirely.
+7. 📝 interview_questions MUST include REAL questions that ACTUALLY appear in exams and job interviews for this topic — not generic questions. Write each answer as a short story/example scenario so it's easy to remember.
 
 JSON FORMAT:
 {
   "topic": "${topic}",
-  "introduction": { "definition": "precise definition", "simple_explanation": "1-2 line easy explanation" },
-  "sections": [{ "title": "Section name", "points": [{ "heading": "Point", "explanation": "DETAILED explanation" }] }],
-  "operations": [{ "name": "Operation", "description": "what it does", "algorithm_steps": ["Step 1","Step 2"], "time_complexity": "O(?)", "space_complexity": "O(?)", "code_example": "pseudocode (ONLY for coding topics)", "example": "walkthrough" }],
+  "introduction": { "definition": "precise definition", "simple_explanation": "explain like a story/analogy" },
+  "sections": [{ "title": "Section name", "points": [{ "heading": "Point", "explanation": "EXPLAIN AS A STORY with examples" }] }],
+  "operations": [{ "name": "Operation", "description": "what it does", "algorithm_steps": ["Step 1","Step 2"], "time_complexity": "O(?)", "space_complexity": "O(?)", "code_example": "pseudocode (ONLY for coding topics)", "example": "walkthrough story" }],
   "types_or_variants": [{ "name": "Type", "explanation": "details", "characteristics": ["c1","c2"], "when_to_use": "when", "example": "example" }],
-  "key_concepts": [{ "concept": "name", "simple_explanation": "simple", "detailed_explanation": "exam-ready detail", "code_snippet": "code (ONLY for coding topics)" }],
-  "examples": [{ "title": "title", "scenario": "real scenario", "explanation": "step-by-step", "visualization": "text diagram" }],
+  "key_concepts": [{ "concept": "name", "simple_explanation": "simple story/analogy", "detailed_explanation": "exam-ready detail", "code_snippet": "code (ONLY for coding topics)" }],
+  "examples": [{ "title": "title", "scenario": "real scenario", "explanation": "step-by-step story", "visualization": "text diagram" }],
   "comparison_table": { "headers": ["A","B","C"], "rows": [["a1","b1","c1"]] },
   "advantages": [{ "point": "advantage", "explanation": "detail" }],
   "disadvantages": [{ "point": "disadvantage", "explanation": "detail" }],
   "important_points": ["point1","point2","point3","point4","point5","point6","point7","point8"],
   "common_mistakes": [{ "mistake": "mistake", "correction": "correction" }],
-  "interview_questions": [{ "question": "question", "answer": "detailed answer", "difficulty": "easy/medium/hard" }],
-  "faq": [{ "question": "question", "answer": "clear answer" }],
+  "interview_questions": [{ "question": "REAL exam/interview question for this topic", "answer": "Answer with a short story/example that makes it easy to remember", "difficulty": "easy/medium/hard" }],
+  "faq": [{ "question": "REAL exam question frequently asked", "answer": "clear answer with example" }],
+  "exam_pattern": [{ "question": "Question pattern that repeats in exams", "answer": "Step-by-step answer as expected in exam", "marks": "2/5/10 marks", "exam_tip": "How to write this answer to get full marks" }],
   "cheat_sheet": { "definition_line": "one-line def", "key_formulas": ["f1","f2"], "critical_points": ["p1","p2","p3","p4","p5"], "quick_recall": ["r1","r2"], "memory_tricks": [{"hint":"mnemonic","for":"what it helps"}] },
   "summary": "4-5 sentence summary"
 }
 
-REQUIRED: minimum 8 sections covering ALL aspects, 6-10 key_concepts, 4-6 examples, 5-8 interview_questions, 3-5 faq, 3-5 common_mistakes, cheat_sheet ALWAYS included. Make every explanation EXAM-READY and INTERVIEW-READY. Include general knowledge and pro tips.`;
+REQUIRED: minimum 8 sections covering ALL aspects, 6-10 key_concepts, 4-6 examples (each as a mini-story), 5-8 interview_questions (REAL ones with story-answers), 3-5 exam_pattern questions, 3-5 faq, 3-5 common_mistakes, cheat_sheet ALWAYS included. Every explanation must be in STORY/NARRATIVE style — use analogies, real-life comparisons, memorable scenarios.`;
 
 const groqResult =
 await askAI(groqPrompt,"",8192,"llama-3.3-70b-versatile");
@@ -6361,11 +6390,13 @@ notesOutput.innerHTML = "";
 groqData = JSON.parse(JSON.stringify(data));
 const geminiImprovePrompt = `You are a PROFESSOR fact-checking and expanding exam notes for "${topic}".
 
-Fix errors, expand every section, add missing EXAMPLES (at least 4-6), and add any missing fields. Keep the same JSON structure.
+Fix errors, expand every section, add missing EXAMPLES (at least 4-6 in STORY format), and add any missing fields.
 
-CRITICAL: If original lacks "examples" or has few, ADD 4-6 real-world examples with step-by-step explanation. ADD cheat_sheet if missing. ADD interview_questions (5-8) if missing.
+CRITICAL: If original lacks "examples" or has few, ADD 4-6 real-world examples as mini-stories. ADD cheat_sheet if missing. ADD interview_questions (5-8 REAL exam/interview questions) if missing. ADD exam_pattern (3-5 questions) if missing.
 
-💻 IMPORTANT: ONLY add code_example/code_snippet fields if "${topic}" is a programming/technical topic (coding, DS, Algo, etc.). For theory/history/non-coding topics, leave code fields OUT.
+🎯 Write ALL explanations in STORY/NARRATIVE style — use analogies, real-life comparisons, memorable scenarios so students never forget.
+
+💻 IMPORTANT: ONLY add code_example/code_snippet fields if "${topic}" is a programming/technical topic.
 
 Return ONLY improved valid JSON. No markdown.
 
