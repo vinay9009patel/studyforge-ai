@@ -6771,7 +6771,8 @@ ${preview}
 
 ${mermaidCodeGroq ? `
 <div class="row" style="display:flex;gap:20px;margin-bottom:30px;">
-<div class="ai-diagram-card" style="flex:1;">
+<div class="ai-diagram-card" style="flex:1;position:relative;" id="mindMapGroqCard">
+<button onclick="document.getElementById('mindMapGroqCard').style.display='none'" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.08);border:none;color:#94a3b8;font-size:18px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10;font-weight:700;">✕</button>
 <div class="ai-diagram-title">
 🤖 Groq Mind Map
 </div>
@@ -6781,7 +6782,8 @@ ${mermaidCodeGroq}
 </div>
 ` : ""}
 ${mermaidCodeGemini ? `
-<div class="ai-diagram-card" style="flex:1;">
+<div class="ai-diagram-card" style="flex:1;position:relative;" id="mindMapGeminiCard">
+<button onclick="document.getElementById('mindMapGeminiCard').style.display='none'" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.08);border:none;color:#94a3b8;font-size:18px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10;font-weight:700;">✕</button>
 <div class="ai-diagram-title">
 🧠 Gemini Mind Map (Improved)
 </div>
@@ -7070,6 +7072,7 @@ const storyText = await askAI(prompt, "You are a fun storyteller for kids. Be ch
 
 let finalStory = storyText;
 
+if(storyText && !storyText.startsWith("🔴") && !storyText.includes("\n## ") && !storyText.includes("\n# ")){
 try{
 if(storyText && !storyText.startsWith("🔴")){
 const geminiPrompt = `Improve this educational story about "${topic}" for a 10-year-old child. CRITICAL: The story MUST teach what "${topic}" is. Every paragraph must explain a real concept of "${topic}". Make it more engaging, fix any errors, keep it simple and magical. If the story does not actually teach "${topic}", rewrite it to do so.
