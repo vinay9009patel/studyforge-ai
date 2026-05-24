@@ -1120,6 +1120,10 @@ transition:0.3s;
 min-height:340px;
 }
 
+.ai-diagram-card.expanded{
+box-shadow:0 0 0 9999px rgba(0,0,0,0.7), 0 20px 60px rgba(0,0,0,0.8);
+}
+
 .ai-diagram-card img{
 width:100%;
 height:260px;
@@ -2623,6 +2627,29 @@ if(jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart){
 cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
 }
 return cleaned;
+}
+
+function toggleMindMapExpand(id){
+const el = document.getElementById(id);
+if(!el) return;
+if(el.classList.contains("expanded")){
+el.classList.remove("expanded");
+el.style.position = "relative";
+el.style.zIndex = "";
+el.style.width = "";
+el.style.maxWidth = "";
+}else{
+el.classList.add("expanded");
+el.style.position = "fixed";
+el.style.zIndex = "99999";
+el.style.width = "90vw";
+el.style.maxWidth = "1200px";
+el.style.top = "50%";
+el.style.left = "50%";
+el.style.transform = "translate(-50%, -50%)";
+el.style.height = "80vh";
+el.style.overflow = "auto";
+}
 }
 
 function escapeHtml(value){
@@ -6769,10 +6796,11 @@ notesOutput.innerHTML = `
 
 ${preview}
 
-${mermaidCodeGroq ? `
+${mermaidCodeGroq || mermaidCodeGemini ? `
 <div class="row" style="display:flex;gap:20px;margin-bottom:30px;">
-<div class="ai-diagram-card" style="flex:1;position:relative;" id="mindMapGroqCard">
-<button onclick="document.getElementById('mindMapGroqCard').style.display='none'" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.08);border:none;color:#94a3b8;font-size:18px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10;font-weight:700;">✕</button>
+${mermaidCodeGroq ? `
+<div class="ai-diagram-card" style="flex:1;position:relative;cursor:pointer;transition:all 0.3s;" id="mindMapGroqCard" onclick="toggleMindMapExpand('mindMapGroqCard')">
+<button onclick="event.stopPropagation();toggleMindMapExpand('mindMapGroqCard')" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.08);border:none;color:#94a3b8;font-size:16px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10;font-weight:700;">⛶</button>
 <div class="ai-diagram-title">
 🤖 Groq Mind Map
 </div>
@@ -6782,8 +6810,8 @@ ${mermaidCodeGroq}
 </div>
 ` : ""}
 ${mermaidCodeGemini ? `
-<div class="ai-diagram-card" style="flex:1;position:relative;" id="mindMapGeminiCard">
-<button onclick="document.getElementById('mindMapGeminiCard').style.display='none'" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.08);border:none;color:#94a3b8;font-size:18px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10;font-weight:700;">✕</button>
+<div class="ai-diagram-card" style="flex:1;position:relative;cursor:pointer;transition:all 0.3s;" id="mindMapGeminiCard" onclick="toggleMindMapExpand('mindMapGeminiCard')">
+<button onclick="event.stopPropagation();toggleMindMapExpand('mindMapGeminiCard')" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.08);border:none;color:#94a3b8;font-size:16px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10;font-weight:700;">⛶</button>
 <div class="ai-diagram-title">
 🧠 Gemini Mind Map (Improved)
 </div>
@@ -6792,7 +6820,8 @@ ${mermaidCodeGemini}
 </div>
 </div>
 ` : ""}
-${mermaidCodeGroq || mermaidCodeGemini ? `</div>` : ""}
+</div>
+` : ""}
 
 ${visualHtml}
 
@@ -7091,10 +7120,11 @@ finalStory = geminiResult;
 if(finalStory && !finalStory.startsWith("🔴")){
 if(content) content.innerHTML = finalStory.replace(/\n/g, "<br>");
 if(status) status.textContent = "✅ Ready! Press 🔊 Listen to hear 🎧";
-}else{
-if(content) content.innerHTML = "☹️ Oops! Could not create story. Try again!";
-if(status) status.textContent = "❌ Failed";
+return;
 }
+}
+if(content) content.innerHTML = "☹️ APIs busy right now. Please try again after a minute!";
+if(status) status.textContent = "❌ Failed";
 }catch(e){
 if(content) content.innerHTML = "☹️ Error: " + e.message;
 if(status) status.textContent = "❌ Error";
