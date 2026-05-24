@@ -4985,9 +4985,8 @@ async function askAI(prompt, systemMsg, maxTok, modelName){
     console.log("   ❌ Gemini error:", gemErr.message);
   }
   
-  console.log("   🧠 All APIs failed. Using SMART FALLBACK notes...");
-  const fallbackNotes = generateSmartFallbackNotes(prompt);
-  return fallbackNotes;
+  console.log("   🧠 All APIs failed.");
+  return null;
 }
 
 function extractTopicFromPrompt(prompt){
@@ -6904,44 +6903,37 @@ notesOutput.innerHTML =
 const extractedText =
 await extractFileText(file);
 
-const groqPrompt = `The user typed topic as "${topic}". If this has a small spelling mistake, auto-correct it to the intended topic. Then generate notes for the corrected topic.
+const groqPrompt = `Generate COMPLETE, DETAILED study notes about "${topic}" in valid JSON.
 
-You are an EXPERT TEACHER + INTERVIEW COACH. Generate ULTRA-DETAILED notes for "${topic}".
-
-${extractedText ? "EXTRA CONTEXT: " + extractedText : ""}
+${extractedText ? "Extra context: " + extractedText : ""}
 
 RULES:
-1. Return ONLY valid JSON. No markdown.
-2. Cover EVERYTHING: definition, all aspects, types, real examples, pros/cons, common mistakes, interview Q&A, exam tips
-3. 🎯 WRITE IN STORY FORMAT — use analogies, real-life comparisons, mini-stories to explain concepts. People understand better through stories. Example: "Think of array like a train with numbered compartments..." instead of dry definitions.
-4. Include real-world applications, historical context, industry use
-5. Comparison table if topic has comparable aspects
-6. 💻 code_example and code_snippet fields: ONLY include for programming/technical topics (DS, Algo, coding concepts). For theory/history/non-coding topics, OMIT these fields entirely.
-7. 📝 interview_questions MUST include REAL questions that ACTUALLY appear in exams and job interviews for this topic — not generic questions. Write each answer as a short story/example scenario so it's easy to remember.
-8. 🔮 CRITICAL: memory_tricks MUST have 3-5 REAL mnemonics. Example hint="My Very Educated Mother Just Served Us Noodles", for="Planet order: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune". Give REAL well-known mnemonics for this topic.
+- Return ONLY valid JSON, no markdown
+- ALL content must be SPECIFICALLY about "${topic}" — real examples, real use cases, real interview questions
+- Write explanations like a teacher explaining to a student — use analogies, simple language, real-life comparisons
+- For coding topics (DS, Algo, programming), include code examples
+- Include memory tricks / mnemonics where helpful
 
-JSON FORMAT:
+JSON STRUCTURE:
 {
   "topic": "${topic}",
-  "introduction": { "definition": "precise definition", "simple_explanation": "explain like a story/analogy" },
-  "sections": [{ "title": "Section name", "points": [{ "heading": "Point", "explanation": "EXPLAIN AS A STORY with examples" }] }],
-  "operations": [{ "name": "Operation", "description": "what it does", "algorithm_steps": ["Step 1","Step 2"], "time_complexity": "O(?)", "space_complexity": "O(?)", "code_example": "pseudocode (ONLY for coding topics)", "example": "walkthrough story" }],
-  "types_or_variants": [{ "name": "Type", "explanation": "details", "characteristics": ["c1","c2"], "when_to_use": "when", "example": "example" }],
-  "key_concepts": [{ "concept": "name", "simple_explanation": "simple story/analogy", "detailed_explanation": "exam-ready detail", "code_snippet": "code (ONLY for coding topics)" }],
-  "examples": [{ "title": "title", "scenario": "real scenario", "explanation": "step-by-step story", "visualization": "beautiful text diagram using box-drawing chars (─│┌┐└┘├┤┬┴┼) and arrows (→←↑↓) to visually explain the concept" }],
+  "introduction": { "definition": "clear definition", "simple_explanation": "simple analogy-based explanation" },
+  "sections": [{ "title": "section title", "points": [{ "heading": "point", "explanation": "detailed explanation with examples" }] }],
+  "operations": [{ "name": "op name", "description": "what it does", "algorithm_steps": ["step1","step2"], "time_complexity": "O(?)", "space_complexity": "O(?)", "code_example": "code for coding topics only", "example": "walkthrough" }],
+  "types_or_variants": [{ "name": "type name", "explanation": "details", "characteristics": ["c1","c2"], "when_to_use": "when to use", "example": "example" }],
+  "key_concepts": [{ "concept": "name", "simple_explanation": "simple explanation", "detailed_explanation": "in-depth explanation" }],
+  "examples": [{ "title": "title", "scenario": "real scenario", "explanation": "step by step explanation", "visualization": "text diagram" }],
   "comparison_table": { "headers": ["A","B","C"], "rows": [["a1","b1","c1"]] },
   "advantages": [{ "point": "advantage", "explanation": "detail" }],
   "disadvantages": [{ "point": "disadvantage", "explanation": "detail" }],
-  "important_points": ["point1","point2","point3","point4","point5","point6","point7","point8"],
+  "important_points": ["point1","point2"],
   "common_mistakes": [{ "mistake": "mistake", "correction": "correction" }],
-  "interview_questions": [{ "question": "REAL exam/interview question for this topic", "answer": "Answer with a short story/example that makes it easy to remember", "difficulty": "easy/medium/hard", "follow_up": [{ "question": "Follow-up question that digs deeper", "answer": "Expected follow-up answer" }] }],
-  "faq": [{ "question": "REAL exam question frequently asked", "answer": "clear answer with example" }],
-  "exam_pattern": [{ "question": "Question pattern that repeats in exams", "answer": "Step-by-step answer as expected in exam", "marks": "2/5/10 marks", "exam_tip": "How to write this answer to get full marks" }],
-  "cheat_sheet": { "definition_line": "one-line def", "key_formulas": ["f1","f2"], "critical_points": ["p1","p2","p3","p4","p5"], "quick_recall": ["r1","r2"], "memory_tricks": [{"hint":"My Very Educated Mother Just Served Us Noodles","for":"Remember planet order: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune"}] },
-  "summary": "4-5 sentence summary"
-}
-
-REQUIRED: minimum 8 sections covering ALL aspects, 6-10 key_concepts, 4-6 examples (each as a mini-story), 5-8 interview_questions (REAL ones with story-answers), 3-5 exam_pattern questions, 3-5 faq, 3-5 common_mistakes, cheat_sheet ALWAYS included. Every explanation must be in STORY/NARRATIVE style — use analogies, real-life comparisons, memorable scenarios.`;
+  "interview_questions": [{ "question": "real interview question", "answer": "answer with example", "difficulty": "easy/medium/hard" }],
+  "faq": [{ "question": "frequently asked question", "answer": "clear answer" }],
+  "exam_pattern": [{ "question": "exam question", "answer": "expected answer", "marks": "2/5/10" }],
+  "cheat_sheet": { "definition_line": "one line definition", "key_formulas": ["f1"], "critical_points": ["p1"], "memory_tricks": [{"hint":"hint","for":"what it helps remember"}] },
+  "summary": "2-3 sentence summary"
+}`;
 
 const groqResult =
 await askAI(groqPrompt,"",8192,"llama-3.3-70b-versatile");
