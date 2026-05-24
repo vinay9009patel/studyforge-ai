@@ -1671,6 +1671,11 @@ class="page active">
 
 </div>
 
+<div class="card" id="dailyUsageCard" style="display:none;">
+<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">📊 Daily Usage</h2>
+<div id="dailyUsageContent"></div>
+</div>
+
 <div class="card">
 
 <h2 style="
@@ -2235,6 +2240,50 @@ Toggle Theme
 const WORKER_URL =
 "https://gorq-proxy.vinaypatel975562.workers.dev";
 
+const ADMIN_EMAIL = "vinay9009patel@gmail.com";
+
+const DAILY_LIMITS = {
+  notes: 5,
+  quiz: 3,
+  mentor: 15,
+  interview: 2
+};
+
+function getCurrentUserEmail(){
+  try{
+    const u = JSON.parse(localStorage.getItem("user") || "{}");
+    return u.email || "";
+  }catch(e){ return ""; }
+}
+
+function isAdmin(){
+  return getCurrentUserEmail() === ADMIN_EMAIL;
+}
+
+function getDailyUsageKey(){ return "du_" + getTodayKey(); }
+
+function getDailyUsage(){
+  const key = getDailyUsageKey();
+  const raw = localStorage.getItem(key);
+  if(raw){ try{ return JSON.parse(raw); }catch(e){} }
+  return { notes:0, quiz:0, mentor:0, interview:0 };
+}
+
+function saveDailyUsage(usage){
+  localStorage.setItem(getDailyUsageKey(), JSON.stringify(usage));
+}
+
+function checkLimitAndTrack(type){
+  if(isAdmin()) return { allowed: true, remaining: 999 };
+  const usage = getDailyUsage();
+  const used = usage[type] || 0;
+  const limit = DAILY_LIMITS[type] || 999;
+  if(used >= limit) return { allowed: false, remaining: 0, used, limit };
+  usage[type] = used + 1;
+  saveDailyUsage(usage);
+  return { allowed: true, remaining: limit - used - 1, used: used + 1, limit };
+}
+
 let appData = {
 
 xp:0,
@@ -2670,6 +2719,41 @@ appData.dailyQuizQuestions >= target;
 dailyChallengeText.innerHTML = completed
 ? `Daily challenge completed. You solved <strong>${appData.dailyQuizQuestions}</strong> quiz questions today.`
 : `Solve 5 quiz questions today. Progress: <strong>${progress}/${target}</strong>`;
+}
+
+function renderDailyUsage(){
+const card = document.getElementById("dailyUsageCard");
+const content = document.getElementById("dailyUsageContent");
+if(!card || !content) return;
+
+if(isAdmin()){
+  card.style.display = "none";
+  return;
+}
+
+const usage = getDailyUsage();
+let html = '<div style="display:grid;gap:12px;">';
+const labels = { notes:"📝 Notes", quiz:"🧪 Quiz", mentor:"🤖 Mentor", interview:"👨‍🏫 Interview" };
+for(const [key, label] of Object.entries(labels)){
+  const used = usage[key] || 0;
+  const limit = DAILY_LIMITS[key] || 999;
+  const remaining = limit - used;
+  const pct = Math.min((used/limit)*100, 100);
+  const color = remaining <= 0 ? "#ef4444" : remaining <= 1 ? "#f59e0b" : "#22c55e";
+  html += `
+    <div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+        <span style="color:#94a3b8;font-weight:500;">${label}</span>
+        <span style="color:${color};font-weight:700;">${remaining}/${limit} left</span>
+      </div>
+      <div style="height:6px;border-radius:3px;background:rgba(255,255,255,0.06);overflow:hidden;">
+        <div style="height:100%;width:${pct}%;border-radius:3px;background:${color};transition:width 0.3s;"></div>
+      </div>
+    </div>`;
+}
+html += '</div>';
+content.innerHTML = html;
+card.style.display = "block";
 }
 
 function renderBadges(){
@@ -4014,6 +4098,17 @@ function retryOwnCamera(){
 }
 
 async function startInterview(){
+const chk = checkLimitAndTrack("interview");
+if(!chk.allowed){
+  const output = document.getElementById("interviewOutput");
+  output.innerHTML = `<div class="card" style="text-align:center;padding:40px;">
+    <div style="font-size:48px;margin-bottom:12px;">😅</div>
+    <h3 style="font-size:24px;font-weight:800;color:#fde68a;margin-bottom:8px;">Daily Interview Limit Reached</h3>
+    <p style="color:#94a3b8;">${chk.used}/${chk.limit} interviews today. Come back tomorrow!</p>
+  </div>`;
+  return;
+}
+
 const topic =
 document.getElementById("interviewTopic").value.trim();
 
@@ -6463,6 +6558,18 @@ return html;
 async function generateNotes(){
 try{
 
+const notesOutput = document.getElementById("notesOutput");
+
+const chk = checkLimitAndTrack("notes");
+if(!chk.allowed){
+  notesOutput.innerHTML = `<div style="padding:40px;text-align:center;">
+    <div style="font-size:48px;margin-bottom:16px;">😅</div>
+    <h3 style="font-size:24px;font-weight:800;color:#fde68a;margin-bottom:8px;">Daily Limit Reached</h3>
+    <p style="color:#94a3b8;">You've used ${chk.used}/${chk.limit} notes today. Come back tomorrow!</p>
+  </div>`;
+  return;
+}
+
 const topic =
 document.getElementById("topic").value;
 
@@ -7395,6 +7502,7 @@ accuracy + "%";
 renderDailyChallenge();
 renderBadges();
 renderWeakTopics();
+renderDailyUsage();
 renderAnalytics();
 
 clearTimeout(dataSaveTimer);
@@ -7764,6 +7872,18 @@ btn.style.boxShadow = "0 0 20px rgba(255,255,255,0.15)";
 
 async function generateQuiz(){
 try{
+
+const quizOutput = document.getElementById("quizOutput");
+
+const chk = checkLimitAndTrack("quiz");
+if(!chk.allowed){
+  quizOutput.innerHTML = `<div style="padding:40px;text-align:center;">
+    <div style="font-size:48px;margin-bottom:16px;">😅</div>
+    <h3 style="font-size:24px;font-weight:800;color:#fde68a;margin-bottom:8px;">Daily Quiz Limit Reached</h3>
+    <p style="color:#94a3b8;">You've used ${chk.used}/${chk.limit} quizzes today. Come back tomorrow!</p>
+  </div>`;
+  return;
+}
 
 const topic =
 quizTopic.value;
@@ -8508,6 +8628,16 @@ ${score}%
 }
 
 async function askMentor(){
+
+const chk = checkLimitAndTrack("mentor");
+if(!chk.allowed){
+  chatHistory.innerHTML += `<div class="card" style="text-align:center;padding:30px;">
+    <div style="font-size:40px;margin-bottom:10px;">😅</div>
+    <div style="font-size:18px;color:#fde68a;font-weight:700;">Daily Mentor Limit Reached</div>
+    <div style="color:#94a3b8;margin-top:6px;">${chk.used}/${chk.limit} messages used today. Come back tomorrow!</div>
+  </div>`;
+  return;
+}
 
 const input =
 mentorInput.value;
