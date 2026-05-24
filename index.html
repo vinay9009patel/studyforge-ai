@@ -3878,8 +3878,7 @@ function retryOwnCamera(){
     ownCamStream = null;
     stopVoiceInput();
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const constraints = {video:true,facingMode:"user"};
-    if(SpeechRecognition) constraints.audio = true;
+    const constraints = {video:{width:320,height:240,facingMode:"user"},audio:true};
     navigator.mediaDevices.getUserMedia(constraints)
     .then(stream=>{
         ownCamStream = stream;
@@ -3958,8 +3957,7 @@ renderInterviewScreen();
             }
         }else{
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            const constraints = {video:true,facingMode:"user"};
-            if(SpeechRecognition) constraints.audio = true;
+            const constraints = {video:{width:320,height:240,facingMode:"user"},audio:true};
             navigator.mediaDevices.getUserMedia(constraints)
             .then(stream=>{
                 ownCamStream = stream;
@@ -4294,63 +4292,16 @@ function startOwnAutoMic(stream){
         return;
     }
     micStream = stream;
-    const textarea = document.getElementById("interviewAnswer");
-    if(voiceRecognition) try{ voiceRecognition.stop(); }catch(e){}
-    let voiceCommittedText = textarea ? textarea.value : "";
-    voiceRecognition = new SpeechRecognition();
-    voiceRecognition.lang = "en-US";
-    voiceRecognition.continuous = true;
-    voiceRecognition.interimResults = true;
-    voiceRecognition.onresult = function(event){
-        let interim = "";
-        let final = "";
-        for(let i=event.resultIndex;i<event.results.length;i++){
-            const transcript = event.results[i][0].transcript;
-            if(event.results[i].isFinal){
-                final += transcript + " ";
-            } else {
-                interim += transcript;
-            }
+    stopVoiceInput();
+    setTimeout(() => {
+        if(!isListening){
+            startVoiceRecognition();
+            const btn = document.getElementById("voiceBtn");
+            const btnText = document.getElementById("voiceBtnText");
+            if(btnText) btnText.innerText = "Auto Mic";
+            if(btn){ btn.style.background = "rgba(239,68,68,0.3)"; btn.style.borderColor = "#ef4444"; }
         }
-        if(final){
-            voiceCommittedText += final.charAt(0).toUpperCase() + final.slice(1);
-        }
-        if(textarea){
-            textarea.value = voiceCommittedText + (interim ? interim.charAt(0).toUpperCase() + interim.slice(1) : "");
-            textarea.scrollTop = textarea.scrollHeight;
-        }
-    };
-    voiceRecognition.onerror = function(event){
-        console.error("SpeechRecognition error:", event.error);
-        if(event.error === "not-allowed" || event.error === "service-not-allowed"){
-            showMicStatus("Mic access denied. Tap 🎤 to try again.","error");
-        } else if(event.error === "no-speech"){
-            showMicStatus("No speech detected. Speak louder or tap 🎤.","warning");
-        } else if(event.error === "aborted"){
-            showMicStatus("");
-        } else {
-            showMicStatus("Voice error. Tap 🎤 to retry.","warning");
-        }
-        stopVoiceInput();
-    };
-    voiceRecognition.onend = function(){
-        if(isListening){
-            try{ voiceRecognition.start(); }catch(e){
-                showMicStatus("Auto mic failed. Tap 🎤 to speak.","error");
-            }
-        }
-    };
-    try {
-        voiceRecognition.start();
-        showMicStatus("🎤 Listening... Speak now","active");
-    } catch(e){
-        showMicStatus("Auto mic failed. Tap 🎤 to speak.","error");
-    }
-    isListening = true;
-    const btn = document.getElementById("voiceBtn");
-    const btnText = document.getElementById("voiceBtnText");
-    if(btnText) btnText.innerText = "Auto Mic";
-    if(btn){ btn.style.background = "rgba(239,68,68,0.3)"; btn.style.borderColor = "#ef4444"; }
+    }, 300);
 }
 
 function showMicStatus(msg,type=""){
