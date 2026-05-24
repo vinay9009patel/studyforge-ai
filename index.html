@@ -2323,6 +2323,7 @@ let currentInterviewAvatarUrl = "";
 let currentInterviewAvatarFallbacks = [];
 let interviewerGender = "male";
 let facialScores = [];
+let evalResults = [];
 
 // ===== Visual Story Player =====
 var visStoryCurrentScene = 0;
@@ -2569,6 +2570,33 @@ return String(value ?? "")
 .replace(/>/g,"&gt;")
 .replace(/"/g,"&quot;")
 .replace(/'/g,"&#39;");
+}
+
+function showEvalToast(evalResult){
+if(!evalResult) return;
+const colors = evalResult.answer_correct ? "#22c55e" : evalResult.answer_score >= 50 ? "#eab308" : "#ef4444";
+const html = `
+<div style="
+position:fixed;bottom:20px;right:20px;z-index:99999;max-width:360px;
+background:linear-gradient(145deg,rgba(30,30,50,0.98),rgba(20,20,40,0.98));
+border:1px solid ${colors}44;border-radius:16px;padding:16px 20px;box-shadow:0 8px 32px rgba(0,0,0,0.6);
+font-size:14px;color:#e2e8f0;backdrop-filter:blur(12px);
+">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+<span style="font-size:20px;">${evalResult.answer_correct ? "✅" : "❌"}</span>
+<strong style="color:${colors};">Score: ${evalResult.answer_score}/100</strong>
+<span style="margin-left:auto;font-size:12px;opacity:0.6;">Question: ${evalResult.question_quality}</span>
+</div>
+<div style="font-size:13px;opacity:0.9;line-height:1.6;">${escapeHtml(evalResult.answer_feedback || evalResult.overall_verdict || "")}</div>
+<div style="display:flex;gap:10px;margin-top:6px;font-size:11px;opacity:0.6;">
+<span>Expression: ${evalResult.expression_appropriate ? "👍" : "👎"}</span>
+</div>
+</div>
+`;
+const div = document.createElement("div");
+div.innerHTML = html;
+document.body.appendChild(div.firstElementChild);
+setTimeout(()=>div.firstElementChild?.remove(),5000);
 }
 
 function normalizeQuizText(value){
@@ -3685,6 +3713,11 @@ ${JSON.stringify(interviewResponses)}
 Facial expression analysis per answer (confident/nervous/neutral/mixed):
 ${JSON.stringify(facialScores)}
 
+Per-question dual-AI evaluation:
+${JSON.stringify(evalResults)}
+
+Consider both facial expressions and dual-AI evaluations when scoring.
+
 Consider the facial expressions when evaluating confidence and giving strengths/weaknesses.
 `;
 
@@ -3940,6 +3973,7 @@ window.speechSynthesis?.cancel();
 interviewResponses = [];
 interviewTranscript = [];
 facialScores = [];
+evalResults = [];
 currentInterviewQuestion = 0;
 interviewTimeLeft = interviewDurationMinutes * 60;
 interviewEnding = false;
@@ -4053,11 +4087,78 @@ ideal_answer:current?.ideal_answer || ""
 
 if(interviewerGender === "own"){
 const frame = captureFrame();
+let expression = "neutral";
 if(frame){
-const analysis = await askAIWithImage(frame,`Analyze this person's facial expression during an interview answer. Respond with ONLY one word: "confident", "nervous", "neutral", or "mixed". Base it on their expression, eye contact, smile, tension etc.`);
-facialScores.push(analysis || "neutral");
-}else{
-facialScores.push("neutral");
+expression = await askAIWithImage(frame,`Analyze this person's facial expression during an interview answer. Respond with ONLY one word: "confident", "nervous", "neutral", or "mixed". Base it on their expression, eye contact, smile, tension etc.`);
+expression = expression || "neutral";
+}
+facialScores.push(expression);
+
+const qText = current?.question || "";
+const idealText = current?.ideal_answer || "";
+
+const evalPrompt = `Evaluate this interview answer for "${qText}".
+
+Candidate answer: "${answer}"
+Expected answer: "${idealText}"
+Facial expression: ${expression}
+
+Return ONLY valid JSON:
+{
+  "question_quality": "good|average|poor",
+  "answer_correct": true|false,
+  "answer_score": 0-100,
+  "answer_feedback": "",
+  "expression_appropriate": true|false,
+  "overall_verdict": ""
+}`;
+
+let dualResult = null;
+try{
+const groqEval = await askAI(evalPrompt, "You are an interview evaluator.");
+const cleaned1 = String(groqEval ?? "").replace(/```json/g,"").replace(/```/g,"").trim();
+dualResult = JSON.parse(cleaned1);
+}catch(e){console.log("Groq eval error:",e.message)}
+
+try{
+if(dualResult){
+const geminiReviewPrompt = `Review this interview evaluation for "${qText}".
+
+Candidate answer: "${answer}"
+Expected answer: "${idealText}"
+Facial expression: ${expression}
+
+Previous AI evaluation:
+${JSON.stringify(dualResult, null, 2)}
+
+Return ONLY valid JSON with your FINAL evaluation:
+{
+  "question_quality": "good|average|poor",
+  "answer_correct": true|false,
+  "answer_score": 0-100,
+  "answer_feedback": "",
+  "expression_appropriate": true|false,
+  "overall_verdict": ""
+}`;
+const geminiResult = await askGemini(geminiReviewPrompt, "You are a strict interview professor.");
+if(geminiResult){
+const cleaned2 = String(geminiResult ?? "").replace(/```json/g,"").replace(/```/g,"").trim();
+const parsed = JSON.parse(cleaned2);
+if(parsed && typeof parsed.answer_score === "number") dualResult = parsed;
+}
+}
+}catch(e){console.log("Gemini eval error:",e.message)}
+
+if(dualResult){
+evalResults.push({
+question: qText,
+candidate_answer: answer,
+ideal_answer: idealText,
+expression,
+evaluation: dualResult
+});
+
+showEvalToast(dualResult);
 }
 }
 
