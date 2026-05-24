@@ -2949,19 +2949,45 @@ const cleaned = String(raw ?? "")
 
 const parsed = JSON.parse(cleaned);
 
-const question =
+let question =
 String(parsed?.question ?? "").trim();
-
-if(question){
-return {
-question,
-ideal_answer:String(
-parsed?.ideal_answer ??
+let idealAnswer =
+String(parsed?.ideal_answer ??
 parsed?.expected_answer ??
 parsed?.answer ??
-""
-).trim()
-};
+"").trim();
+
+try{
+if(question && idealAnswer){
+const geminiCheckPrompt = `Review this interview question about "${currentInterviewTopic}".
+
+Question: "${question}"
+Expected answer: "${idealAnswer}"
+
+Fix if:
+- Question is off-topic or unclear
+- Answer has factual errors
+- Question doesn't match ${currentInterviewTopic}
+
+Return ONLY valid JSON:
+{"question":"improved question","ideal_answer":"improved answer"}
+
+If already good, return as-is.`;
+
+const geminiRaw = await askGemini(geminiCheckPrompt, "You are a strict interview quality checker.");
+if(geminiRaw){
+const gCleaned = String(geminiRaw ?? "").replace(/```json/g,"").replace(/```/g,"").trim();
+const gParsed = JSON.parse(gCleaned);
+if(gParsed?.question?.trim() && gParsed?.ideal_answer?.trim()){
+question = gParsed.question.trim();
+idealAnswer = gParsed.ideal_answer.trim();
+}
+}
+}
+}catch(e){console.log("Gemini question review skipped:",e.message)}
+
+if(question){
+return { question, ideal_answer:idealAnswer };
 }
 
 }catch(error){
@@ -3221,11 +3247,24 @@ RULES:
 const result =
 await askAI(prompt,"You are a mindmap generator. Write in English.");
 
-return normalizeMindMapCode(
-result,
-topic,
-sourceText
-);
+let mindMapCode = normalizeMindMapCode(result, topic, sourceText);
+
+try{
+const geminiImprovePrompt = `Improve this Mermaid mind map for "${topic}". Make it more detailed, add more branches, fix any syntax errors.
+
+Current mind map:
+${mindMapCode}
+
+Return ONLY the improved Mermaid mind map code. No markdown, no explanation.`;
+
+const geminiRaw = await askGemini(geminiImprovePrompt, "You are a mind map expert. Return ONLY Mermaid code.");
+if(geminiRaw){
+const gImproved = normalizeMindMapCode(geminiRaw, topic, sourceText);
+if(gImproved && gImproved.length > mindMapCode.length) mindMapCode = gImproved;
+}
+}catch(e){console.log("Gemini mind map improvement skipped:",e.message)}
+
+return mindMapCode;
 }
 
 function renderFallbackMindMapHtml(code){
@@ -3722,224 +3761,53 @@ Consider the facial expressions when evaluating confidence and giving strengths/
 `;
 
 const response =
-await askAI(evaluationPrompt);
+await askAI(input,`You are a helpful AI study mentor. Always respond in English.`);
 
-const cleaned = String(response ?? "")
-.replace(/```json/g,"")
-.replace(/```/g,"")
-.trim();
+let mentorResponse = response;
 
-report = JSON.parse(cleaned);
+try{
+if(response && !response.startsWith("🔴")){
+const geminiCheckPrompt = `As a professor, fact-check and improve this mentor response about "${input}".
 
-}catch(error){
-console.log(error);
-report = buildFallbackInterviewReport(reason);
+Mentor response:
+${response}
+
+Fix any errors, add missing key points, improve clarity. Return ONLY the improved response.`;
+
+const geminiResult = await askGemini(geminiCheckPrompt, "You are a strict professor fact-checker.");
+if(geminiResult && !geminiResult.startsWith("🔴") && geminiResult.length > 50){
+mentorResponse = geminiResult;
 }
+}
+}catch(e){console.log("Gemini mentor check skipped:",e.message)}
 
-const summary =
-report?.summary || {};
-
-const results =
-Array.isArray(report?.results)
-? report.results
-: buildFallbackInterviewReport(reason).results;
-
-const strengths =
-Array.isArray(summary.strengths)
-? summary.strengths
-: [summary.strengths || "No strengths generated"];
-
-const weaknesses =
-Array.isArray(summary.weaknesses)
-? summary.weaknesses
-: [summary.weaknesses || "No weaknesses generated"];
-
-const score =
-Number(summary.overall_score ?? 0);
-
-interviewOutput.innerHTML = `
+chatHistory.innerHTML += `
 <div class="card">
-<div style="
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-gap:20px;
-margin-bottom:24px;
-">
-<div style="
-padding:28px;
-border-radius:28px;
-background:linear-gradient(145deg,rgba(139,92,246,0.22),rgba(59,130,246,0.14));
-border:1px solid rgba(255,255,255,0.08);
-">
-<div style="color:#c4b5fd;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">
-Interview Score
-</div>
-<div style="font-size:46px;font-weight:900;margin-bottom:10px;">
-${score}%
-</div>
-<div style="color:#dbeafe;line-height:1.7;">
-${escapeHtml(summary.recommendation || reason)}
-</div>
-</div>
-<div style="
-padding:24px;
-border-radius:28px;
-background:rgba(255,255,255,0.05);
-border:1px solid rgba(255,255,255,0.08);
-">
-<div style="font-size:22px;font-weight:800;margin-bottom:12px;">Strengths</div>
-<div style="color:#dbeafe;line-height:1.8;">
-${strengths.map(item=>`<div>${escapeHtml(item)}</div>`).join("")}
-</div>
-</div>
-<div style="
-padding:24px;
-border-radius:28px;
-background:rgba(255,255,255,0.05);
-border:1px solid rgba(255,255,255,0.08);
-">
-<div style="font-size:22px;font-weight:800;margin-bottom:12px;">Improvement Areas</div>
-<div style="color:#dbeafe;line-height:1.8;">
-${weaknesses.map(item=>`<div>${escapeHtml(item)}</div>`).join("")}
-</div>
-</div>
- </div>
-${facialScores.length ? `
-<div style="padding:24px;border-radius:28px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);">
-<div style="font-size:22px;font-weight:800;margin-bottom:12px;">😊 Facial Confidence</div>
-<div style="color:#dbeafe;line-height:1.8;">
-${(()=>{
-const c = facialScores.filter(s=>s==="confident").length;
-const n = facialScores.filter(s=>s==="nervous").length;
-const total = facialScores.length;
-return `Confident: ${c}/${total} • Nervous: ${n}/${total} • Overall: ${c > n ? "✅ Confident" : n > c ? "⚠️ Nervous" : "➖ Mixed"}`;
-})()}
-</div>
-</div>
-` : ""}
-</div>
-
-<div style="font-size:28px;font-weight:900;margin-bottom:18px;">
-Detailed Interview Report
-
-${results.map((item,index)=>`
-<div style="
-padding:24px;
-border-radius:26px;
-background:rgba(255,255,255,0.05);
-border:1px solid rgba(255,255,255,0.08);
-margin-bottom:18px;
-">
-<div style="
-display:flex;
-justify-content:space-between;
-gap:16px;
-flex-wrap:wrap;
-margin-bottom:14px;
-">
-<div style="font-size:22px;font-weight:800;">Question ${index+1}</div>
-<div style="
-padding:8px 14px;
-border-radius:999px;
-background:${item.verdict === "Strong" ? "rgba(34,197,94,0.18)" : item.verdict === "Partial" ? "rgba(251,191,36,0.18)" : "rgba(248,113,113,0.18)"};
-color:${item.verdict === "Strong" ? "#86efac" : item.verdict === "Partial" ? "#fde68a" : "#fca5a5"};
-font-weight:800;
-">
-${escapeHtml(String(item.verdict || "Review"))} • ${Number(item.score || 0)}%
-</div>
-</div>
-${(()=>{
-const s = Number(item.score || 0);
-let emoji, label, bg, color;
-if(s >= 80){ emoji = "🎯"; label = "Too Close"; bg = "rgba(34,197,94,0.18)"; color = "#86efac"; }
-else if(s >= 50){ emoji = "👍"; label = "Close"; bg = "rgba(34,197,94,0.12)"; color = "#86efac"; }
-else if(s >= 25){ emoji = "👎"; label = "Not Close"; bg = "rgba(248,113,113,0.18)"; color = "#fca5a5"; }
-else { emoji = "😬"; label = "Bahut Dur"; bg = "rgba(248,113,113,0.25)"; color = "#fca5a5"; }
-return `<div style="display:inline-block;padding:6px 14px;border-radius:999px;font-weight:700;background:${bg};color:${color};margin-top:8px;">${emoji} ${label}</div>`;
-})()}
-<div style="margin-bottom:12px;line-height:1.8;">
-<div style="color:#94a3b8;margin-bottom:6px;">Question Asked</div>
-<div style="font-size:19px;font-weight:700;">${escapeHtml(String(item.question || ""))}</div>
-</div>
-<div style="margin-bottom:12px;line-height:1.8;">
-<div style="color:#94a3b8;margin-bottom:6px;">Your Answer</div>
-<div>${escapeHtml(String(item.candidate_answer || ""))}</div>
-</div>
-${facialScores[index] ? `
-<div style="margin-bottom:12px;line-height:1.8;">
-<div style="color:#94a3b8;margin-bottom:6px;">😊 Facial Expression</div>
-<div style="display:inline-block;padding:6px 14px;border-radius:999px;font-weight:700;background:${facialScores[index] === "confident" ? "rgba(34,197,94,0.18)" : facialScores[index] === "nervous" ? "rgba(248,113,113,0.18)" : "rgba(251,191,36,0.18)"};color:${facialScores[index] === "confident" ? "#86efac" : facialScores[index] === "nervous" ? "#fca5a5" : "#fde68a"};">${escapeHtml(String(facialScores[index]))}</div>
-</div>
-` : ""}
-<div style="margin-bottom:12px;line-height:1.8;">
-<div style="color:#94a3b8;margin-bottom:6px;">Expected Answer</div>
-<div>${escapeHtml(String(item.ideal_answer || ""))}</div>
-</div>
-<div style="line-height:1.8;">
-<div style="color:#94a3b8;margin-bottom:6px;">AI Feedback</div>
-<div>${escapeHtml(String(item.feedback || ""))}</div>
-</div>
-</div>
-`).join("")}
-</div>
-`;
-
-appData.xp += 30;
-updateUI();
-interviewEnding = false;
-}
-
-function setInterviewerGender(gender){
-interviewerGender = gender;
-document.getElementById("genderMale").style.background = gender === "male" ? "rgba(59,130,246,0.4)" : "rgba(59,130,246,0.2)";
-document.getElementById("genderMale").style.borderColor = gender === "male" ? "#60a5fa" : "rgba(59,130,246,0.3)";
-document.getElementById("genderFemale").style.background = gender === "female" ? "rgba(236,72,153,0.4)" : "rgba(236,72,153,0.2)";
-document.getElementById("genderFemale").style.borderColor = gender === "female" ? "#f472b6" : "rgba(236,72,153,0.3)";
-document.getElementById("genderOwn").style.background = gender === "own" ? "rgba(34,197,94,0.4)" : "rgba(34,197,94,0.2)";
-document.getElementById("genderOwn").style.borderColor = gender === "own" ? "#4ade80" : "rgba(34,197,94,0.3)";
-}
-
-function retryOwnCamera(){
-    const video = document.getElementById("ownCamVideo");
-    const camMsg = document.getElementById("ownCamMessage");
-    if(video) video.style.display = "none";
-    if(camMsg){
-        camMsg.style.display = "flex";
-        camMsg.innerHTML = `<div style="text-align:center;padding:20px;"><div style="font-size:40px;margin-bottom:12px;">🔄</div><div style="font-size:18px;font-weight:700;color:#94a3b8;">Requesting camera & mic...</div></div>`;
+🤖 ${marked.parse(mentorResponse)}
+</div>`;
+                }
+            });
+        }
     }
-    ownCamStream?.getTracks().forEach(t=>t.stop());
-    ownCamStream = null;
-    stopVoiceInput();
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const constraints = {video:{width:320,height:240,facingMode:"user"},audio:true};
-    navigator.mediaDevices.getUserMedia(constraints)
-    .then(stream=>{
-        ownCamStream = stream;
-        if(video){
-            video.srcObject = stream;
-            video.style.display = "block";
-        }
-        if(camMsg) camMsg.style.display = "none";
-        const retryBtn = document.getElementById("ownCamRetry");
-        if(retryBtn) retryBtn.style.display = "none";
-        startOwnAutoMic(stream);
-    })
-    .catch(err=>{
-        console.log("Camera retry error:",err);
-        if(video) video.style.display = "none";
-        if(camMsg){
-            camMsg.style.display = "flex";
-            camMsg.innerHTML = `
-            <div style="text-align:center;padding:30px;">
-            <div style="font-size:60px;margin-bottom:14px;">📷</div>
-            <div style="font-size:20px;font-weight:800;margin-bottom:10px;color:#f87171;">Camera Blocked</div>
-            <div style="color:#94a3b8;font-size:14px;line-height:1.7;margin-bottom:18px;">
-            Camera permission denied. Click the lock icon in your browser address bar, allow camera & mic, then click retry.
-            </div>
-            <button class="btn dark" onclick="retryOwnCamera()" id="ownCamRetry" style="background:#8b5cf6;color:white;">🔄 Retry Camera</button>
-            </div>`;
-        }
-    });
+
+    await askCurrentInterviewQuestion();
+
+    interviewTimer = setInterval(()=>{
+    interviewTimeLeft--;
+
+    const timerText =
+    document.getElementById("interviewTimerText");
+
+    if(timerText){
+    timerText.innerText =
+    formatDuration(Math.max(interviewTimeLeft,0));
+    }
+
+    if(interviewTimeLeft <= 0){
+    finishInterview("Interview time completed");
+    }
+    },1000);
+
 }
 
 async function startInterview(){
@@ -4394,6 +4262,7 @@ function startOwnAutoMic(stream){
     }
     micStream = stream;
     stopVoiceInput();
+    voiceCommittedText = "";
     setTimeout(() => {
         if(!isListening){
             startVoiceRecognition();
@@ -6167,7 +6036,7 @@ ${data.examples.map((ex, idx)=>`
 ${ex.scenario ? `<div style="margin-bottom:8px;"><span style="color:#fbbf24;font-weight:600;">Scenario:</span> <span style="color:#dbeafe;">${escapeHtml(ex.scenario)}</span></div>` : ""}
 <p style="color:#dbeafe;line-height:1.8;font-size:15px;margin:0;">${escapeHtml(ex.explanation || "")}</p>
 ${ex.visualization ? `
-<pre style="background:#0f172a;padding:14px;border-radius:12px;color:#a5f3fc;font-size:13px;line-height:1.5;overflow-x:auto;margin-top:12px;">${escapeHtml(ex.visualization)}</pre>` : ""}
+<pre style="background:#0f172a;padding:18px;border-radius:14px;color:#7dd3fc;font-size:14px;line-height:1.7;overflow-x:auto;margin-top:14px;font-family:'Cascadia Code','Fira Code','JetBrains Mono',Consolas,monospace;border:1px solid rgba(59,130,246,0.15);white-space:pre;">${escapeHtml(ex.visualization)}</pre>` : ""}
 </div>`).join("")}
 </div>
 </div>`;
@@ -6416,7 +6285,7 @@ JSON FORMAT:
   "operations": [{ "name": "Operation", "description": "what it does", "algorithm_steps": ["Step 1","Step 2"], "time_complexity": "O(?)", "space_complexity": "O(?)", "code_example": "pseudocode (ONLY for coding topics)", "example": "walkthrough story" }],
   "types_or_variants": [{ "name": "Type", "explanation": "details", "characteristics": ["c1","c2"], "when_to_use": "when", "example": "example" }],
   "key_concepts": [{ "concept": "name", "simple_explanation": "simple story/analogy", "detailed_explanation": "exam-ready detail", "code_snippet": "code (ONLY for coding topics)" }],
-  "examples": [{ "title": "title", "scenario": "real scenario", "explanation": "step-by-step story", "visualization": "text diagram" }],
+  "examples": [{ "title": "title", "scenario": "real scenario", "explanation": "step-by-step story", "visualization": "beautiful text diagram using box-drawing chars (─│┌┐└┘├┤┬┴┼) and arrows (→←↑↓) to visually explain the concept" }],
   "comparison_table": { "headers": ["A","B","C"], "rows": [["a1","b1","c1"]] },
   "advantages": [{ "point": "advantage", "explanation": "detail" }],
   "disadvantages": [{ "point": "disadvantage", "explanation": "detail" }],
@@ -6481,6 +6350,8 @@ CRITICAL: If original lacks "examples" or has few, ADD 4-6 real-world examples a
 🎯 Write ALL explanations in STORY/NARRATIVE style — use analogies, real-life comparisons, memorable scenarios so students never forget.
 
 💻 IMPORTANT: ONLY add code_example/code_snippet fields if "${topic}" is a programming/technical topic.
+
+📊 VISUALIZATIONS: For each example's "visualization" field, create BEAUTIFUL text diagrams using box-drawing characters (─│┌┐└┘├┤┬┴┼) and arrows (→←↑↓). Make them visually clear and educational.
 
 Return ONLY improved valid JSON. No markdown.
 
@@ -6876,8 +6747,26 @@ RULES:
 try{
 if(status) status.textContent = "⏳ AI writing story...";
 const storyText = await askAI(prompt, "You are a fun storyteller for kids. Be cheerful.", 2500);
+
+let finalStory = storyText;
+
+try{
 if(storyText && !storyText.startsWith("🔴")){
-if(content) content.innerHTML = storyText.replace(/\n/g, "<br>");
+const geminiPrompt = `Improve this story about "${topic}" for a 10-year-old child. Make it more engaging, add more fun elements, fix any errors, keep it simple and magical.
+
+Story:
+${storyText}
+
+Return ONLY the improved story. Keep 400-800 words. ${lang === "hindi" ? "Only Hindi." : lang === "hinglish" ? "Keep Hinglish style." : "Keep English."}`;
+const geminiResult = await askGemini(geminiPrompt, "You are a children's story editor.");
+if(geminiResult && !geminiResult.startsWith("🔴") && geminiResult.length > 100){
+finalStory = geminiResult;
+}
+}
+}catch(e){console.log("Gemini story improvement skipped:",e.message)}
+
+if(finalStory && !finalStory.startsWith("🔴")){
+if(content) content.innerHTML = finalStory.replace(/\n/g, "<br>");
 if(status) status.textContent = "✅ Ready! Press 🔊 Listen to hear 🎧";
 }else{
 if(content) content.innerHTML = "☹️ Oops! Could not create story. Try again!";
@@ -7060,13 +6949,36 @@ B --> C[Output]
 const result =
 await askAI(prompt);
 
-return result
+let diagram = result
 .replace(/```mermaid/g,"")
 .replace(/```/g,"")
 .replace(/mermaid/g,"")
 .replace(/\[/g,"(")
 .replace(/\]/g,")")
 .trim();
+
+try{
+const geminiImprovePrompt = `Improve this Mermaid flowchart for "${topic}". Fix syntax, add more nodes, make it more educational.
+
+Current diagram:
+${diagram}
+
+Return ONLY clean Mermaid syntax. No markdown. No explanation.`;
+
+const geminiRaw = await askGemini(geminiImprovePrompt, "You are a diagram expert. Return ONLY Mermaid code.");
+if(geminiRaw){
+const gClean = geminiRaw
+.replace(/```mermaid/g,"")
+.replace(/```/g,"")
+.replace(/mermaid/g,"")
+.replace(/\[/g,"(")
+.replace(/\]/g,")")
+.trim();
+if(gClean.includes("graph") || gClean.includes("flowchart")) diagram = gClean;
+}
+}catch(e){console.log("Gemini diagram improvement skipped:",e.message)}
+
+return diagram;
 
 }
 
@@ -8394,11 +8306,29 @@ chatHistory.innerHTML += `
 const response =
 await askAI(input,`You are a helpful AI study mentor. Always respond in English.`);
 
+let mentorResponse = response;
+
+try{
+if(response && !response.startsWith("🔴")){
+const geminiCheckPrompt = `As a professor, fact-check and improve this mentor response about "${input}".
+
+Mentor response:
+${response}
+
+Fix any errors, add missing key points, improve clarity. Return ONLY the improved response.`;
+
+const geminiResult = await askGemini(geminiCheckPrompt, "You are a strict professor fact-checker.");
+if(geminiResult && !geminiResult.startsWith("🔴") && geminiResult.length > 50){
+mentorResponse = geminiResult;
+}
+}
+}catch(e){console.log("Gemini mentor check skipped:",e.message)}
+
 chatHistory.innerHTML += `
 
 <div class="card">
 
-🤖 ${marked.parse(response)}
+🤖 ${marked.parse(mentorResponse)}
 
 </div>
 
