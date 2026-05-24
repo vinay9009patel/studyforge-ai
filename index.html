@@ -6858,6 +6858,7 @@ RULES:
 5. Comparison table if topic has comparable aspects
 6. 💻 code_example and code_snippet fields: ONLY include for programming/technical topics (DS, Algo, coding concepts). For theory/history/non-coding topics, OMIT these fields entirely.
 7. 📝 interview_questions MUST include REAL questions that ACTUALLY appear in exams and job interviews for this topic — not generic questions. Write each answer as a short story/example scenario so it's easy to remember.
+8. 🔮 CRITICAL: memory_tricks MUST have 3-5 REAL mnemonics. Example hint="My Very Educated Mother Just Served Us Noodles", for="Planet order: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune". Give REAL well-known mnemonics for this topic.
 
 JSON FORMAT:
 {
@@ -6876,7 +6877,7 @@ JSON FORMAT:
   "interview_questions": [{ "question": "REAL exam/interview question for this topic", "answer": "Answer with a short story/example that makes it easy to remember", "difficulty": "easy/medium/hard", "follow_up": [{ "question": "Follow-up question that digs deeper", "answer": "Expected follow-up answer" }] }],
   "faq": [{ "question": "REAL exam question frequently asked", "answer": "clear answer with example" }],
   "exam_pattern": [{ "question": "Question pattern that repeats in exams", "answer": "Step-by-step answer as expected in exam", "marks": "2/5/10 marks", "exam_tip": "How to write this answer to get full marks" }],
-  "cheat_sheet": { "definition_line": "one-line def", "key_formulas": ["f1","f2"], "critical_points": ["p1","p2","p3","p4","p5"], "quick_recall": ["r1","r2"], "memory_tricks": [{"hint":"mnemonic","for":"what it helps"}] },
+  "cheat_sheet": { "definition_line": "one-line def", "key_formulas": ["f1","f2"], "critical_points": ["p1","p2","p3","p4","p5"], "quick_recall": ["r1","r2"], "memory_tricks": [{"hint":"My Very Educated Mother Just Served Us Noodles","for":"Remember planet order: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune"}] },
   "summary": "4-5 sentence summary"
 }
 
@@ -6921,7 +6922,7 @@ const geminiImprovePrompt = `You are a PROFESSOR fact-checking and expanding exa
 
 Fix errors, expand every section, add missing EXAMPLES (at least 4-6 in STORY format), and add any missing fields.
 
-CRITICAL: If original lacks "examples" or has few, ADD 4-6 real-world examples as mini-stories. ADD cheat_sheet if missing. ADD interview_questions (5-8 REAL exam/interview questions) if missing. Each interview_question must include a "follow_up" array with 1-2 deeper follow-up questions and answers. ADD exam_pattern (3-5 questions) if missing.
+CRITICAL: If original lacks "examples" or has few, ADD 4-6 real-world examples as mini-stories. ADD cheat_sheet if missing. ADD interview_questions (5-8 REAL exam/interview questions) if missing. Each interview_question must include a "follow_up" array with 1-2 deeper follow-up questions and answers. ADD exam_pattern (3-5 questions) if missing. 🔮 CRITICAL: ADD 3-5 REAL mnemonics in memory_tricks array inside cheat_sheet — each with a real-world memorable hint/phrase.
 
 🎯 Write ALL explanations in STORY/NARRATIVE style — use analogies, real-life comparisons, memorable scenarios so students never forget.
 
