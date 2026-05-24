@@ -6283,169 +6283,38 @@ notesOutput.innerHTML =
 const extractedText =
 await extractFileText(file);
 
-const groqPrompt = `You are an EXPERT TEACHER, INTERVIEW COACH, and GENERAL KNOWLEDGE ENRICHER.
+const groqPrompt = `You are an EXPERT TEACHER + INTERVIEW COACH. Generate ULTRA-DETAILED notes for "${topic}".
 
-Generate ULTRA-DETAILED, EXAM-READY, INTERVIEW-READY notes for "${topic}".
+${extractedText ? "EXTRA CONTEXT: " + extractedText : ""}
 
-CONTENT MUST:
-- Be DEEP and COMPLETE — cover every aspect, sub-topic, and edge case
-- Include GENERAL KNOWLEDGE context — real-world applications, historical context, industry use-cases, latest trends
-- Be EXAM-FOCUSED — exactly what a student needs to write in exams (definitions, explanations, diagrams in text, comparisons)
-- Be INTERVIEW-READY — practical implementation details, coding questions, common interview traps, best practices
-- INCREASE IQ — include thought-provoking insights, why-things-work, deeper understanding, not just surface-level facts
-- Every concept must connect theory → practical → real-world
+RULES:
+1. Return ONLY valid JSON. No markdown.
+2. Cover EVERYTHING: definition, all operations (insert/delete/update/search/etc with steps & complexity), types, real examples, code/pseudocode, pros/cons, common mistakes, interview Q&A, exam tips
+3. Each explanation must be DETAILED — assume student will write exam answers from this
+4. Include real-world applications, industry context, pro tips
+5. Comparison table if topic has comparable aspects
 
-${extractedText ? "EXTRA CONTEXT FROM UPLOADED FILE: " + extractedText : ""}
-
-IMPORTANT RULES:
-1. Return ONLY VALID JSON - no markdown, no explanations outside JSON
-2. For this specific topic, identify and cover EVERY major operation, variant, type, and sub-topic
-3. If the topic has operations (like insert, delete, update, search, traverse, sort, merge, etc.), create a dedicated section for EACH operation with step-by-step explanation
-4. If the topic has types/variants, explain each type in detail
-5. Every concept must have a real code/pseudocode example
-6. Use simple language that students can understand
-7. If the topic involves comparing different things, include comparison_table(s)
-
-RETURN FORMAT (JSON):
+JSON FORMAT:
 {
-  "topic": "Full topic name",
-
-  "introduction": {
-    "title": "Introduction",
-    "definition": "Clear definition of the topic",
-    "simple_explanation": "Very simple explanation in 1-2 sentences"
-  },
-
-  "sections": [
-    {
-      "title": "Section title (e.g., 'Insertion Operation' or 'Types of ...' or 'How It Works')",
-      "content": "Brief overview of this section",
-      "points": [
-        {
-          "heading": "Specific point heading",
-          "explanation": "EXPLAIN IN DETAIL with step-by-step breakdown, include pseudocode/code example where applicable"
-        }
-      ]
-    }
-  ],
-
-  "operations": [
-    {
-      "name": "Operation name (e.g., Insertion, Deletion, Update, Search, Traversal)",
-      "description": "What this operation does",
-      "algorithm_steps": ["Step 1...", "Step 2...", "Step 3..."],
-      "time_complexity": "O(?)",
-      "space_complexity": "O(?)",
-      "code_example": "Pseudocode or code example",
-      "example": "Walk-through with a real example"
-    }
-  ],
-
-  "types_or_variants": [
-    {
-      "name": "Type name",
-      "explanation": "Detailed explanation of this type/variant",
-      "characteristics": ["Characteristic 1", "Characteristic 2"],
-      "when_to_use": "When this type is preferred",
-      "example": "Real example"
-    }
-  ],
-
-  "key_concepts": [
-    {
-      "concept": "Concept name",
-      "simple_explanation": "Simple explanation",
-      "detailed_explanation": "Detailed explanation for exams",
-      "code_snippet": "Optional: relevant code/pseudocode"
-    }
-  ],
-
-  "examples": [
-    {
-      "title": "Example title",
-      "scenario": "Real-world scenario",
-      "explanation": "Step-by-step walk-through of how this works",
-      "visualization": "Text-based visual representation if helpful"
-    }
-  ],
-
-  "comparison_table": {
-    "title": "Comparison title",
-    "headers": ["Column 1", "Column 2", "Column 3"],
-    "rows": [
-      ["Row 1 Col 1", "Row 1 Col 2", "Row 1 Col 3"]
-    ]
-  },
-
-  "advantages": [
-    { "point": "Advantage point", "explanation": "Detailed explanation" }
-  ],
-
-  "disadvantages": [
-    { "point": "Disadvantage point", "explanation": "Detailed explanation" }
-  ],
-
-  "important_points": [
-    "Exam-focused point 1",
-    "Exam-focused point 2",
-    "Exam-focused point 3",
-    "Exam-focused point 4",
-    "Exam-focused point 5",
-    "Exam-focused point 6",
-    "Exam-focused point 7",
-    "Exam-focused point 8"
-  ],
-
-  "common_mistakes": [
-    {
-      "mistake": "Common mistake students make",
-      "correction": "How to avoid it / correct approach"
-    }
-  ],
-
-  "interview_questions": [
-    {
-      "question": "Common interview question?",
-      "answer": "Concise but complete answer with example if possible",
-      "difficulty": "easy/medium/hard"
-    }
-  ],
-
-  "faq": [
-    {
-      "question": "Frequently asked question about this topic?",
-      "answer": "Clear, exam-focused answer"
-    }
-  ],
-
-  "cheat_sheet": {
-    "definition_line": "One-line definition",
-    "key_formulas": ["Formula 1", "Formula 2"],
-    "critical_points": ["Point 1", "Point 2", "Point 3", "Point 4", "Point 5"],
-    "quick_recall": ["Remember: ...", "Remember: ..."],
-    "memory_tricks": [
-      {"hint": "Acronym / Mnemonic", "for": "What it helps remember"},
-      {"hint": "Shortcut trick", "for": "What it helps remember"}
-    ]
-  },
-
-  "summary": "Complete summary of the topic in 4-5 sentences"
+  "topic": "${topic}",
+  "introduction": { "definition": "precise definition", "simple_explanation": "1-2 line easy explanation" },
+  "sections": [{ "title": "Section name", "points": [{ "heading": "Point", "explanation": "DETAILED explanation with code/steps" }] }],
+  "operations": [{ "name": "Operation", "description": "what it does", "algorithm_steps": ["Step 1","Step 2"], "time_complexity": "O(?)", "space_complexity": "O(?)", "code_example": "pseudocode", "example": "walkthrough" }],
+  "types_or_variants": [{ "name": "Type", "explanation": "details", "characteristics": ["c1","c2"], "when_to_use": "when", "example": "example" }],
+  "key_concepts": [{ "concept": "name", "simple_explanation": "simple", "detailed_explanation": "exam-ready detail", "code_snippet": "code" }],
+  "examples": [{ "title": "title", "scenario": "real scenario", "explanation": "step-by-step", "visualization": "text diagram" }],
+  "comparison_table": { "headers": ["A","B","C"], "rows": [["a1","b1","c1"]] },
+  "advantages": [{ "point": "advantage", "explanation": "detail" }],
+  "disadvantages": [{ "point": "disadvantage", "explanation": "detail" }],
+  "important_points": ["point1","point2","point3","point4","point5","point6","point7","point8"],
+  "common_mistakes": [{ "mistake": "mistake", "correction": "correction" }],
+  "interview_questions": [{ "question": "question", "answer": "detailed answer", "difficulty": "easy/medium/hard" }],
+  "faq": [{ "question": "question", "answer": "clear answer" }],
+  "cheat_sheet": { "definition_line": "one-line def", "key_formulas": ["f1","f2"], "critical_points": ["p1","p2","p3","p4","p5"], "quick_recall": ["r1","r2"], "memory_tricks": [{"hint":"mnemonic","for":"what it helps"}] },
+  "summary": "4-5 sentence summary"
 }
 
-REQUIREMENTS:
-- sections: Cover ALL major parts of the topic. If topic has operations, each operation is its own section with detailed steps.
-- operations: REQUIRED if the topic involves any actions/operations (arrays, linked lists, trees, graphs, DBMS, etc.)
-- types_or_variants: REQUIRED if the topic has multiple types/variants
-- key_concepts: 6-10 important concepts with code snippets
-- examples: 3-5 real-world examples with step-by-step walkthrough
-- common_mistakes: 3-5 common student mistakes with corrections
-- interview_questions: 5-8 common interview questions with answers (easy to hard)
-- faq: 3-5 frequently asked exam questions with answers
-- comparison_table: Include if topic has comparable aspects
-- cheat_sheet: REQUIRED — a quick revision card with one-liners, formulas, and memory aids
-- Every section must include GENERAL KNOWLEDGE context (real-world use, industry practices, historical background) to increase IQ and understanding
-- Every explanation must be DETAILED, EXAM-FOCUSED and INTERVIEW-READY — assume student needs to write answers in exams AND answer interview questions
-- Add "💡 Pro Tip:" or "🧠 Deep Insight:" in explanations wherever it adds real value`;
+REQUIRED: minimum 8 sections covering ALL aspects, 6-10 key_concepts, 4-6 examples, 5-8 interview_questions, 3-5 faq, 3-5 common_mistakes, cheat_sheet ALWAYS included. Make every explanation EXAM-READY and INTERVIEW-READY. Include general knowledge and pro tips.`;
 
 const groqResult =
 await askAI(groqPrompt,"",8192);
@@ -6488,30 +6357,13 @@ isJson = true;
 if(isJson && data){
 notesOutput.innerHTML = "";
 groqData = JSON.parse(JSON.stringify(data));
-const geminiImprovePrompt = `You are a PROFESSOR, INTERVIEW MENTOR, and KNOWLEDGE ENRICHER fact-checking, expanding, and improving exam notes.
+const geminiImprovePrompt = `You are a PROFESSOR fact-checking and expanding exam notes for "${topic}".
 
-Below is the JSON notes generated for topic "${topic}". Your job is to:
+Fix errors, expand every section, add missing EXAMPLES (at least 4-6), and add any missing fields. Keep the same JSON structure.
 
-1. FIX any factual errors or inaccuracies
-2. EXPAND every section — add more detail, more steps, more clarity
-3. ADD GENERAL KNOWLEDGE & IQ-BOOSTING CONTENT:
-   - Add real-world applications, industry context, historical insights
-   - Add "💡 Pro Tip:" or "🧠 Deep Insight:" style enrichments inside explanations
-   - Connect theory → practice in every section
-4. ADD missing content:
-   - If topic has operations (insert/delete/update/search/etc), ADD an "operations" array
-   - If topic has types/variants, ADD a "types_or_variants" array
-   - ADD "common_mistakes" (3-5) with corrections
-   - ADD "interview_questions" (5-8) with answers from easy to hard
-   - ADD "faq" (3-5) with exam-focused answers
-   - ADD "cheat_sheet" with definition_line, key_formulas, critical_points (5+), quick_recall (3+), memory_tricks (3+ mnemonics/acronyms/shortcuts)
-   - Add "code_snippet" to key_concepts where relevant
-   - Add more "important_points" (at least 8)
-5. Make every explanation EXAM-READY and INTERVIEW-READY — deep enough to increase IQ
-6. Add time/space complexity info in operations where relevant
-7. Keep the exact same JSON structure but IMPROVE and EXPAND the content
+CRITICAL: If original lacks "examples" or has few, ADD 4-6 real-world examples with step-by-step explanation. ADD cheat_sheet if missing. ADD interview_questions (5-8) if missing.
 
-Return ONLY the improved valid JSON. No markdown, no explanations.
+Return ONLY improved valid JSON. No markdown.
 
 ORIGINAL JSON:
 ${JSON.stringify(data, null, 2)}`;
