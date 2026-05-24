@@ -3333,136 +3333,7 @@ async function drawCanvasDiagram(topic, concepts){
   return canvas.toDataURL("image/png", 0.9);
 }
 
-let imageUrlCache = {};
 
-async function generateAIImage(prompt, seed = 123){
-  const cacheKey = prompt + "_" + seed;
-  if(imageUrlCache[cacheKey]){
-    return imageUrlCache[cacheKey];
-  }
-  
-  const safePrompt = encodeURIComponent(prompt + ", educational diagram, clean white background");
-  const imageUrl = `https://image.pollinations.ai/prompt/${safePrompt}?width=800&height=600&nologo=true&seed=${seed}`;
-  
-  imageUrlCache[cacheKey] = imageUrl;
-  return imageUrl;
-}
-
-async function generateTopicDiagrams(topic, data, sequenceData = []){
-  console.log("\n🚀 ====== Starting AI Image Generation ======");
-  console.log("📌 Topic:", topic);
-  console.log("📋 Sequence data items:", sequenceData ? sequenceData.length : 0);
-  
-  const images = [];
-  const usedSeeds = new Set();
-  
-  function getUniqueSeed(base){
-    let seed = base;
-    while(usedSeeds.has(seed)){
-      seed = seed + 7;
-    }
-    usedSeeds.add(seed);
-    return seed;
-  }
-  
-  if(sequenceData && sequenceData.length > 0){
-    console.log("\n🎨 Generating images from sequence data...");
-    
-    for(let i=0;i<sequenceData.length && i<6;i++){
-      const seq = sequenceData[i];
-      const baseTopic = seq.fullTitle || seq.title || seq.search_term || topic;
-      const seed = getUniqueSeed(100 + i * 11);
-      
-      console.log(`\n   [${i+1}] Generating for: ${baseTopic}`);
-      
-      const imagePrompt = `${baseTopic}, educational diagram, clean white background, labeled, professional, for students, exam preparation, high quality, infographic style`;
-      
-      const imageUrl = await generateAIImage(imagePrompt, seed);
-      
-      if(imageUrl){
-        const imgData = {
-          imageUrl: imageUrl,
-          title: seq.title || `Visual ${i+1}`,
-          sequenceLabel: seq.sequenceLabel || "📷 Visual",
-          fullTitle: seq.fullTitle || seq.title,
-          sectionTitle: seq.title,
-          query: seq.search_term || topic
-        };
-        images.push(imgData);
-        console.log(`   ✅ Image ${i+1} added: ${imgData.title}`);
-      }
-    }
-  }
-  
-  if(images.length === 0){
-    console.log("\n⚠️ No sequence data, using fallback images...");
-    
-    const fallbackItems = [
-      { title: `Introduction to ${topic}`, search: `${topic} introduction diagram`, label: "📖 Introduction" },
-      { title: `How ${topic} Works`, search: `${topic} process diagram`, label: "⚡ Process" },
-      { title: `${topic} Structure`, search: `${topic} structure labeled`, label: "🏗️ Structure" },
-      { title: `Types of ${topic}`, search: `${topic} types comparison`, label: "📊 Types" },
-      { title: `${topic} Applications`, search: `${topic} real world applications`, label: "🌍 Applications" },
-      { title: `${topic} Summary`, search: `${topic} concept map`, label: "📝 Summary" }
-    ];
-    
-    for(let i=0;i<fallbackItems.length;i++){
-      const item = fallbackItems[i];
-      const seed = getUniqueSeed(500 + i * 13);
-      
-      console.log(`\n   [${i+1}] Fallback: ${item.title}`);
-      
-      const imagePrompt = `${item.search}, educational diagram, clean white background, labeled, professional, infographic`;
-      const imageUrl = await generateAIImage(imagePrompt, seed);
-      
-      if(imageUrl){
-        images.push({
-          imageUrl: imageUrl,
-          title: item.title,
-          sequenceLabel: item.label,
-          fullTitle: item.title,
-          sectionTitle: item.title,
-          query: item.search
-        });
-        console.log(`   ✅ Fallback image ${i+1} added`);
-      }
-    }
-  }
-  
-  console.log(`\n✅ ====== Image Generation Complete ======`);
-  console.log(`📊 Total images generated: ${images.length}`);
-  console.log("🌐 Image URLs:");
-  images.forEach((img, idx) => {
-    console.log(`   [${idx+1}] ${img.title}: ${img.imageUrl.substring(0, 60)}...`);
-  });
-  
-  window.__galleryImages = images;
-  console.log(`\n💾 Saved to window.__galleryImages (${images.length} items)`);
-  
-  return images;
-}
-
-function renderImageCard(image, title = "", explanation = ""){
-  if(!image || !image.imageUrl) return "";
-  
-  const imgTitle = title || image.title || "Educational illustration";
-  const imgExpl = explanation || "";
-  
-  return `
-<div style="border-radius:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);overflow:hidden;margin:16px 0;">
-  <div style="position:relative;overflow:hidden;background:#0f172a;min-height:150px;max-height:300px;display:flex;align-items:center;justify-content:center;">
-    <img src="${escapeHtml(image.imageUrl)}" 
-         alt="${escapeHtml(imgTitle)}" 
-         style="width:100%;height:auto;max-height:300px;object-fit:contain;"
-         onerror="this.style.display='none';this.parentNode.innerHTML='<div style=\\'padding:40px;text-align:center;color:#94a3b8;\\'>🖼️ Image not available</div>';">
-  </div>
-  ${imgTitle || imgExpl ? `
-  <div style="padding:14px 16px;">
-    ${imgTitle ? `<div style="font-weight:700;color:#c4b5fd;margin-bottom:6px;">${escapeHtml(imgTitle)}</div>` : ""}
-    ${imgExpl ? `<div style="font-size:13px;color:#94a3b8;line-height:1.6;">${escapeHtml(imgExpl)}</div>` : ""}
-  </div>` : ""}
-</div>`;
-}
 
 function renderComparisonTable(table){
   if(!table || !table.headers || !table.rows || table.rows.length === 0) return "";
@@ -6061,98 +5932,42 @@ return null;
 }
 }
 
-function buildVisualNotesHTML(data, topic, images = []){
+function buildVisualNotesHTML(data, topic){
 let html = "";
-let globalImageIndex = 0;
-
-window.__galleryImages = images || [];
-
-function renderInlineImage(sectionTitle, fallbackSearchTerm = ""){
-  if(globalImageIndex >= images.length) return "";
-  
-  const img = images[globalImageIndex];
-  if(!img || !img.imageUrl) {
-    globalImageIndex++;
-    return "";
-  }
-  
-  const currentIdx = globalImageIndex;
-  globalImageIndex++;
-  
-  const sequenceLabel = img.sequenceLabel || "📷 Visual";
-  const imgTitle = img.sectionTitle || img.fullTitle || sectionTitle || img.title || "Visual";
-  const imgQuery = img.query || fallbackSearchTerm || imgTitle;
-  
-  return `
-<div onclick="openImageModal(${currentIdx})" style="border-radius:14px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);overflow:hidden;cursor:pointer;transition:all 0.3s;margin:16px 0;" onmouseover="this.style.borderColor='rgba(139,92,246,0.3)';this.style.background='rgba(139,92,246,0.05)';" onmouseout="this.style.borderColor='rgba(255,255,255,0.05)';this.style.background='rgba(255,255,255,0.02)';">
-  <div style="position:relative;overflow:hidden;background:#0f172a;min-height:140px;display:flex;align-items:center;justify-content:center;">
-    <div style="position:absolute;top:10px;left:10px;padding:6px 12px;border-radius:8px;background:linear-gradient(135deg,#8b5cf6,#3b82f6);color:white;font-size:12px;font-weight:700;z-index:10;">${escapeHtml(sequenceLabel)}</div>
-    <div style="position:absolute;top:10px;right:10px;padding:6px 10px;border-radius:8px;background:rgba(0,0,0,0.6);color:white;font-size:11px;font-weight:600;z-index:10;">🔍 Click to enlarge</div>
-    <img src="${escapeHtml(img.imageUrl)}" 
-         alt="${escapeHtml(imgTitle)}" 
-         style="width:100%;height:auto;max-height:200px;object-fit:contain;"
-         onerror="this.style.display='none';this.parentNode.innerHTML='<div style=\\'padding:30px;text-align:center;color:#94a3b8;\\'>🖼️ Visual not available</div>';">
-  </div>
-  <div style="padding:12px 14px;">
-    <div style="font-size:14px;font-weight:700;color:#c4b5fd;margin-bottom:4px;">${escapeHtml(imgTitle)}</div>
-    ${imgQuery ? `<div style="font-size:11px;color:#a78bfa;">🔍 ${escapeHtml(imgQuery)}</div>` : ""}
-  </div>
-</div>`;
-}
 
 if(data.introduction){
 const intro = data.introduction;
-const heroTitle = intro.title || topic;
-const heroSubtitle = intro.simple_explanation || intro.definition || "";
-
 html += `
 <div class="card" style="text-align:center;padding:40px;">
 <div style="font-size:48px;font-weight:900;margin-bottom:16px;background:linear-gradient(to right,#a78bfa,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
-${escapeHtml(heroTitle)}
+${escapeHtml(intro.title || topic)}
 </div>
 <p style="font-size:20px;color:#dbeafe;line-height:1.6;max-width:700px;margin:0 auto;">
-${escapeHtml(heroSubtitle)}
+${escapeHtml(intro.simple_explanation || intro.definition || "")}
 </p>
 ${intro.definition ? `<p style="font-size:16px;color:#94a3b8;line-height:1.6;max-width:700px;margin:16px auto 0 auto;">
 <strong style="color:#a78bfa;">📖 Definition:</strong> ${escapeHtml(intro.definition)}
 </p>` : ""}
 </div>`;
-
-html += renderInlineImage("Introduction", data.introduction.search_term || topic);
 }
 
 if(data.sections && data.sections.length){
 for(let sIdx=0;sIdx<data.sections.length;sIdx++){
 const section = data.sections[sIdx];
-const sectionTitle = section.title || `Section ${sIdx + 1}`;
-
 html += `
 <div class="card">
-<h2 style="font-size:32px;font-weight:900;margin-bottom:12px;">📚 ${escapeHtml(sectionTitle)}</h2>`;
-
-html += renderInlineImage(sectionTitle, section.search_term || sectionTitle);
-
-html += `<div style="display:grid;gap:16px;margin-top:16px;">`;
-
+<h2 style="font-size:32px;font-weight:900;margin-bottom:12px;">📚 ${escapeHtml(section.title || `Section ${sIdx + 1}`)}</h2>
+<div style="display:grid;gap:16px;margin-top:16px;">`;
 if(section.points && section.points.length){
 for(let pIdx=0;pIdx<section.points.length;pIdx++){
 const point = section.points[pIdx];
-const pointTitle = point.heading || `Step ${pIdx + 1}`;
-
 html += `
 <div style="padding:20px;border-radius:18px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);">
-<h3 style="font-size:20px;font-weight:800;margin-bottom:10px;color:#c4b5fd;">${escapeHtml(pointTitle)}</h3>`;
-
-const pointImg = renderInlineImage(pointTitle, point.search_term || pointTitle);
-if(pointImg){
-  html += pointImg;
-}
-
-html += `<p style="color:#dbeafe;line-height:1.8;font-size:15px;">${escapeHtml(point.explanation || "")}</p>
+<h3 style="font-size:20px;font-weight:800;margin-bottom:10px;color:#c4b5fd;">${escapeHtml(point.heading || `Step ${pIdx + 1}`)}</h3>
+<p style="color:#dbeafe;line-height:1.8;font-size:15px;">${escapeHtml(point.explanation || "")}</p>
 </div>`;
 }
 }
-
 html += `</div></div>`;
 }
 }
@@ -6160,20 +5975,14 @@ html += `</div></div>`;
 if(data.key_concepts && data.key_concepts.length){
 html += `
 <div class="card">
-<h2 style="font-size:32px;font-weight:900;margin-bottom:12px;">🔬 Key Concepts</h2>`;
-
-html += renderInlineImage("Key Concepts", "key concepts " + topic);
-
-html += `<div style="display:grid;gap:20px;margin-top:16px;">
-${data.key_concepts.map((concept, idx)=>{
-  const conceptImg = renderInlineImage(concept.concept || `Concept ${idx+1}`, concept.search_term || concept.concept);
-  return `
+<h2 style="font-size:32px;font-weight:900;margin-bottom:12px;">🔬 Key Concepts</h2>
+<div style="display:grid;gap:20px;margin-top:16px;">
+${data.key_concepts.map((concept, idx)=>`
 <div style="padding:22px;border-radius:18px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);">
 <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
 <div style="min-width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#3b82f6);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;color:white;">${idx+1}</div>
 <h3 style="font-size:22px;font-weight:800;margin:0;color:#c4b5fd;">${escapeHtml(concept.concept || "")}</h3>
 </div>
-${conceptImg}
 ${concept.simple_explanation ? `
 <div style="margin-bottom:12px;padding:14px;border-radius:14px;background:rgba(34,197,94,0.05);border:1px solid rgba(34,197,94,0.1);">
 <span style="color:#86efac;font-weight:600;">🧒 Simple Explanation:</span>
@@ -6184,9 +5993,7 @@ ${concept.detailed_explanation ? `
 <span style="color:#94a3b8;font-weight:600;">📝 Detailed:</span>
 <span style="color:#93c5fd;"> ${escapeHtml(concept.detailed_explanation)}</span>
 </div>` : ''}
-</div>
-`;
-}).join("")}
+</div>`).join("")}
 </div>
 </div>`;
 }
@@ -6194,21 +6001,16 @@ ${concept.detailed_explanation ? `
 if(data.examples && data.examples.length){
 html += `
 <div class="card">
-<h2 style="font-size:32px;font-weight:900;margin-bottom:12px;">💡 Examples</h2>`;
-
-html += renderInlineImage("Examples", "examples of " + topic);
-
-html += `<div style="display:grid;gap:16px;margin-top:16px;">
+<h2 style="font-size:32px;font-weight:900;margin-bottom:12px;">💡 Examples</h2>
+<div style="display:grid;gap:16px;margin-top:16px;">
 ${data.examples.map((ex, idx)=>`
 <div style="padding:20px;border-radius:18px;background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.1);">
 <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
 <span style="font-size:24px;">🎯</span>
 <h3 style="font-size:20px;font-weight:800;margin:0;color:#93c5fd;">${escapeHtml(ex.title || "Example " + (idx+1))}</h3>
 </div>
-${renderInlineImage(ex.title || `Example ${idx+1}`, ex.search_term || ex.title)}
 <p style="color:#dbeafe;line-height:1.8;font-size:15px;margin:0;">${escapeHtml(ex.explanation || "")}</p>
-</div>
-`).join("")}
+</div>`).join("")}
 </div>
 </div>`;
 }
@@ -6229,8 +6031,7 @@ ${data.advantages.map(adv=>`
 <span style="color:#4ade80;font-weight:700;">${escapeHtml(adv.point || "")}</span>
 ${adv.explanation ? `<p style="color:#94a3b8;font-size:14px;margin:4px 0 0 0;line-height:1.6;">${escapeHtml(adv.explanation)}</p>` : ""}
 </div>
-</div>
-`).join("")}
+</div>`).join("")}
 </div>
 </div>`;
 }
@@ -6247,8 +6048,7 @@ ${data.disadvantages.map(adv=>`
 <span style="color:#f87171;font-weight:700;">${escapeHtml(adv.point || "")}</span>
 ${adv.explanation ? `<p style="color:#94a3b8;font-size:14px;margin:4px 0 0 0;line-height:1.6;">${escapeHtml(adv.explanation)}</p>` : ""}
 </div>
-</div>
-`).join("")}
+</div>`).join("")}
 </div>
 </div>`;
 }
@@ -6262,8 +6062,7 @@ ${data.important_points.map((p, idx)=>`
 <div style="display:flex;gap:12px;padding:14px 18px;border-radius:12px;background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.1);">
 <span style="color:#fde68a;font-weight:700;font-size:16px;">${idx+1}.</span>
 <span style="color:#dbeafe;line-height:1.6;">${escapeHtml(p)}</span>
-</div>
-`).join("")}
+</div>`).join("")}
 </div>
 </div>`;
 }
@@ -6301,7 +6100,7 @@ notesOutput.innerHTML =
 const extractedText =
 await extractFileText(file);
 
-const prompt = `You are an EXPERT TEACHER and EXAM NOTES GENERATOR.
+const groqPrompt = `You are an EXPERT TEACHER and EXAM NOTES GENERATOR.
 
 Create comprehensive, structured exam-ready notes for the topic below.
 
@@ -6313,8 +6112,7 @@ IMPORTANT RULES:
 1. Return ONLY VALID JSON - no markdown, no explanations outside JSON
 2. Make sure each concept is explained clearly for exam preparation
 3. Use simple language that students can understand
-4. Each concept should have a clear "search_term" that can be used to find related images
-5. If the topic involves comparing different things (e.g., types of something, before/after, methods), include a comparison_table
+4. If the topic involves comparing different things (e.g., types of something, before/after, methods), include a comparison_table
 
 RETURN FORMAT (JSON):
 {
@@ -6323,19 +6121,16 @@ RETURN FORMAT (JSON):
   "introduction": {
     "title": "Introduction",
     "definition": "Clear definition of the topic",
-    "simple_explanation": "Very simple explanation in 1-2 sentences",
-    "search_term": "Search term for images about this introduction"
+    "simple_explanation": "Very simple explanation in 1-2 sentences"
   },
   
   "sections": [
     {
       "title": "Section 1 title (e.g., 'How It Works')",
-      "search_term": "Search term for images about this section",
       "points": [
         {
           "heading": "Point heading",
-          "explanation": "Detailed explanation",
-          "search_term": "Search term for images about this point"
+          "explanation": "Detailed explanation"
         }
       ]
     }
@@ -6345,16 +6140,14 @@ RETURN FORMAT (JSON):
     {
       "concept": "Concept name",
       "simple_explanation": "Simple explanation",
-      "detailed_explanation": "Detailed explanation for exams",
-      "search_term": "Search term for images about this concept"
+      "detailed_explanation": "Detailed explanation for exams"
     }
   ],
   
   "examples": [
     {
       "title": "Example title",
-      "explanation": "How this example works",
-      "search_term": "Search term for images about this example"
+      "explanation": "How this example works"
     }
   ],
   
@@ -6396,21 +6189,78 @@ Make sure:
 - key_concepts has 5-8 important concepts
 - examples has 2-4 real-world examples
 - comparison_table is ONLY included if the topic benefits from comparison (like comparing types, methods, before/after)
-- search_term for each item should be specific enough to find relevant educational images
 - All explanations are clear and exam-focused`;
 
-const result =
-await askAI(prompt,"",4000);
+const groqResult =
+await askAI(groqPrompt,"",4000);
+
+if(!groqResult || groqResult.startsWith("🔴")){
+const fallback = generateSmartFallbackNotes(topic);
+notesOutput.innerHTML = marked.parse(fallback);
+return;
+}
 
 let data;
 let isJson = false;
 try{
-const cleaned = String(result ?? "")
+const cleaned = String(groqResult ?? "")
 .replace(/```json/g,"")
 .replace(/```/g,"")
 .trim();
 data = JSON.parse(cleaned);
 isJson = true;
+}catch(parseError){
+console.log("Groq JSON parse failed, trying Gemini directly", parseError);
+}
+
+if(!isJson){
+const geminiPrompt = `Create comprehensive, structured exam-ready notes for topic: ${topic}\n\n${extractedText ? "EXTRA CONTEXT: " + extractedText : ""}\n\nReturn ONLY valid JSON with sections, key_concepts, examples, advantages, disadvantages, important_points, summary. Make sure every concept is accurate and exam-focused.`;
+try{
+const geminiResult = await askGemini(geminiPrompt, "You are an expert teacher. Return ONLY valid JSON.");
+if(geminiResult){
+const cleaned = String(geminiResult ?? "")
+.replace(/```json/g,"")
+.replace(/```/g,"")
+.trim();
+data = JSON.parse(cleaned);
+isJson = true;
+}
+}catch(e){}
+}
+
+if(isJson && data){
+notesOutput.innerHTML = "";
+const geminiImprovePrompt = `You are a PROFESSOR fact-checking and improving exam notes created by another AI.
+
+Below is the JSON notes generated for topic "${topic}". Review each section carefully:
+- Fix any factual errors or inaccuracies
+- Improve explanations to be clearer and more exam-relevant
+- Add missing important points
+- Ensure definitions are precise
+- Make examples more concrete and relevant
+- Keep the exact same JSON structure but IMPROVE the content
+
+Return ONLY the improved valid JSON. No markdown, no explanations.
+
+ORIGINAL JSON:
+${JSON.stringify(data, null, 2)}`;
+
+try{
+const gradeAResult = await askGemini(geminiImprovePrompt, "You are a strict professor. Return ONLY valid JSON.");
+if(gradeAResult){
+const cleaned = String(gradeAResult ?? "")
+.replace(/```json/g,"")
+.replace(/```/g,"")
+.trim();
+const improved = JSON.parse(cleaned);
+if(improved && improved.sections){
+data = improved;
+}
+}
+}catch(e){
+console.log("Gemini improvement skipped:", e.message);
+}
+}
 
 if(!data.sections) data.sections = [];
 if(!data.key_concepts) data.key_concepts = [];
@@ -6419,111 +6269,12 @@ if(!data.advantages) data.advantages = [];
 if(!data.disadvantages) data.disadvantages = [];
 if(!data.important_points) data.important_points = [];
 
-}catch(parseError){
-console.log("JSON parse failed, using markdown fallback", parseError);
-}
-
 let visualHtml = "";
 let mermaidCode = "";
-let topicImages = [];
-let imageSequenceData = [];
 
 if(isJson && data){
-  imageSequenceData = [];
-  const searchTerms = [];
-  
-  if(data.introduction){
-    if(data.introduction.search_term){
-      searchTerms.push(data.introduction.search_term);
-      imageSequenceData.push({
-        search_term: data.introduction.search_term,
-        title: data.introduction.title || "Introduction",
-        sequenceLabel: "📖 Introduction",
-        fullTitle: "Introduction: " + (data.introduction.title || topic)
-      });
-    }
-  }
-  
-  if(data.sections && Array.isArray(data.sections)){
-    for(let sIdx=0;sIdx<data.sections.length;sIdx++){
-      const s = data.sections[sIdx];
-      const sectionNum = sIdx + 1;
-      
-      if(s.search_term){
-        searchTerms.push(s.search_term);
-        imageSequenceData.push({
-          search_term: s.search_term,
-          title: s.title || `Section ${sectionNum}`,
-          sequenceLabel: `📚 Section ${sectionNum}`,
-          fullTitle: s.title || `Section ${sectionNum}`
-        });
-      }
-      
-      if(s.points && Array.isArray(s.points)){
-        for(let pIdx=0;pIdx<s.points.length;pIdx++){
-          const p = s.points[pIdx];
-          const pointNum = pIdx + 1;
-          
-          if(p.search_term){
-            searchTerms.push(p.search_term);
-            imageSequenceData.push({
-              search_term: p.search_term,
-              title: p.heading || `Step ${pointNum}`,
-              sequenceLabel: `⚡ Step ${pointNum}`,
-              fullTitle: p.heading || `Step ${pointNum} in ${s.title || 'process'}`
-            });
-          }
-        }
-      }
-    }
-  }
-  
-  if(data.key_concepts && Array.isArray(data.key_concepts)){
-    for(let cIdx=0;cIdx<data.key_concepts.length;cIdx++){
-      const c = data.key_concepts[cIdx];
-      const conceptNum = cIdx + 1;
-      
-      if(c.search_term){
-        searchTerms.push(c.search_term);
-        imageSequenceData.push({
-          search_term: c.search_term,
-          title: c.concept || `Concept ${conceptNum}`,
-          sequenceLabel: `🔬 Concept ${conceptNum}`,
-          fullTitle: c.concept || `Key Concept ${conceptNum}`
-        });
-      }
-    }
-  }
-  
-  if(data.examples && Array.isArray(data.examples)){
-    for(let eIdx=0;eIdx<data.examples.length;eIdx++){
-      const e = data.examples[eIdx];
-      const exampleNum = eIdx + 1;
-      
-      if(e.search_term){
-        searchTerms.push(e.search_term);
-        imageSequenceData.push({
-          search_term: e.search_term,
-          title: e.title || `Example ${exampleNum}`,
-          sequenceLabel: `💡 Example ${exampleNum}`,
-          fullTitle: e.title || `Real-world Example ${exampleNum}`
-        });
-      }
-    }
-  }
-  
-  console.log("📋 Image sequence data:", imageSequenceData);
-  console.log("🔍 Search terms in order:", searchTerms);
-  
-  try{
-    topicImages = await generateTopicDiagrams(topic, data, imageSequenceData);
-    console.log("📸 Generated", topicImages.length, "topic-related diagrams");
-  }catch(e){
-    console.log("Diagram generation skipped:", e.message);
-    topicImages = [];
-  }
 
-visualHtml = buildVisualNotesHTML(data, topic, topicImages);
+visualHtml = buildVisualNotesHTML(data, topic);
 
 mermaidCode = await generateDetailedMindMap(
 topic,
@@ -6533,7 +6284,7 @@ topic,
 
 let formatted = "";
 if(!isJson){
-let cleanedResult = result
+let cleanedResult = groqResult || ""
 .replace(/```mermaid([\s\S]*?)```/g,"")
 .replace(/```/g,"");
 formatted = DOMPurify.sanitize(marked.parse(cleanedResult));
@@ -6819,163 +6570,7 @@ if(pauseBtn) pauseBtn.style.display = "none";
 }
 }
 
-let __currentModalIndex = 0;
-let __autoPlayInterval = null;
-let __isAutoPlaying = false;
 
-function openImageModal(index){
-const images = window.__galleryImages || [];
-if(images.length === 0) return;
-
-__currentModalIndex = index;
-updateModalDisplay();
-
-const modal = document.getElementById("imageModal");
-if(modal){
-modal.style.display = "flex";
-}
-
-document.body.style.overflow = "hidden";
-}
-
-function updateModalDisplay(){
-const images = window.__galleryImages || [];
-if(images.length === 0) return;
-
-const img = images[__currentModalIndex];
-if(!img || !img.imageUrl) return;
-
-const modalImg = document.getElementById("modalImage");
-const modalCounter = document.getElementById("modalCounter");
-const modalTitle = document.getElementById("modalTitle");
-const modalSearchTerm = document.getElementById("modalSearchTerm");
-const prevBtn = document.getElementById("modalPrevBtn");
-const nextBtn = document.getElementById("modalNextBtn");
-
-if(modalImg){
-modalImg.src = img.imageUrl;
-}
-
-const sequenceLabel = img.sequenceLabel || (`Image ${__currentModalIndex + 1}`);
-const displayTitle = img.sectionTitle || img.fullTitle || img.title || (`Visual ${__currentModalIndex + 1}`);
-
-if(modalCounter){
-modalCounter.textContent = `${sequenceLabel}  •  ${__currentModalIndex + 1} / ${images.length}`;
-}
-
-if(modalTitle){
-modalTitle.textContent = displayTitle;
-}
-
-if(modalSearchTerm){
-modalSearchTerm.textContent = img.query ? `🔍 Search: ${img.query}` : "Topic-related visual";
-}
-
-if(prevBtn){
-prevBtn.style.opacity = __currentModalIndex === 0 ? "0.4" : "1";
-prevBtn.disabled = __currentModalIndex === 0;
-}
-
-if(nextBtn){
-nextBtn.style.opacity = __currentModalIndex === images.length - 1 ? "0.4" : "1";
-nextBtn.disabled = __currentModalIndex === images.length - 1;
-}
-}
-
-function closeImageModal(){
-const modal = document.getElementById("imageModal");
-if(modal){
-modal.style.display = "none";
-}
-document.body.style.overflow = "auto";
-
-stopAutoPlay();
-}
-
-function prevImageModal(){
-const images = window.__galleryImages || [];
-if(__currentModalIndex > 0){
-__currentModalIndex--;
-updateModalDisplay();
-}
-}
-
-function nextImageModal(){
-const images = window.__galleryImages || [];
-if(__currentModalIndex < images.length - 1){
-__currentModalIndex++;
-updateModalDisplay();
-} else if(__isAutoPlaying){
-stopAutoPlay();
-}
-}
-
-function toggleAutoPlay(){
-if(__isAutoPlaying){
-stopAutoPlay();
-} else {
-startAutoPlay();
-}
-}
-
-function startAutoPlay(){
-if(__autoPlayInterval){
-clearInterval(__autoPlayInterval);
-}
-
-__isAutoPlaying = true;
-
-const speedSlider = document.getElementById("modalSpeed");
-const speed = speedSlider ? parseInt(speedSlider.value) : 3;
-const delay = (11 - speed) * 300;
-
-const autoBtn = document.getElementById("modalAutoPlayBtn");
-if(autoBtn){
-autoBtn.textContent = "⏸ Pause";
-autoBtn.style.background = "rgba(251,191,36,0.2)";
-autoBtn.style.color = "#fde68a";
-autoBtn.style.borderColor = "rgba(251,191,36,0.3)";
-}
-
-__autoPlayInterval = setInterval(function(){
-const images = window.__galleryImages || [];
-if(__currentModalIndex < images.length - 1){
-nextImageModal();
-} else {
-stopAutoPlay();
-}
-}, delay);
-}
-
-function stopAutoPlay(){
-if(__autoPlayInterval){
-clearInterval(__autoPlayInterval);
-__autoPlayInterval = null;
-}
-
-__isAutoPlaying = false;
-
-const autoBtn = document.getElementById("modalAutoPlayBtn");
-if(autoBtn){
-autoBtn.textContent = "▶ Play";
-autoBtn.style.background = "rgba(34,197,94,0.2)";
-autoBtn.style.color = "#4ade80";
-autoBtn.style.borderColor = "rgba(34,197,94,0.3)";
-}
-}
-
-document.addEventListener("keydown", function(e){
-const modal = document.getElementById("imageModal");
-if(!modal || modal.style.display === "none") return;
-
-if(e.key === "Escape"){
-closeImageModal();
-} else if(e.key === "ArrowLeft"){
-prevImageModal();
-} else if(e.key === "ArrowRight"){
-nextImageModal();
-}
-});
 
 function downloadNotes(){
 const notesEl =
@@ -8711,36 +8306,6 @@ setDifficulty("medium");
 );
 
 </script>
-
-<div id="imageModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:999999;justify-content:center;align-items:center;flex-direction:column;">
-  
-  <button onclick="closeImageModal()" style="position:absolute;top:20px;right:20px;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;font-size:28px;cursor:pointer;display:flex;justify-content:center;align-items:center;transition:all 0.3s;" onmouseover="this.style.background='rgba(239,68,68,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">✕</button>
-  
-  <div id="modalImageContainer" style="position:relative;display:flex;align-items:center;justify-content:center;flex:1;padding:80px 20px;max-width:90vw;max-height:80vh;">
-    <img id="modalImage" src="" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:12px;box-shadow:0 0 60px rgba(139,92,246,0.3);">
-  </div>
-  
-  <div id="modalNav" style="display:flex;align-items:center;gap:20px;padding:20px;background:rgba(255,255,255,0.03);border-top:1px solid rgba(255,255,255,0.08);width:100%;justify-content:center;">
-    
-    <button id="modalPrevBtn" onclick="prevImageModal()" style="padding:12px 24px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;color:white;font-weight:700;font-size:14px;cursor:pointer;transition:all 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">◀ Previous</button>
-    
-    <div id="modalCounter" style="min-width:100px;text-align:center;font-size:16px;font-weight:700;color:#c4b5fd;">1 / 6</div>
-    
-    <button id="modalNextBtn" onclick="nextImageModal()" style="padding:12px 24px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;color:white;font-weight:700;font-size:14px;cursor:pointer;transition:all 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">Next ▶</button>
-    
-    <div style="margin-left:20px;display:flex;align-items:center;gap:10px;">
-      <span style="color:#94a3b8;font-size:13px;">Auto-play:</span>
-      <button id="modalAutoPlayBtn" onclick="toggleAutoPlay()" style="padding:8px 16px;border-radius:8px;background:rgba(34,197,94,0.2);border:1px solid rgba(34,197,94,0.3);color:#4ade80;font-weight:600;font-size:13px;cursor:pointer;">▶ Play</button>
-      <input type="range" id="modalSpeed" min="1" max="10" value="3" style="width:80px;">
-    </div>
-  </div>
-  
-  <div id="modalInfo" style="position:absolute;bottom:100px;left:50%;transform:translateX(-50%);padding:12px 24px;border-radius:12px;background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.3);text-align:center;max-width:600px;">
-    <div id="modalTitle" style="font-weight:700;color:#c4b5fd;margin-bottom:4px;">Image Title</div>
-    <div id="modalSearchTerm" style="font-size:13px;color:#94a3b8;">Search term used</div>
-  </div>
-  
-</div>
 
 </body>
 </html>

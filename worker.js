@@ -46,6 +46,16 @@ export default {
           });
         }
         
+        let pollResult = await generatePollinationsImage(prompt);
+        if (pollResult && pollResult.success) {
+          return new Response(JSON.stringify({ 
+            imageBase64: pollResult.imageBase64, 
+            altText: prompt, 
+            success: true, 
+            source: "pollinations"
+          }), { status: 200, headers: { "Content-Type": "application/json", ...cors } });
+        }
+        
         const wikimediaResult = await searchWikimediaImage(prompt);
         if (wikimediaResult && wikimediaResult.success) {
           return new Response(JSON.stringify({
@@ -58,50 +68,10 @@ export default {
           }), { status: 200, headers: { "Content-Type": "application/json", ...cors } });
         }
         
-        if (env.GEMINI_API_KEY) {
-          const models = [
-            "gemini-2.0-flash-exp-image-generation",
-            "gemini-2.5-flash",
-            "gemini-2.5-pro"
-          ];
-          
-          for (const model of models) {
-            try {
-              const genConfig = model.includes("exp-image") ? {} : { responseModalities: ["IMAGE", "TEXT"] };
-              const bodyData = { contents: [{ parts: [{ text: "Create a photorealistic educational image: " + prompt }] }] };
-              if (Object.keys(genConfig).length) bodyData.generationConfig = genConfig;
-              
-              const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + env.GEMINI_API_KEY, {
-                method: "POST", 
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(bodyData)
-              });
-              
-              const d = await r.json();
-              if (!r.ok) continue;
-              
-              const parts = d?.candidates?.[0]?.content?.parts || [];
-              let img = "", alt = "";
-              for (const p of parts) { if (p.inlineData) img = p.inlineData.data; if (p.text) alt = p.text; }
-              
-              if (img) {
-                return new Response(JSON.stringify({ 
-                  imageBase64: img, 
-                  altText: alt, 
-                  success: true, 
-                  modelUsed: model,
-                  source: "gemini"
-                }), { status: 200, headers: { "Content-Type": "application/json", ...cors } });
-              }
-            } catch (e) { continue; }
-          }
-        }
-        
         return new Response(JSON.stringify({ 
           success: false, 
-          error: "All image sources failed: " + (wikimediaResult?.error || "unknown"),
-          fallback: "canvas",
-          searchQuery: extractKeywords(prompt)
+          error: "All image sources failed: " + (pollResult?.error || wikimediaResult?.error || "unknown"),
+          fallback: "canvas"
         }), { status: 200, headers: { "Content-Type": "application/json", ...cors } });
       }
 
@@ -156,8 +126,13 @@ function extractKeywords(prompt) {
 
 async function searchWikimediaImage(prompt) {
   try {
-    const searchQuery = extractKeywords(prompt);
-    const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&generator=search&gsrsearch=${encodeURIComponent(searchQuery)}&gsrlimit=5&prop=pageimages&piprop=thumbnail&pithumbsize=600&pilimit=5`;
+    const searchQuery = (prompt || "science")
+      .replace(/[^a-z0-9\s]/gi, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
+    
+    const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&generator=search&gsrsearch=${encodeURIComponent(searchQuery)}&gsrlimit=5&gsrwhat=text&prop=pageimages|extracts&exintro&explaintext&exsentences=1&piprop=original|thumbnail&pithumbsize=800&pilimit=5`;
     
     const response = await fetch(searchUrl, {
       headers: {
@@ -167,7 +142,7 @@ async function searchWikimediaImage(prompt) {
     });
     
     if (!response.ok) {
-      return { success: false, error: "Wikipedia API status: " + response.status + " for query: " + searchQuery };
+      return { success: false, error: "API status: " + response.status };
     }
     
     const data = await response.json();
@@ -176,24 +151,74 @@ async function searchWikimediaImage(prompt) {
       const pages = Object.values(data.query.pages);
       
       for (const page of pages) {
-        if (page.thumbnail && page.thumbnail.source) {
+        let imgUrl = null;
+        if (page.original && page.original.source) imgUrl = page.original.source;
+        else if (page.thumbnail && page.thumbnail.source) imgUrl = page.thumbnail.source;
+        
+        if (imgUrl) {
           return {
             success: true,
-            imageUrl: page.thumbnail.source,
-            thumbnailUrl: page.thumbnail.source,
-            title: page.title,
+            imageUrl: imgUrl,
+            thumbnailUrl: imgUrl,
+            title: page.title + ": " + (page.extract || "").substring(0, 100),
             pageUrl: `https://en.wikipedia.org/wiki/${encodeURIComponent(page.title)}`,
-            width: page.thumbnail?.width || 600,
-            height: page.thumbnail?.height || 400
+            width: (page.original || page.thumbnail || {}).width || 800,
+            height: (page.original || page.thumbnail || {}).height || 600
           };
         }
       }
-      return { success: false, error: "No images found in results for: " + searchQuery };
     }
     
-    return { success: false, error: "Invalid response structure" };
+    const commonsUrl = `https://commons.wikimedia.org/w/api.php?action=query&format=json&generator=search&gsrsearch=${encodeURIComponent(searchQuery)}&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url&iiurlwidth=800`;
+    const cResp = await fetch(commonsUrl, {
+      headers: { "User-Agent": "StudyForge-AI/1.0", "Accept": "application/json" }
+    });
+    if (cResp.ok) {
+      const cData = await cResp.json();
+      if (cData && cData.query && cData.query.pages) {
+        const cPages = Object.values(cData.query.pages);
+        for (const page of cPages) {
+          const info = page.imageinfo && page.imageinfo[0];
+          if (info && info.url) {
+            return {
+              success: true,
+              imageUrl: info.thumburl || info.url,
+              thumbnailUrl: info.thumburl || info.url,
+              title: page.title.replace(/^File:/, '').replace(/\.\w+$/, ''),
+              pageUrl: info.descriptionurl || "",
+              width: info.width || 800,
+              height: info.height || 600
+            };
+          }
+        }
+      }
+    }
+    
+    return { success: false, error: "No images found" };
   } catch (e) {
     return { success: false, error: "Exception: " + e.message };
+  }
+}
+
+async function generatePollinationsImage(prompt) {
+  try {
+    const shortPrompt = prompt.split(",")[0].trim().substring(0, 80);
+    const encoded = encodeURIComponent(shortPrompt);
+    const url = `https://image.pollinations.ai/prompt/${encoded}?width=800&height=600&seed=${Math.floor(Math.random() * 10000)}`;
+    
+    const resp = await fetch(url, { signal: AbortSignal.timeout(55000) });
+    if (!resp.ok) return { success: false, error: "Pollinations status: " + resp.status };
+    
+    const contentType = resp.headers.get("content-type") || "";
+    if (!contentType.includes("image")) return { success: false, error: "Not an image" };
+    
+    const buffer = await resp.arrayBuffer();
+    const uint8 = new Uint8Array(buffer);
+    let binary = "";
+    uint8.forEach(byte => binary += String.fromCharCode(byte));
+    return { success: true, imageBase64: btoa(binary) };
+  } catch (e) {
+    return { success: false, error: e.message };
   }
 }
 
