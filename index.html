@@ -6676,12 +6676,9 @@ ORIGINAL JSON:
 ${JSON.stringify(data, null, 2)}`;
 
 try{
-const gradeAResult = await askGemini(geminiImprovePrompt, "You are a strict professor. Return ONLY valid JSON.");
+      const gradeAResult = await askGemini(geminiImprovePrompt, "You are a strict professor. Return ONLY valid JSON.");
 if(gradeAResult){
-const cleaned = String(gradeAResult ?? "")
-.replace(/```json/g,"")
-.replace(/```/g,"")
-.trim();
+const cleaned = extractJsonFromText(String(gradeAResult ?? ""));
 const improved = JSON.parse(cleaned);
 if(improved && improved.sections){
 data = improved;
@@ -6753,10 +6750,9 @@ console.log("Gemini mind map skipped:", e.message);
 
 let formatted = "";
 if(!isJson){
-let cleanedResult = groqResult || ""
-.replace(/```mermaid([\s\S]*?)```/g,"")
-.replace(/```/g,"");
-formatted = DOMPurify.sanitize(marked.parse(cleanedResult));
+  const fallback = generateSmartFallbackNotes(topic);
+  notesOutput.innerHTML = marked.parse(fallback);
+  return;
 }
 
 let preview = "";
@@ -6797,8 +6793,6 @@ ${mermaidCodeGemini}
 ${mermaidCodeGroq || mermaidCodeGemini ? `</div>` : ""}
 
 ${visualHtml}
-
-${formatted}
 
 `;
 
