@@ -1649,6 +1649,15 @@ id="password"
 class="input"
 placeholder="Enter Password">
 
+<div
+style="text-align:right;margin:-10px 0 16px 0;">
+<button
+onclick="resetPassword()"
+style="background:none;border:none;color:#8b5cf6;cursor:pointer;font-size:14px;font-weight:600;padding:4px 0;">
+Forgot Password?
+</button>
+</div>
+
 <button
 class="btn primary"
 style="width:100%;margin-bottom:14px;"
@@ -9038,7 +9047,9 @@ onAuthStateChanged,
 
 setPersistence,
 
-browserLocalPersistence
+browserLocalPersistence,
+
+sendPasswordResetEmail
 
 }
 
@@ -9116,6 +9127,40 @@ window.googleLogin =
     }
     alert(msg);
   }
+
+};
+
+window.resetPassword =
+async function(){
+
+const email =
+document.getElementById(
+"email"
+).value;
+
+if(!email || !email.includes("@")){
+alert("Enter your email address first");
+document.getElementById("email").focus();
+return;
+}
+
+try {
+await sendPasswordResetEmail(
+auth,
+email
+);
+alert("Password reset email sent to " + email + ". Check your inbox.");
+} catch(error) {
+let msg = "Failed to send reset email.";
+if(error.code === "auth/user-not-found") {
+msg = "No account found with this email.";
+} else if(error.code === "auth/invalid-email") {
+msg = "Invalid email address.";
+} else {
+msg = "Error: " + (error.message || error);
+}
+alert(msg);
+}
 
 };
 
