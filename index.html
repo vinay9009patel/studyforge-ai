@@ -3172,7 +3172,6 @@ speechVoicesLoaded = true;
 }
 
 function speakInterviewText(text){
-if(interviewerGender === "own") return;
 const speech = window.speechSynthesis;
 
     if(!speech || !text){
