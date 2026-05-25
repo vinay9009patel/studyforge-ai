@@ -4874,6 +4874,7 @@ function startOwnAutoMic(stream){
     voiceCommittedText = "";
     setTimeout(() => {
         if(!isListening){
+            isListening = true;
             startVoiceRecognition();
             const btn = document.getElementById("voiceBtn");
             const btnText = document.getElementById("voiceBtnText");
