@@ -7033,7 +7033,6 @@ if(!data.important_points) data.important_points = [];
 }
 
 let visualHtml = "";
-let mermaidCode = "";
 
 if(isJson && data){
 const dataTopic = (data.topic || "").toLowerCase().trim();
@@ -7068,27 +7067,53 @@ class="upload-preview"
 `;
 }
 
-let statusLine = '<div id="genStatus" style="text-align:center;padding:20px;color:#94a3b8;font-size:14px;">⏳ Generating...</div>';
-
-const initialHtml = buildVisualNotesHTML(data, topic);
-notesOutput.innerHTML = `\n${preview}\n${statusLine}\n${initialHtml}\n`;
-
 stopLoadingCountdown();
 
-// --- Background progressive improvement (Groq → Gemini, chunk by chunk) ---
-(async function(){
-const sections = data.sections || [];
-const improvedData = JSON.parse(JSON.stringify(data));
-
-// 1. Generate mind map with Groq → show when ready
+// --- Chunk-by-chunk progressive generation (Groq → Gemini → Screen) ---
+let pendingOutput = preview;
 let mmCode = "";
-const statusEl = document.getElementById("genStatus");
-if(statusEl) statusEl.textContent = "🧠 Generating mind map...";
 
+function updateScreen(){
+notesOutput.innerHTML = pendingOutput + '\n<div id="genStatus"></div>\n';
+}
+function setStatus(msg, pct){
+const el = document.getElementById("genStatus");
+if(el) el.innerHTML = `<div style="text-align:center;padding:16px;border-radius:16px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);margin-bottom:20px;">
+<div style="display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:8px;">
+<div style="font-size:20px;">⏳</div>
+<div style="font-size:16px;font-weight:700;color:#c4b5fd;">${msg}</div>
+</div>
+${pct ? `<div style="width:100%;height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:linear-gradient(to right,#a78bfa,#38bdf8);border-radius:3px;transition:width 0.5s;"></div></div>` : ""}
+${pct ? `<div style="font-size:12px;color:#64748b;margin-top:4px;">${pct}% complete</div>` : ""}
+</div>`;
+}
+
+(async function(){
+const improvedData = JSON.parse(JSON.stringify(data));
+const totalChunks = 2 + (data.sections?.length || 0) + 1; // mindmap intro sections ...
+let chunkDone = 0;
+
+function progress(label){
+chunkDone++;
+const pct = Math.round((chunkDone / totalChunks) * 100);
+setStatus(`<span style="color:#fbbf24;">Step ${chunkDone}/${totalChunks}:</span> ${label}`, pct);
+}
+
+// 1. MIND MAP: Groq → Gemini → Screen
+try{
+progress("🧠 Generating mind map (Groq)...");
 const mindMapSrc = topic + (extractedText ? "\n" + extractedText.substring(0,500) : "");
 mmCode = await generateDetailedMindMap(topic, mindMapSrc);
-
 if(mmCode && mmCode.length > 10){
+progress("🔮 Improving mind map (Gemini)...");
+try{
+const gemPrompt = `Fix and improve this Mermaid mind map for "${topic}". Reorder: Definition→Features→Types→How It Works→Applications→Pros→Cons→Terms→Summary. Fix syntax, remove dupes. Each node 1-3 words. Return only Mermaid code.\n\n${mmCode}`;
+const gemResult = await askGemini(gemPrompt, "You are a mind map expert.");
+if(gemResult){
+const improved = normalizeMindMapCode(gemResult, topic, topic);
+if(improved && improved.length > mmCode.length && improved.length > 50) mmCode = improved;
+}
+}catch(e){}
 const mmHtml = `\n<div class="row" style="display:flex;gap:20px;margin-bottom:30px;">
 <div class="ai-diagram-card" style="flex:1;position:relative;cursor:pointer;transition:all 0.3s;" id="mindMapCard" onclick="toggleMindMapExpand('mindMapCard')">
 <button onclick="event.stopPropagation();toggleMindMapExpand('mindMapCard')" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.08);border:none;color:#94a3b8;font-size:16px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10;font-weight:700;">⛶</button>
@@ -7096,49 +7121,60 @@ const mmHtml = `\n<div class="row" style="display:flex;gap:20px;margin-bottom:30
 <div class="mermaid" id="notesMindMap">${mmCode}</div>
 </div>
 </div>\n`;
-notesOutput.innerHTML = `\n${preview}\n${mmHtml}\n${statusLine}\n${initialHtml}\n`;
+pendingOutput += mmHtml;
+updateScreen();
 try{
 mermaid.initialize({startOnLoad:false,securityLevel:"loose",theme:"dark",mindmap:{}});
 await mermaid.run({querySelector:"#notesMindMap"});
-}catch(err){ console.log("Mermaid err:", err.message); }
-} else {
-if(statusEl) statusEl.textContent = "⚠️ Mind map generation failed, continuing...";
-}
+}catch(err){}
+} else { progress("✓ Mind map ready"); }
+} catch(e){ console.log("Mind map failed:", e.message); }
+chunkDone++;
 
-// 2. Try improving mind map with Gemini
-if(mmCode && mmCode.length > 10){
-if(statusEl) statusEl.textContent = "🔮 Gemini improving mind map...";
+// 2. INTRODUCTION: Groq data → Gemini improve → Screen
 try{
-const gemPrompt = `Fix and improve this Mermaid mind map for "${topic}". Reorder: Definition→Features→Types→How It Works→Applications→Pros→Cons→Terms→Summary. Fix syntax, remove dupes. Each node 1-3 words. Return only Mermaid code.\n\n${mmCode}`;
-const gemResult = await askGemini(gemPrompt, "You are a mind map expert.");
+progress("📖 Improving introduction (Gemini)...");
+const intro = data.introduction || {};
+const introPrompt = `Write a better introduction for "${topic}" notes. Return ONLY JSON: {"title":"Introduction to ${topic}","definition":"clear definition","simple_explanation":"simple analogy"}. Make it exam-focused.
+
+Current definition: ${(intro.definition || "").substring(0,200)}
+Current simple: ${(intro.simple_explanation || "").substring(0,200)}`;
+const gemResult = await askGemini(introPrompt, "You are a professor.");
 if(gemResult){
-const improved = normalizeMindMapCode(gemResult, topic, topic);
-if(improved && improved.length > mmCode.length && improved.length > 50){
-mmCode = improved;
-const mmDiv = document.querySelector("#notesMindMap");
-if(mmDiv) mmDiv.textContent = mmCode;
 try{
+const cleaned = extractJsonFromText(String(gemResult ?? ""));
+const improved = JSON.parse(cleaned);
+if(improved && improved.definition){
+improvedData.introduction = improved;
+}
+}catch(e){}
+}
+const newHtml = buildVisualNotesHTML(improvedData, topic);
+pendingOutput = preview;
+pendingOutput += mmCode ? `\n<div class="row" style="display:flex;gap:20px;margin-bottom:30px;"><div class="ai-diagram-card" style="flex:1;position:relative;cursor:pointer;transition:all 0.3s;" id="mindMapCard" onclick="toggleMindMapExpand('mindMapCard')"><button onclick="event.stopPropagation();toggleMindMapExpand('mindMapCard')" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.08);border:none;color:#94a3b8;font-size:16px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10;font-weight:700;">⛶</button><div class="ai-diagram-title">🧠 Mind Map</div><div class="mermaid" id="notesMindMap">${mmCode}</div></div></div>\n` : "";
+pendingOutput += newHtml;
+updateScreen();
+try{
+if(mmCode){
 mermaid.initialize({startOnLoad:false,securityLevel:"loose",theme:"dark",mindmap:{}});
 await mermaid.run({querySelector:"#notesMindMap"});
-}catch(err){ console.log("Mermaid improve err:", err.message); }
 }
-}
-}catch(e){ console.log("Gemini mind map improve skipped:", e.message); }
-}
+}catch(err){}
+} catch(e){ console.log("Intro failed:", e.message); }
+chunkDone++;
 
-// 3. Improve each section with Gemini one at a time
+// 3. EACH SECTION: one by one Groq → Gemini → Screen
+const sections = data.sections || [];
 for(let i = 0; i < sections.length; i++){
 const s = sections[i];
-if(!s || !s.title) continue;
-if(statusEl) statusEl.textContent = `✦ Gemini improving: "${s.title}"...`;
-
+if(!s || !s.title){ chunkDone++; continue; }
 try{
-const sectionPrompt = `Improve this section for "${topic}". Expand explanation, add real examples, fix errors. Return ONLY JSON: {"title":"...","points":[{"heading":"...","explanation":"..."}]}.
+progress(`✦ Improving "${s.title}" (Gemini)...`);
+const sectionPrompt = `Improve this section for "${topic}". Expand, add examples, fix. Return ONLY JSON: {"title":"...","points":[{"heading":"...","explanation":"..."}]}.
 
 Section: ${s.title}
-Points: ${JSON.stringify((s.points || []).map(p => ({heading:p.heading})))}
-First point explanation (context): ${((s.points?.[0]?.explanation || "")).substring(0,300)}`;
-
+Headings: ${JSON.stringify((s.points || []).map(p => p.heading))}
+Context: ${((s.points?.[0]?.explanation || "")).substring(0,200)}`;
 const gemResult = await askGemini(sectionPrompt, "You are a professor. Return ONLY valid JSON.");
 if(gemResult){
 try{
@@ -7146,22 +7182,30 @@ const cleaned = extractJsonFromText(String(gemResult ?? ""));
 const improvedSection = JSON.parse(cleaned);
 if(improvedSection && improvedSection.points && improvedSection.points.length){
 improvedData.sections[i] = improvedSection;
+}
+}catch(e){}
+}
 const newHtml = buildVisualNotesHTML(improvedData, topic);
-notesOutput.innerHTML = `\n${preview}\n${mmCode && mmCode.length > 10 ? `\n<div class="row" style="display:flex;gap:20px;margin-bottom:30px;"><div class="ai-diagram-card" style="flex:1;position:relative;cursor:pointer;transition:all 0.3s;" id="mindMapCard" onclick="toggleMindMapExpand('mindMapCard')"><button onclick="event.stopPropagation();toggleMindMapExpand('mindMapCard')" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.08);border:none;color:#94a3b8;font-size:16px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10;font-weight:700;">⛶</button><div class="ai-diagram-title">🧠 Mind Map</div><div class="mermaid" id="notesMindMap">${mmCode}</div></div></div>\n` : ""}\n${statusLine}\n${newHtml}\n`;
-if(mmCode && mmCode.length > 10){
+pendingOutput = preview;
+pendingOutput += mmCode ? `\n<div class="row" style="display:flex;gap:20px;margin-bottom:30px;"><div class="ai-diagram-card" style="flex:1;position:relative;cursor:pointer;transition:all 0.3s;" id="mindMapCard" onclick="toggleMindMapExpand('mindMapCard')"><button onclick="event.stopPropagation();toggleMindMapExpand('mindMapCard')" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.08);border:none;color:#94a3b8;font-size:16px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10;font-weight:700;">⛶</button><div class="ai-diagram-title">🧠 Mind Map</div><div class="mermaid" id="notesMindMap">${mmCode}</div></div></div>\n` : "";
+pendingOutput += newHtml;
+updateScreen();
 try{
+if(mmCode){
 mermaid.initialize({startOnLoad:false,securityLevel:"loose",theme:"dark",mindmap:{}});
 await mermaid.run({querySelector:"#notesMindMap"});
+}
 }catch(err){}
-}
-}
-}catch(e){ console.log("Section parse err:", e.message); }
-}
-} catch(e){ console.log("Section fail:", s.title, e.message); }
+} catch(e){ console.log("Section failed:", s.title, e.message); }
+chunkDone++;
 }
 
-if(statusEl) statusEl.textContent = "✅ Done!";
-setTimeout(() => { if(statusEl) statusEl.style.display = "none"; }, 4000);
+// Done
+setStatus("✅ All done! Notes generated with Groq + Gemini improvement", 100);
+setTimeout(() => {
+const el = document.getElementById("genStatus");
+if(el) el.style.display = "none";
+}, 5000);
 })();
 
 setTimeout(function(){
@@ -7173,25 +7217,6 @@ setTimeout(function(){
     renderArrayBoxes();
   }
 }, 100);
-
-if(mermaidCode){
-try{
-mermaid.initialize({
-startOnLoad:false,
-securityLevel:"loose",
-theme:"dark",
-mindmap:{}
-});
-await mermaid.run({
-querySelector: "#notesMindMap"
-});
-}catch(error){
-console.log(error);
-const fallback = buildFallbackMindMap(topic, `${topic}\n${extractedText}\n${isJson ? JSON.stringify(data) : ""}`);
-const container = notesOutput.querySelector("#notesMindMap");
-if(container) container.outerHTML = renderFallbackMindMapHtml(fallback);
-}
-}
 
 notesOutput.scrollIntoView({
 behavior:"smooth"
@@ -7206,15 +7231,6 @@ populateVoiceList();
 appData.notesGenerated++;
 appData.xp += 10;
 updateUI();
-
-const rawText = notesOutput.textContent || "";
-const trimmed = rawText.trim();
-if(trimmed.startsWith("{") || trimmed.includes('"search_term"') || trimmed.startsWith("[") || (trimmed.length > 20 && trimmed.includes('"topic"'))){
-console.warn("⚠️ JSON detected in output! Replacing with fallback.");
-console.warn("First 200 chars:", trimmed.substring(0,200));
-const fbTopic = document.getElementById("topic")?.value || topic;
-notesOutput.innerHTML = marked.parse(generateSmartFallbackNotes(fbTopic));
-}
 
 }catch(error){
 console.error(error);
