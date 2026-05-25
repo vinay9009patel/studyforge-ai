@@ -4702,6 +4702,19 @@ function toggleVoiceInput(){
     }
     
     if(!support.isHttps){
+        showMicStatus("⚠️ File:// protocol blocks microphone. Use Live Server (VS Code) -> Right-click -> Open with Live Server", "warning");
+        alert("⚠️ Microphone blocked!\n\n" +
+              "You're opening this file directly (file:// protocol).\n" +
+              "Chrome blocks microphone access on file:// URLs.\n\n" +
+              "👉 Solution: Use VS Code Live Server\n" +
+              "   1. Install 'Live Server' extension in VS Code\n" +
+              "   2. Right-click index.html → 'Open with Live Server'\n" +
+              "   3. Voice will work on http://127.0.0.1:5500\n\n" +
+              "Or type your answer manually.");
+        return;
+    }
+    
+    if(!support.isHttps){
         showMicStatus("⚠️ Needs HTTPS for voice", "warning");
     }
     
@@ -4818,11 +4831,8 @@ function startVoiceRecognition(){
         console.log("🎤 rec.start() called successfully");
     } catch(e){
         console.log("❌ rec.start() failed:", e);
-        if(isListening){
-            setTimeout(() => {
-                if(isListening) startVoiceRecognition();
-            }, 500);
-        }
+        showMicStatus("❌ Microphone blocked. File:// or no permission.", "error");
+        stopVoiceInput();
     }
 }
 
@@ -4943,9 +4953,9 @@ async function askAI(prompt, systemMsg, maxTok, modelName){
   
   console.log("🤖 === askAI called ===");
   
+  // Groq first (primary)
+  console.log("   🌐 Trying Groq...");
   try{
-    console.log("   🌐 Trying Cloudflare Worker...");
-    
     const response = await fetch(WORKER_URL + "/openai/v1/chat/completions",{
       method:"POST",
       headers:{ "Content-Type":"application/json" },
@@ -4960,17 +4970,18 @@ async function askAI(prompt, systemMsg, maxTok, modelName){
     if(response.ok){
       const data = await response.json();
       if(data?.choices?.[0]){
-        console.log("   ✅ Worker API success!");
+        console.log("   ✅ Groq success!");
         return data.choices[0].message.content;
       }
     }
     
-    console.log("   ❌ Worker failed with status:", response.status);
+    console.log("   ❌ Groq failed with status:", response.status);
     
   }catch(workerErr){
-    console.log("   ❌ Worker error:", workerErr.message);
+    console.log("   ❌ Groq error:", workerErr.message);
   }
   
+  // Gemini fallback (if quota resets)
   console.log("   🔄 Trying Gemini fallback...");
   try{
     const geminiResult = await askGemini(prompt, systemMsg);
@@ -7001,26 +7012,6 @@ isJson = true;
 if(isJson && data){
 notesOutput.innerHTML = "";
 groqData = JSON.parse(JSON.stringify(data));
-    const summaryData = { topic: data.topic, sections: (data.sections || []).map(s => ({title: s.title, points: (s.points || []).map(p => ({heading: p.heading}))})), key_concepts: (data.key_concepts || []).map(k => ({concept: k.concept})) };
-    const geminiImprovePrompt = `You are a PROFESSOR fact-checking and expanding exam notes for "${topic}".
-
-Fix errors, expand every section, add missing content, add 4-6 EXAMPLES as mini-stories, add cheat_sheet with 5-8 memory_tricks (acronym/story/visual/rhyme), add interview_questions and exam_pattern. Write in STORY/NARRATIVE style. For non-CS topics NO code. Return ONLY valid JSON.
-
-TOPIC: ${topic}
-SECTIONS: ${JSON.stringify(summaryData.sections)}`;
-
-try{
-      const gradeAResult = await askGemini(geminiImprovePrompt, "You are a strict professor. Return ONLY valid JSON.");
-if(gradeAResult){
-const cleaned = extractJsonFromText(String(gradeAResult ?? ""));
-const improved = JSON.parse(cleaned);
-if(improved && improved.sections){
-data = improved;
-}
-}
-}catch(e){
-console.log("Gemini improvement skipped:", e.message);
-}
 }
 
 if(data){
@@ -7069,7 +7060,7 @@ class="upload-preview"
 
 stopLoadingCountdown();
 
-// --- Chunk-by-chunk progressive generation (Groq → Gemini → Screen) ---
+// --- Progressive rendering (Groq → ONE Gemini call → chunk-by-chunk screen) ---
 let pendingOutput = preview;
 let mmCode = "";
 
@@ -7090,8 +7081,9 @@ ${pct ? `<div style="font-size:12px;color:#64748b;margin-top:4px;">${pct}% compl
 
 (async function(){
 const improvedData = JSON.parse(JSON.stringify(data));
-const totalChunks = 2 + (data.sections?.length || 0) + 1; // mindmap intro sections ...
+const totalChunks = 2 + (data.sections?.length || 0) + 1;
 let chunkDone = 0;
+const delay = ms => new Promise(r => setTimeout(r, ms));
 
 function progress(label){
 chunkDone++;
@@ -7099,7 +7091,7 @@ const pct = Math.round((chunkDone / totalChunks) * 100);
 setStatus(`<span style="color:#fbbf24;">Step ${chunkDone}/${totalChunks}:</span> ${label}`, pct);
 }
 
-// 1. MIND MAP: Groq → Gemini → Screen
+// 1. MIND MAP: Groq generate → Gemini improve (small prompt) → screen
 try{
 progress("🧠 Generating mind map (Groq)...");
 const mindMapSrc = topic + (extractedText ? "\n" + extractedText.substring(0,500) : "");
@@ -7107,6 +7099,7 @@ mmCode = await generateDetailedMindMap(topic, mindMapSrc);
 if(mmCode && mmCode.length > 10){
 progress("🔮 Improving mind map (Gemini)...");
 try{
+await delay(4000);
 const gemPrompt = `Fix and improve this Mermaid mind map for "${topic}". Reorder: Definition→Features→Types→How It Works→Applications→Pros→Cons→Terms→Summary. Fix syntax, remove dupes. Each node 1-3 words. Return only Mermaid code.\n\n${mmCode}`;
 const gemResult = await askGemini(gemPrompt, "You are a mind map expert.");
 if(gemResult){
@@ -7114,39 +7107,30 @@ const improved = normalizeMindMapCode(gemResult, topic, topic);
 if(improved && improved.length > mmCode.length && improved.length > 50) mmCode = improved;
 }
 }catch(e){}
-const mmHtml = `\n<div class="row" style="display:flex;gap:20px;margin-bottom:30px;">
-<div class="ai-diagram-card" style="flex:1;position:relative;cursor:pointer;transition:all 0.3s;" id="mindMapCard" onclick="toggleMindMapExpand('mindMapCard')">
-<button onclick="event.stopPropagation();toggleMindMapExpand('mindMapCard')" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.08);border:none;color:#94a3b8;font-size:16px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10;font-weight:700;">⛶</button>
-<div class="ai-diagram-title">🧠 Mind Map</div>
-<div class="mermaid" id="notesMindMap">${mmCode}</div>
-</div>
-</div>\n`;
-pendingOutput += mmHtml;
+}
+pendingOutput += `\n<div class="row" style="display:flex;gap:20px;margin-bottom:30px;"><div class="ai-diagram-card" style="flex:1;position:relative;cursor:pointer;transition:all 0.3s;" id="mindMapCard" onclick="toggleMindMapExpand('mindMapCard')"><button onclick="event.stopPropagation();toggleMindMapExpand('mindMapCard')" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.08);border:none;color:#94a3b8;font-size:16px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10;font-weight:700;">⛶</button><div class="ai-diagram-title">🧠 Mind Map</div><div class="mermaid" id="notesMindMap">${mmCode ? mmCode : "mindmap\ngraph TD\n  A[" + topic + "]\\n  B[Definition]\\n  C[Features]\\n  D[Types]\\n  E[Applications]\\n  A-->B\\n  A-->C\\n  A-->D\\n  A-->E"}</div></div></div>\n`;
 updateScreen();
 try{
+if(mmCode){
 mermaid.initialize({startOnLoad:false,securityLevel:"loose",theme:"dark",mindmap:{}});
 await mermaid.run({querySelector:"#notesMindMap"});
+}
 }catch(err){}
-} else { progress("✓ Mind map ready"); }
-} catch(e){ console.log("Mind map failed:", e.message); }
 chunkDone++;
+} catch(e){ console.log("Mind map failed:", e.message); chunkDone++; }
 
-// 2. INTRODUCTION: Groq data → Gemini improve → Screen
+// 2. INTRODUCTION: Groq data → Gemini improve (small prompt) → screen
 try{
 progress("📖 Improving introduction (Gemini)...");
-const intro = data.introduction || {};
-const introPrompt = `Write a better introduction for "${topic}" notes. Return ONLY JSON: {"title":"Introduction to ${topic}","definition":"clear definition","simple_explanation":"simple analogy"}. Make it exam-focused.
-
-Current definition: ${(intro.definition || "").substring(0,200)}
-Current simple: ${(intro.simple_explanation || "").substring(0,200)}`;
+await delay(4000);
+const intro = improvedData.introduction || {};
+const introPrompt = `Write a better introduction for "${topic}" notes. Return ONLY JSON: {"title":"Introduction to ${topic}","definition":"clear definition","simple_explanation":"simple analogy with story"}. Make it exam-focused.\n\nCurrent definition: ${(intro.definition || "").substring(0,200)}\nCurrent simple: ${(intro.simple_explanation || "").substring(0,200)}`;
 const gemResult = await askGemini(introPrompt, "You are a professor.");
 if(gemResult){
 try{
 const cleaned = extractJsonFromText(String(gemResult ?? ""));
 const improved = JSON.parse(cleaned);
-if(improved && improved.definition){
-improvedData.introduction = improved;
-}
+if(improved && improved.definition) improvedData.introduction = improved;
 }catch(e){}
 }
 const newHtml = buildVisualNotesHTML(improvedData, topic);
@@ -7155,57 +7139,70 @@ pendingOutput += mmCode ? `\n<div class="row" style="display:flex;gap:20px;margi
 pendingOutput += newHtml;
 updateScreen();
 try{
-if(mmCode){
-mermaid.initialize({startOnLoad:false,securityLevel:"loose",theme:"dark",mindmap:{}});
-await mermaid.run({querySelector:"#notesMindMap"});
-}
+if(mmCode){ mermaid.initialize({startOnLoad:false,securityLevel:"loose",theme:"dark",mindmap:{}}); await mermaid.run({querySelector:"#notesMindMap"}); }
 }catch(err){}
-} catch(e){ console.log("Intro failed:", e.message); }
 chunkDone++;
+} catch(e){ console.log("Intro failed:", e.message); chunkDone++; }
 
-// 3. EACH SECTION: one by one Groq → Gemini → Screen
+// 3. EACH SECTION: Groq data → Gemini improve (small prompt each) → screen
 const sections = data.sections || [];
 for(let i = 0; i < sections.length; i++){
 const s = sections[i];
 if(!s || !s.title){ chunkDone++; continue; }
 try{
 progress(`✦ Improving "${s.title}" (Gemini)...`);
-const sectionPrompt = `Improve this section for "${topic}". Expand, add examples, fix. Return ONLY JSON: {"title":"...","points":[{"heading":"...","explanation":"..."}]}.
-
-Section: ${s.title}
-Headings: ${JSON.stringify((s.points || []).map(p => p.heading))}
-Context: ${((s.points?.[0]?.explanation || "")).substring(0,200)}`;
+await delay(4000);
+const sectionPrompt = `Improve this section for "${topic}". Expand, add examples, real-life analogy. Return ONLY JSON: {"title":"...","points":[{"heading":"...","explanation":"..."}]}.\n\nSection: ${s.title}\nHeadings: ${JSON.stringify((s.points || []).map(p => p.heading))}\nContext: ${((s.points?.[0]?.explanation || "")).substring(0,200)}`;
 const gemResult = await askGemini(sectionPrompt, "You are a professor. Return ONLY valid JSON.");
 if(gemResult){
 try{
 const cleaned = extractJsonFromText(String(gemResult ?? ""));
-const improvedSection = JSON.parse(cleaned);
-if(improvedSection && improvedSection.points && improvedSection.points.length){
-improvedData.sections[i] = improvedSection;
-}
+const improved = JSON.parse(cleaned);
+if(improved && improved.points && improved.points.length) improvedData.sections[i] = improved;
 }catch(e){}
 }
-const newHtml = buildVisualNotesHTML(improvedData, topic);
+const partialData = JSON.parse(JSON.stringify(improvedData));
+partialData.sections = partialData.sections?.slice(0, i + 1);
+const newHtml = buildVisualNotesHTML(partialData, topic);
 pendingOutput = preview;
-pendingOutput += mmCode ? `\n<div class="row" style="display:flex;gap:20px;margin-bottom:30px;"><div class="ai-diagram-card" style="flex:1;position:relative;cursor:pointer;transition:all 0.3s;" id="mindMapCard" onclick="toggleMindMapExpand('mindMapCard')"><button onclick="event.stopPropagation();toggleMindMapExpand('mindMapCard')" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.08);border:none;color:#94a3b8;font-size:16px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10;font-weight:700;">⛶</button><div class="ai-diagram-title">🧠 Mind Map</div><div class="mermaid" id="notesMindMap">${mmCode}</div></div></div>\n` : "";
+if(mmCode){ pendingOutput += `\n<div class="row" style="display:flex;gap:20px;margin-bottom:30px;"><div class="ai-diagram-card" style="flex:1;position:relative;cursor:pointer;transition:all 0.3s;" id="mindMapCard" onclick="toggleMindMapExpand('mindMapCard')"><button onclick="event.stopPropagation();toggleMindMapExpand('mindMapCard')" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.08);border:none;color:#94a3b8;font-size:16px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10;font-weight:700;">⛶</button><div class="ai-diagram-title">🧠 Mind Map</div><div class="mermaid" id="notesMindMap">${mmCode}</div></div></div>\n`; }
 pendingOutput += newHtml;
 updateScreen();
 try{
-if(mmCode){
-mermaid.initialize({startOnLoad:false,securityLevel:"loose",theme:"dark",mindmap:{}});
-await mermaid.run({querySelector:"#notesMindMap"});
-}
+if(mmCode){ mermaid.initialize({startOnLoad:false,securityLevel:"loose",theme:"dark",mindmap:{}}); await mermaid.run({querySelector:"#notesMindMap"}); }
 }catch(err){}
-} catch(e){ console.log("Section failed:", s.title, e.message); }
 chunkDone++;
+} catch(e){ console.log("Section failed:", s?.title, e.message); chunkDone++; }
 }
 
-// Done
-setStatus("✅ All done! Notes generated with Groq + Gemini improvement", 100);
-setTimeout(() => {
-const el = document.getElementById("genStatus");
-if(el) el.style.display = "none";
-}, 5000);
+// 4. CHEAT SHEET: Groq concise → Gemini details + stories → screen
+try{
+const cs = improvedData.cheat_sheet || data.cheat_sheet;
+if(cs){
+progress("🧠 Generating memory tricks (Gemini)...");
+await delay(4000);
+const csPrompt = `Create MEMORABLE memory tricks for "${topic}" study notes. Return ONLY JSON with this structure:
+{"definition_line":"one line definition","key_formulas":["f1"],"critical_points":["p1"],"memory_tricks":[{"hint":"catchy phrase","for":"what it helps","type":"story/visual/rhyme/acronym","story":"fun short story that makes it stick","visual_clue":"mental image"}]}
+Be creative! Use stories, visual imagery, rhymes. Topic: ${topic}`;
+const gemResult = await askGemini(csPrompt, "You are a memory expert. Return ONLY valid JSON.");
+if(gemResult){
+try{
+const cleaned = extractJsonFromText(String(gemResult ?? ""));
+const improved = JSON.parse(cleaned);
+if(improved && improved.memory_tricks) improvedData.cheat_sheet = improved;
+}catch(e){}
+}
+const fullHtml = buildVisualNotesHTML(improvedData, topic);
+pendingOutput = preview;
+if(mmCode){ pendingOutput += `\n<div class="row" style="display:flex;gap:20px;margin-bottom:30px;"><div class="ai-diagram-card" style="flex:1;position:relative;cursor:pointer;transition:all 0.3s;" id="mindMapCard" onclick="toggleMindMapExpand('mindMapCard')"><button onclick="event.stopPropagation();toggleMindMapExpand('mindMapCard')" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.08);border:none;color:#94a3b8;font-size:16px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10;font-weight:700;">⛶</button><div class="ai-diagram-title">🧠 Mind Map</div><div class="mermaid" id="notesMindMap">${mmCode}</div></div></div>\n`; }
+pendingOutput += fullHtml;
+updateScreen();
+}
+chunkDone++;
+} catch(e){ console.log("Cheat sheet failed:", e.message); chunkDone++; }
+
+setStatus("✅ All done! Notes ready", 100);
+setTimeout(() => { const el = document.getElementById("genStatus"); if(el) el.style.display = "none"; }, 5000);
 })();
 
 setTimeout(function(){
@@ -8303,14 +8300,85 @@ function generateFallbackQuiz(topic,count){
 const fallback = [];
 const topics = topic.split(",").map(t=>t.trim()).filter(Boolean);
 const baseTopic = topics[0] || topic;
-const sampleQs = [
+const t = baseTopic.toLowerCase();
+
+let sampleQs;
+
+if(t.includes("array")){
+sampleQs = [
+{question:"What is an array?",options:["A collection of elements of same type stored in contiguous memory","A linked list of nodes","A key-value pair collection","A tree structure"],answer:"A collection of elements of same type stored in contiguous memory"},
+{question:"What is the time complexity of accessing an element in an array by index?",options:["O(1)","O(log n)","O(n)","O(n²)"],answer:"O(1)"},
+{question:"What is a key disadvantage of a static array?",options:["Fixed size cannot be changed","Slow access time","No random access","Cannot store integers"],answer:"Fixed size cannot be changed"},
+{question:"Which of these is a dynamic array in Python?",options:["list","tuple","set","dict"],answer:"list"},
+{question:"What happens when you insert an element at the beginning of an array?",options:["All elements shift right — O(n)","Element is added in O(1)","Array becomes sorted","Last element is removed"],answer:"All elements shift right — O(n)"},
+{question:"What is a 2D array?",options:["Array of arrays (matrix)","Array with 2 elements","Array stored in 2 memory blocks","Sorted array"],answer:"Array of arrays (matrix)"}
+];
+} else if(t.includes("binary search") || t.includes("search")){
+sampleQs = [
+{question:"What is binary search?",options:["Divide-and-conquer search on sorted array","Linear search on unsorted array","Random search on any data","Hash-based lookup"],answer:"Divide-and-conquer search on sorted array"},
+{question:"What is the time complexity of binary search?",options:["O(log n)","O(n)","O(1)","O(n log n)"],answer:"O(log n)"},
+{question:"What is the prerequisite for binary search?",options:["Array must be sorted","Array must be unsorted","Array must be large","Array must be small"],answer:"Array must be sorted"},
+{question:"How does binary search eliminate elements?",options:["Half the array is eliminated each step","One element is eliminated each step","All elements are checked","Random elements are removed"],answer:"Half the array is eliminated each step"},
+{question:"When should you use linear search instead of binary search?",options:["When array is unsorted or small","When array is sorted","When array is very large","Never"],answer:"When array is unsorted or small"}
+];
+} else if(t.includes("stack")){
+sampleQs = [
+{question:"What principle does a stack follow?",options:["LIFO (Last In, First Out)","FIFO (First In, First Out)","Random access","Sorted order"],answer:"LIFO (Last In, First Out)"},
+{question:"What are the two primary stack operations?",options:["Push and Pop","Enqueue and Dequeue","Insert and Delete","Add and Remove"],answer:"Push and Pop"},
+{question:"What is the time complexity of stack push/pop operations?",options:["O(1)","O(n)","O(log n)","O(n²)"],answer:"O(1)"},
+{question:"Which data structure is used in function call recursion?",options:["Stack","Queue","Tree","Heap"],answer:"Stack"},
+{question:"In expression evaluation, what does a stack help with?",options:["Converting infix to postfix","Sorting numbers","Searching elements","Storing variables"],answer:"Converting infix to postfix"}
+];
+} else if(t.includes("queue")){
+sampleQs = [
+{question:"What principle does a queue follow?",options:["FIFO (First In, First Out)","LIFO (Last In, First Out)","Priority order","Random order"],answer:"FIFO (First In, First Out)"},
+{question:"What are the two primary queue operations?",options:["Enqueue and Dequeue","Push and Pop","Insert and Delete","Add and Remove"],answer:"Enqueue and Dequeue"},
+{question:"What is a circular queue?",options:["Queue where rear connects back to front to reuse space","Queue that sorts elements","Queue with priority","Queue that reverses order"],answer:"Queue where rear connects back to front to reuse space"},
+{question:"Which application uses a queue?",options:["CPU scheduling (round-robin)","Function call recursion","Expression evaluation","Undo operations"],answer:"CPU scheduling (round-robin)"},
+{question:"What is a priority queue?",options:["Elements with highest priority are dequeued first","Elements are dequeued in insertion order","All elements have same priority","Elements are sorted alphabetically"],answer:"Elements with highest priority are dequeued first"}
+];
+} else if(t.includes("linked list")){
+sampleQs = [
+{question:"What is a linked list?",options:["A linear data structure where elements are connected via pointers","A contiguous array of elements","A tree of nodes","A hash table"],answer:"A linear data structure where elements are connected via pointers"},
+{question:"What is the advantage of a linked list over an array?",options:["Dynamic size and O(1) insertions at head","Faster random access","Less memory usage","Built-in sorting"],answer:"Dynamic size and O(1) insertions at head"},
+{question:"What is the time complexity of accessing an element in a linked list?",options:["O(n)","O(1)","O(log n)","O(n²)"],answer:"O(n)"},
+{question:"What is a doubly linked list?",options:["Each node has pointers to both next AND previous node","Each node points to two next nodes","List with double the elements","List sorted in descending order"],answer:"Each node has pointers to both next AND previous node"},
+{question:"What is a common use of linked lists?",options:["Implementing stacks, queues, and adjacency lists","Storing sorted arrays","Database indexing","Caching images"],answer:"Implementing stacks, queues, and adjacency lists"}
+];
+} else if(t.includes("tree") || t.includes("bst") || t.includes("binary tree")){
+sampleQs = [
+{question:"What is a binary tree?",options:["Each node has at most 2 children","Each node has exactly 2 children","A tree with 2 levels only","A sorted array"],answer:"Each node has at most 2 children"},
+{question:"What is a Binary Search Tree (BST)?",options:["Left child < parent < right child for all nodes","Smallest element is always root","Tree with at most 2 levels","Tree where all leaves are at same level"],answer:"Left child < parent < right child for all nodes"},
+{question:"What is the time complexity of search in a balanced BST?",options:["O(log n)","O(n)","O(1)","O(n log n)"],answer:"O(log n)"},
+{question:"What is tree traversal visiting left→root→right called?",options:["In-order","Pre-order","Post-order","Level-order"],answer:"In-order"},
+{question:"What is the height of a tree?",options:["Number of edges on longest path from root to leaf","Number of nodes in the tree","Number of leaves","Depth of root"],answer:"Number of edges on longest path from root to leaf"}
+];
+} else if(t.includes("graph")){
+sampleQs = [
+{question:"What is a graph?",options:["Set of vertices connected by edges","A tree with cycles","A sorted collection","A linked list with multiple connections"],answer:"Set of vertices connected by edges"},
+{question:"What is the difference between DFS and BFS?",options:["DFS uses stack (deep), BFS uses queue (level by level)","DFS is faster than BFS","DFS uses queue, BFS uses stack","They are the same"],answer:"DFS uses stack (deep), BFS uses queue (level by level)"},
+{question:"What is an adjacency matrix?",options:["2D array where matrix[i][j]=1 if edge i→j exists","List of connected edges","Tree representation","Hash map of nodes"],answer:"2D array where matrix[i][j]=1 if edge i→j exists"},
+{question:"Which algorithm finds shortest path in unweighted graph?",options:["BFS","DFS","Binary Search","Quick Sort"],answer:"BFS"},
+{question:"What is a cycle in a graph?",options:["A path where first and last vertex are same","A path with no repeated vertices","A disconnected component","A self-loop"],answer:"A path where first and last vertex are same"}
+];
+} else if(t.includes("sort") || t.includes("sorting")){
+sampleQs = [
+{question:"What is the best-case time complexity of Quick Sort?",options:["O(n log n)","O(n)","O(n²)","O(log n)"],answer:"O(n log n)"},
+{question:"What is the worst-case time complexity of Quick Sort?",options:["O(n²)","O(n log n)","O(n)","O(log n)"],answer:"O(n²)"},
+{question:"Which sorting algorithm has O(n²) in all cases?",options:["Bubble Sort","Merge Sort","Quick Sort","Heap Sort"],answer:"Bubble Sort"},
+{question:"Which sorting algorithm uses divide-and-conquer?",options:["Merge Sort and Quick Sort","Bubble Sort","Insertion Sort","Selection Sort"],answer:"Merge Sort and Quick Sort"},
+{question:"What is the space complexity of Merge Sort?",options:["O(n)","O(1)","O(log n)","O(n²)"],answer:"O(n)"}
+];
+} else {
+sampleQs = [
 {question:`What is ${baseTopic}?`,options:["Definition and core concepts","History only","Related tools","None"],answer:"Definition and core concepts"},
 {question:`Which of these best describes ${baseTopic}?`,options:["A programming paradigm","A design pattern","A database system","A testing framework"],answer:"A programming paradigm"},
 {question:`Why is ${baseTopic} important?`,options:["Improves code quality","Makes code faster","Reduces costs","Increases complexity"],answer:"Improves code quality"},
 {question:`What is a key feature of ${baseTopic}?`,options:["Reusability","Speed","Cost","Size"],answer:"Reusability"},
 {question:`Where is ${baseTopic} commonly used?`,options:["Web development","Games only","CLI tools","Mobile only"],answer:"Web development"}
 ];
-for(let i=0;i<Math.min(parseInt(count)||5,5);i++){
+}
+for(let i=0;i<Math.min(parseInt(count)||5,Math.min(sampleQs.length,10));i++){
 const q = sampleQs[i % sampleQs.length];
 fallback.push({
 question:q.question,
@@ -8424,6 +8492,7 @@ console.log("Groq quiz parse retry failed:",error2);
 }
 
 if(quizQuestions && quizQuestions.length > 0){
+await new Promise(r => setTimeout(r, 4000));
 const geminiPrompt = `You are a PROFESSOR reviewing MCQ questions for "${topic}".
 
 Below are ${quizQuestions.length} questions generated by another AI. Your job:
