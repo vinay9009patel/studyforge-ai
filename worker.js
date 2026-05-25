@@ -47,6 +47,24 @@ export default {
       }
     }
 
+    // === GET ALL USERS' DAILY USAGE (admin) ===
+    if (request.method === "POST" && url.pathname === "/limit/all") {
+      try {
+        const prefix = `limit_`;
+        const listResult = await env.LIMITS.list({ prefix });
+        const all = {};
+        for (const key of listResult.keys) {
+          const raw = await env.LIMITS.get(key.name);
+          if (raw) {
+            all[key.name] = JSON.parse(raw);
+          }
+        }
+        return new Response(JSON.stringify({ success: true, data: all }), { status: 200, headers: { "Content-Type": "application/json", ...cors } });
+      } catch(e) {
+        return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: { "Content-Type": "application/json", ...cors } });
+      }
+    }
+
     if (request.method === "GET" && url.pathname.includes("/test-image")) {
       const result = await searchWikimediaImage("binary search algorithm");
       return new Response(JSON.stringify(result), { 

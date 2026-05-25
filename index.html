@@ -1913,68 +1913,29 @@ Download Notes
 
 </div>
 
-<div id="audioControls" style="margin-top:20px;display:none;gap:12px;flex-wrap:wrap;align-items:center;">
-<button
-id="audioPlayBtn"
-class="btn"
-style="background:linear-gradient(135deg,#22c55e,#16a34a);color:white;padding:12px 24px;border-radius:14px;border:none;font-size:15px;cursor:pointer;font-weight:700;"
-onclick="toggleAudioPlay()">
-▶ Play Audio
-</button>
-
-<button
-id="audioPauseBtn"
-class="btn"
-style="background:rgba(251,191,36,0.2);color:#fde68a;padding:12px 24px;border-radius:14px;border:1px solid rgba(251,191,36,0.3);font-size:15px;cursor:pointer;font-weight:700;display:none;"
-onclick="pauseAudio()">
-⏸ Pause
-</button>
-
-<button
-id="audioStopBtn"
-class="btn"
-style="background:rgba(239,68,68,0.2);color:#fca5a5;padding:12px 24px;border-radius:14px;border:1px solid rgba(239,68,68,0.3);font-size:15px;cursor:pointer;font-weight:700;"
-onclick="stopAudio()">
-⏹ Stop
-</button>
-
-<select
-id="voiceSelect"
-class="input dark-select"
-style="max-width:250px;padding:12px 16px;font-size:14px;"
-onchange="changeVoice()">
-</select>
-
-<div style="display:flex;align-items:center;gap:8px;">
-<span style="color:#94a3b8;font-size:14px;">Speed:</span>
-<input
-type="range"
-id="speechRate"
-min="0.5"
-max="2"
-step="0.1"
-value="1"
-style="width:100px;"
-onchange="changeSpeechRate()">
-<span id="speechRateValue" style="color:#94a3b8;font-size:14px;">1x</span>
+<div id="audioControls" style="margin-top:20px;display:none;flex-direction:column;gap:12px;">
+<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+<button id="audioPlayBtn" class="btn" style="background:linear-gradient(135deg,#22c55e,#16a34a);color:white;padding:12px 20px;border-radius:14px;border:none;font-size:15px;cursor:pointer;font-weight:700;min-width:120px;" onclick="toggleAudioPlay()">▶ Play</button>
+<button id="audioStopBtn" class="btn" style="background:rgba(239,68,68,0.2);color:#fca5a5;padding:12px 20px;border-radius:14px;border:1px solid rgba(239,68,68,0.3);font-size:15px;cursor:pointer;font-weight:700;" onclick="stopAudio()">⏹ Stop</button>
+<select id="voiceSelect" class="input dark-select" style="max-width:200px;padding:10px 14px;font-size:13px;" onchange="changeVoice()"></select>
+<div style="display:flex;align-items:center;gap:6px;">
+<span style="color:#94a3b8;font-size:13px;">Speed:</span>
+<input type="range" id="speechRate" min="0.5" max="2" step="0.1" value="1" style="width:80px;" oninput="changeSpeechRate()">
+<span id="speechRateValue" style="color:#94a3b8;font-size:13px;min-width:30px;">1x</span>
 </div>
-
-<button
-id="storyModeBtn"
-class="btn"
-style="background:linear-gradient(135deg,#ec4899,#8b5cf6);color:white;padding:12px 24px;border-radius:14px;border:none;font-size:15px;cursor:pointer;font-weight:700;"
-onclick="startStoryMode()">
-🎧 Story Mode
-</button>
-
-<select
-id="storyLangSelect"
-class="input dark-select"
-style="max-width:140px;padding:12px 16px;font-size:14px;">
+<button id="storyModeBtn" class="btn" style="background:linear-gradient(135deg,#ec4899,#8b5cf6);color:white;padding:10px 18px;border-radius:14px;border:none;font-size:14px;cursor:pointer;font-weight:700;" onclick="startStoryMode()">🎧 Story</button>
+<select id="storyLangSelect" class="input dark-select" style="max-width:120px;padding:10px 14px;font-size:13px;">
 <option value="hindi">हिन्दी</option>
 <option value="english" selected>English</option>
 <option value="hinglish">Hinglish</option>
 </select>
+</div>
+<div id="audioProgressRow" style="display:none;align-items:center;gap:12px;">
+<div style="flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,0.08);cursor:pointer;position:relative;" onclick="seekAudio(event)">
+<div id="audioProgressFill" style="width:0%;height:100%;border-radius:3px;background:linear-gradient(to right,#22c55e,#16a34a);transition:width 0.3s;"></div>
+</div>
+<span id="audioTimeDisplay" style="color:#94a3b8;font-size:12px;min-width:100px;text-align:right;">0:00 / 0:00</span>
+</div>
 </div>
 
 <div id="storyContainer" style="display:none;margin-top:20px;padding:24px;border-radius:20px;background:linear-gradient(135deg,rgba(236,72,153,0.05),rgba(139,92,246,0.08));border:2px solid rgba(236,72,153,0.2);">
@@ -2592,6 +2553,7 @@ async function secureSaveData(data){
 }
 
 let quizQuestions = [];
+let quizUserAnswers = [];
 let currentQuestion = 0;
 let timer;
 let selectedQuizTime = 20;
@@ -2871,21 +2833,31 @@ const el = document.getElementById(id);
 if(!el) return;
 if(el.classList.contains("expanded")){
 el.classList.remove("expanded");
-el.style.position = "relative";
+el.style.position = "";
 el.style.zIndex = "";
 el.style.width = "";
 el.style.maxWidth = "";
+el.style.top = "";
+el.style.left = "";
+el.style.transform = "";
+el.style.height = "";
+el.style.overflow = "";
+el.style.inset = "";
+el.style.outline = "";
+el.style.boxShadow = "";
 }else{
 el.classList.add("expanded");
 el.style.position = "fixed";
 el.style.zIndex = "99999";
-el.style.width = "90vw";
-el.style.maxWidth = "1200px";
-el.style.top = "50%";
-el.style.left = "50%";
-el.style.transform = "translate(-50%, -50%)";
-el.style.height = "80vh";
+el.style.width = "92vw";
+el.style.maxWidth = "1400px";
+el.style.inset = "5%";
+el.style.height = "90vh";
 el.style.overflow = "auto";
+el.style.outline = "9999px solid rgba(0,0,0,0.7)";
+el.style.boxShadow = "0 30px 80px rgba(0,0,0,0.8)";
+el.style.borderRadius = "20px";
+el.scrollIntoView({behavior:"instant"});
 }
 }
 
@@ -3164,6 +3136,31 @@ document.getElementById("interviewerFace");
 if(!face) return;
 
 face.classList.toggle("talking",isTalking);
+}
+
+let loadingCountdownTimer = null;
+
+function startLoadingCountdown(elementId, seconds){
+const el = document.getElementById(elementId);
+if(!el) return;
+clearInterval(loadingCountdownTimer);
+let remaining = seconds;
+el.textContent = remaining;
+loadingCountdownTimer = setInterval(() => {
+remaining--;
+if(remaining <= 0){
+el.textContent = "⌛";
+clearInterval(loadingCountdownTimer);
+} else {
+el.textContent = remaining;
+}
+}, 1000);
+}
+
+function stopLoadingCountdown(){
+clearInterval(loadingCountdownTimer);
+const el = document.getElementById("notesCountdown");
+if(el) el.textContent = "✅";
 }
 
 let speechVoicesLoaded = false;
@@ -3623,25 +3620,28 @@ Create a CHEAT SHEET style MIND MAP for "${topic}".
 Topic: ${topic}
 Source: ${sourceText}
 
-CRITICAL: This is the PRIMARY study tool. Each node = 1-3 words max. Must cover topic fully in compact form.
+CRITICAL: Each node = 1-3 words max. Must cover topic fully in compact form. Follow a LOGICAL FLOW from basic to advanced.
 
-Structure — 8-10 branches with 3-5 sub-points each, 2 levels deep:
-1. Definition — what it is in few words
-2. Key Features — 4-5 core traits
-3. Types — main categories with 1 example each
-4. How It Works — process steps (3-4 points)
-5. Applications — 3-4 real uses
-6. Pros & Cons — 3 each
-7. Key Terms — 4-5 terms with 2-3 word meaning
-8. Quick Summary — main takeaway in 1-2 points
+LOGICAL FLOW STRUCTURE — 8-10 branches with 3-5 sub-points each, 2 levels deep:
+1. Definition — what it is (simple, one-line)
+2. Core Idea — how it fundamentally works (key principle)
+3. Key Features — 4-5 distinguishing traits
+4. Types / Categories — main kinds with 1 example each
+5. How It Works — step-by-step process (3-4 ordered steps)
+6. Real Applications — 3-4 practical uses with context
+7. Pros — 3 advantages
+8. Cons — 3 limitations
+9. Key Terms — 4-5 important terms with short meaning
+10. Quick Summary — main takeaway
 
 RULES:
 - Labels: 1-3 words per node (real cheat sheet style)
-- Specific: use real examples, not generic words
+- Specific: use real examples, not generic placeholders
 - No empty branches — every node must have content
 - First line: mindmap | Valid Mermaid syntax | No markdown fences
 - English only
 - GOAL: 5 minutes of looking = full topic understanding
+- STRICT: Follow the exact order above — Definition → Core Idea → Features → Types → How It Works → Applications → Pros → Cons → Terms → Summary. This order teaches from basic to advanced.
 `;
 
 const result =
@@ -3650,16 +3650,13 @@ await askAI(prompt,"You are a mindmap generator. Write in English.");
 let mindMapCode = normalizeMindMapCode(result, topic, sourceText);
 
 try{
-const geminiImprovePrompt = `Improve this Mermaid mind map for "${topic}". Make it more detailed, add more branches, fix any syntax errors.
+const     geminiImprovePrompt = `Fix and improve this Mermaid mind map for "${topic}". Reorder: Definition→Core Idea→Features→Types→How It Works→Applications→Pros→Cons→Terms→Summary. Fix syntax, remove dupes. 1-3 word nodes. Return only Mermaid code.
 
-Current mind map:
-${mindMapCode}
+${mindMapCode}`;
 
-Return ONLY the improved Mermaid mind map code. No markdown, no explanation.`;
-
-const geminiRaw = await askGemini(geminiImprovePrompt, "You are a mind map expert. Return ONLY Mermaid code.");
+const geminiRaw = await askGemini(geminiImprovePrompt, "You are a mind map expert.");
 if(geminiRaw){
-const gImproved = normalizeMindMapCode(geminiRaw, topic, sourceText);
+const gImproved = normalizeMindMapCode(geminiRaw, topic, topic);
 if(gImproved && gImproved.length > mindMapCode.length) mindMapCode = gImproved;
 }
 }catch(e){console.log("Gemini mind map improvement skipped:",e.message)}
@@ -5015,7 +5012,7 @@ function extractTopicFromPrompt(prompt){
 }
 
 function generateSmartFallbackNotes(prompt){
-    const topic = extractTopicFromPrompt(prompt);
+    const topic = (typeof prompt === "string" && prompt.length < 80 && !prompt.includes("\n")) ? prompt.trim() : extractTopicFromPrompt(prompt);
     const topicLower = topic.toLowerCase();
     
     console.log("🧠 Generating SMART fallback notes for:", topic);
@@ -6434,19 +6431,31 @@ function generateSmartFallbackNotes(prompt){
         ];
     }
     
-    const notesData = {
-        topic: topic,
-        introduction: {
-            title: "Introduction to " + topic,
-            definition: introDef,
-            simple_explanation: introSimple,
-            search_term: topic.toLowerCase() + " introduction overview"
-        },
-        sections: sections,
-        key_concepts: keyConcepts
-    };
+    let md = `# ${topic}\n\n`;
+    md += `## 📖 Introduction to ${topic}\n\n`;
+    md += `**Definition:** ${introDef}\n\n`;
+    md += `**Simple Explanation:** ${introSimple}\n\n`;
     
-    return JSON.stringify(notesData, null, 2);
+    for(const s of sections){
+        md += `## 📚 ${s.title}\n\n`;
+        if(s.content) md += `${s.content}\n\n`;
+        for(const p of (s.points || [])){
+            md += `### ${p.heading}\n\n`;
+            md += `${p.explanation}\n\n`;
+            if(p.code_example) md += "```\n" + p.code_example + "\n```\n\n";
+        }
+    }
+    
+    if(keyConcepts && keyConcepts.length){
+        md += `## 🔬 Key Concepts\n\n`;
+        for(const c of keyConcepts){
+            md += `### ${c.concept}\n\n`;
+            md += `- **Simple:** ${c.simple_explanation}\n`;
+            md += `- **Detailed:** ${c.detailed_explanation}\n\n`;
+        }
+    }
+    
+    return md;
 }
 
 function captureFrame(){
@@ -6841,13 +6850,27 @@ ${cs.quick_recall.map(r => `<div style="padding:10px 16px;border-radius:8px;back
 </div>` : ""}
 ${cs.memory_tricks && cs.memory_tricks.length ? `
 <div>
-<div style="font-weight:700;color:#fbbf24;margin-bottom:8px;">🔮 Memory Tricks / Mnemonics:</div>
-<div style="display:grid;gap:10px;">
-${cs.memory_tricks.map(t => `
-<div style="padding:14px 18px;border-radius:12px;background:linear-gradient(135deg,rgba(251,191,36,0.08),rgba(239,68,68,0.05));border:1px solid rgba(251,191,36,0.2);">
-<div style="color:#fde68a;font-weight:700;font-size:16px;margin-bottom:4px;">🎯 ${escapeHtml(t.hint || "")}</div>
-${t.for ? `<div style="color:#94a3b8;font-size:14px;">→ ${escapeHtml(t.for)}</div>` : ""}
-</div>`).join("")}
+<div style="font-weight:700;color:#fbbf24;margin-bottom:12px;font-size:18px;">🔮 Memory Tricks / Mnemonics</div>
+<div style="display:grid;gap:14px;">
+${cs.memory_tricks.map((t, i) => {
+const typeIcon = {acronym:"🔤",story:"📖",visual:"👁️",rhyme:"🎵"}[(t.type||"").toLowerCase()] || "💡";
+const typeColors = {acronym:"rgba(59,130,246,0.15)",story:"rgba(16,185,129,0.15)",visual:"rgba(139,92,246,0.15)",rhyme:"rgba(236,72,153,0.15)"};
+const typeBorder = {acronym:"rgba(59,130,246,0.3)",story:"rgba(16,185,129,0.3)",visual:"rgba(139,92,246,0.3)",rhyme:"rgba(236,72,153,0.3)"};
+const bg = typeColors[(t.type||"").toLowerCase()] || "rgba(251,191,36,0.08)";
+const bd = typeBorder[(t.type||"").toLowerCase()] || "rgba(251,191,36,0.2)";
+return `
+<div style="padding:18px 20px;border-radius:16px;background:${bg};border:1px solid ${bd};transition:all 0.3s;cursor:default;" onmouseover="this.style.transform='translateX(6px)'" onmouseout="this.style.transform=''">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+<span style="font-size:22px;">${typeIcon}</span>
+<div style="flex:1;">
+<span style="color:#fde68a;font-weight:800;font-size:17px;">${escapeHtml(t.hint || "")}</span>
+${t.type ? `<span style="display:inline-block;margin-left:8px;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:700;text-transform:uppercase;background:rgba(255,255,255,0.08);color:#94a3b8;">${escapeHtml(t.type)}</span>` : ""}
+</div>
+</div>
+${t.for ? `<div style="color:#a78bfa;font-size:14px;font-weight:600;margin-bottom:6px;">🎯 ${escapeHtml(t.for)}</div>` : ""}
+${t.story ? `<div style="color:#dbeafe;font-size:14px;line-height:1.7;padding:10px 14px;border-radius:10px;background:rgba(0,0,0,0.2);margin-top:6px;">📖 ${escapeHtml(t.story)}</div>` : ""}
+${t.visual_clue ? `<div style="color:#93c5fd;font-size:13px;margin-top:6px;font-style:italic;">👁️ ${escapeHtml(t.visual_clue)}</div>` : ""}
+</div>`}).join("")}
 </div>
 </div>` : ""}
 </div>
@@ -6897,8 +6920,14 @@ return;
 const file =
 document.getElementById("notesFile").files[0];
 
-notesOutput.innerHTML =
-"<div class='loader'></div>";
+notesOutput.innerHTML = `<div style="text-align:center;padding:50px 20px;">
+<div class="loader" style="margin:0 auto 24px;"></div>
+<div style="font-size:22px;font-weight:800;color:#c4b5fd;margin-bottom:6px;">⏳ Generating Notes...</div>
+<div style="color:#94a3b8;font-size:14px;">AI is preparing <span id="notesTopicDisplay">${escapeHtml(topic)}</span> notes for you</div>
+<div id="notesCountdown" style="margin-top:16px;font-size:40px;font-weight:900;background:linear-gradient(to right,#a78bfa,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">5</div>
+<div style="color:#64748b;font-size:12px;">Estimated time remaining</div>
+</div>`;
+startLoadingCountdown("notesCountdown", 20);
 
 const extractedText =
 await extractFileText(file);
@@ -6912,7 +6941,9 @@ RULES:
 - ALL content must be SPECIFICALLY about "${topic}" — real examples, real use cases, real interview questions
 - Write explanations like a teacher explaining to a student — use analogies, simple language, real-life comparisons
 - For coding topics (DS, Algo, programming), include code examples
-- Include memory tricks / mnemonics where helpful
+- Include clever memory tricks / mnemonics (acronyms, rhymes, stories, visual imagery) — make them unforgettable
+- CRITICAL: If "${topic}" is a NON-programming topic (biology, history, chemistry, physics, arts, etc.), NEVER include code_example, code_snippet, or any programming code in any field. Return pure text/content only.
+- CRITICAL: ONLY include code_example/code_snippet if "${topic}" is explicitly a programming/technical topic (like Python, Java, Data Structures, Algorithms, Web Dev, etc.)
 
 JSON STRUCTURE:
 {
@@ -6931,7 +6962,7 @@ JSON STRUCTURE:
   "interview_questions": [{ "question": "real interview question", "answer": "answer with example", "difficulty": "easy/medium/hard" }],
   "faq": [{ "question": "frequently asked question", "answer": "clear answer" }],
   "exam_pattern": [{ "question": "exam question", "answer": "expected answer", "marks": "2/5/10" }],
-  "cheat_sheet": { "definition_line": "one line definition", "key_formulas": ["f1"], "critical_points": ["p1"], "memory_tricks": [{"hint":"hint","for":"what it helps remember"}] },
+   "cheat_sheet": { "definition_line": "one line definition", "key_formulas": ["f1"], "critical_points": ["p1"], "memory_tricks": [{"hint":"catchy phrase/hook","for":"what it helps remember","type":"acronym/story/visual/rhyme","story":"a short fun story that makes it stick","visual_clue":"mental image to visualize"}] },
   "summary": "2-3 sentence summary"
 }`;
 
@@ -6970,22 +7001,13 @@ isJson = true;
 if(isJson && data){
 notesOutput.innerHTML = "";
 groqData = JSON.parse(JSON.stringify(data));
-const geminiImprovePrompt = `You are a PROFESSOR fact-checking and expanding exam notes for "${topic}".
+    const summaryData = { topic: data.topic, sections: (data.sections || []).map(s => ({title: s.title, points: (s.points || []).map(p => ({heading: p.heading}))})), key_concepts: (data.key_concepts || []).map(k => ({concept: k.concept})) };
+    const geminiImprovePrompt = `You are a PROFESSOR fact-checking and expanding exam notes for "${topic}".
 
-Fix errors, expand every section, add missing EXAMPLES (at least 4-6 in STORY format), and add any missing fields.
+Fix errors, expand every section, add missing content, add 4-6 EXAMPLES as mini-stories, add cheat_sheet with 5-8 memory_tricks (acronym/story/visual/rhyme), add interview_questions and exam_pattern. Write in STORY/NARRATIVE style. For non-CS topics NO code. Return ONLY valid JSON.
 
-CRITICAL: If original lacks "examples" or has few, ADD 4-6 real-world examples as mini-stories. ADD cheat_sheet if missing. ADD interview_questions (5-8 REAL exam/interview questions) if missing. Each interview_question must include a "follow_up" array with 1-2 deeper follow-up questions and answers. ADD exam_pattern (3-5 questions) if missing. 🔮 CRITICAL: ADD 3-5 REAL mnemonics in memory_tricks array inside cheat_sheet — each with a real-world memorable hint/phrase.
-
-🎯 Write ALL explanations in STORY/NARRATIVE style — use analogies, real-life comparisons, memorable scenarios so students never forget.
-
-💻 IMPORTANT: ONLY add code_example/code_snippet fields if "${topic}" is a programming/technical topic.
-
-📊 VISUALIZATIONS: For each example's "visualization" field, create BEAUTIFUL text diagrams using box-drawing characters (─│┌┐└┘├┤┬┴┼) and arrows (→←↑↓). Make them visually clear and educational.
-
-Return ONLY improved valid JSON. No markdown.
-
-ORIGINAL JSON:
-${JSON.stringify(data, null, 2)}`;
+TOPIC: ${topic}
+SECTIONS: ${JSON.stringify(summaryData.sections)}`;
 
 try{
       const gradeAResult = await askGemini(geminiImprovePrompt, "You are a strict professor. Return ONLY valid JSON.");
@@ -7011,53 +7033,53 @@ if(!data.important_points) data.important_points = [];
 }
 
 let visualHtml = "";
-let mermaidCodeGroq = "";
-let mermaidCodeGemini = "";
+let mermaidCode = "";
 
 if(isJson && data){
-
-visualHtml = buildVisualNotesHTML(data, topic);
-
-  mermaidCodeGroq = await generateDetailedMindMap(
-  topic,
-  `${topic}\n${extractedText}\n${JSON.stringify(groqData)}`
-);
+const dataTopic = (data.topic || "").toLowerCase().trim();
+const realTopic = topic.toLowerCase().trim();
+const isGeneric = !dataTopic || dataTopic === "topic" || (dataTopic !== realTopic && !dataTopic.includes(realTopic) && !realTopic.includes(dataTopic));
+const hasPlaceholders = JSON.stringify(data).includes("search_term") || data.sections?.every?.(s =>
+(s.title || "").includes("Core Concept") || (s.title || "").includes("Overview") || (s.points || []).every?.(p =>
+(p.heading || "").includes("What is") || (p.explanation || "").length < 50
+));
+if(isGeneric || hasPlaceholders){
+const fallback = generateSmartFallbackNotes(topic);
+notesOutput.innerHTML = marked.parse(fallback);
+stopLoadingCountdown();
+return;
+}
+    visualHtml = buildVisualNotesHTML(data, topic);
+    console.log("📝 visualHtml length:", visualHtml.length);
+    if(!visualHtml || visualHtml.length < 50) console.warn("⚠️ visualHtml too short or empty!");
+    const mindMapSrc = topic + (extractedText ? "\n" + extractedText.substring(0,500) : "");
+    mermaidCode = await generateDetailedMindMap(topic, mindMapSrc);
 }
 
-if(isJson && data){
-const geminiMapPrompt = `Create a CHEAT SHEET style MIND MAP for "${topic}".
-
-Topic: ${topic}
-Source: ${topic}\n${extractedText}\n${JSON.stringify(data)}
-
-CRITICAL: This is the PRIMARY study tool. Each node = 1-3 words max. Must cover topic fully in compact form.
-
-Structure — 8-10 branches with 3-5 sub-points each, 2 levels deep:
-1. Definition — what it is in few words
-2. Key Features — 4-5 core traits
-3. Types — main categories with 1 example each
-4. How It Works — process steps (3-4 points)
-5. Applications — 3-4 real uses
-6. Pros & Cons — 3 each
-7. Key Terms — 4-5 terms with 2-3 word meaning
-8. Quick Summary — main takeaway in 1-2 points
-
-RULES:
-- Labels: 1-3 words per node (real cheat sheet style)
-- Specific: use real examples, not generic words
-- No empty branches — every node must have content
-- First line: mindmap | Valid Mermaid syntax | No markdown fences
-- English only
-- GOAL: 5 minutes of looking = full topic understanding`;
-
+if(isJson && data && mermaidCode && mermaidCode.length > 10){
 try{
-const geminiMapResult = await askGemini(geminiMapPrompt, "You are a mindmap generator. Write in English.");
-if(geminiMapResult){
-mermaidCodeGemini = normalizeMindMapCode(geminiMapResult, topic, `${topic}\n${extractedText}\n${JSON.stringify(data)}`);
+    const geminiImprovePrompt = `Fix and improve this Mermaid mind map for "${topic}". Reorder: Definition→Features→Types→How It Works→Applications→Pros→Cons→Terms→Summary. Fix syntax, remove dupes. Each node 1-3 words. Return only Mermaid code.
+
+${mermaidCode}`;
+const geminiResult = await askGemini(geminiImprovePrompt, "You are a mind map expert.");
+if(geminiResult){
+const improved = normalizeMindMapCode(geminiResult, topic, topic);
+if(improved && improved.length > mindMapCode.length) mermaidCode = improved;
 }
 }catch(e){
-console.log("Gemini mind map skipped:", e.message);
+console.log("Gemini mind map improvement skipped:", e.message);
 }
+}
+
+if(!isJson && groqResult && !groqResult.startsWith("🔴")){
+  try{
+    const asMarkdown = marked.parse(groqResult);
+    if(asMarkdown && asMarkdown.length > 100 && !asMarkdown.startsWith("{")){
+      notesOutput.innerHTML = asMarkdown;
+      stopLoadingCountdown();
+      return;
+    }
+  }catch(e){}
 }
 
 let formatted = "";
@@ -7081,36 +7103,25 @@ notesOutput.innerHTML = `
 
 ${preview}
 
-${mermaidCodeGroq || mermaidCodeGemini ? `
+${mermaidCode ? `
 <div class="row" style="display:flex;gap:20px;margin-bottom:30px;">
-${mermaidCodeGroq ? `
-<div class="ai-diagram-card" style="flex:1;position:relative;cursor:pointer;transition:all 0.3s;" id="mindMapGroqCard" onclick="toggleMindMapExpand('mindMapGroqCard')">
-<button onclick="event.stopPropagation();toggleMindMapExpand('mindMapGroqCard')" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.08);border:none;color:#94a3b8;font-size:16px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10;font-weight:700;">⛶</button>
+<div class="ai-diagram-card" style="flex:1;position:relative;cursor:pointer;transition:all 0.3s;" id="mindMapCard" onclick="toggleMindMapExpand('mindMapCard')">
+<button onclick="event.stopPropagation();toggleMindMapExpand('mindMapCard')" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.08);border:none;color:#94a3b8;font-size:16px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10;font-weight:700;">⛶</button>
 <div class="ai-diagram-title">
-🤖 Groq Mind Map
+🧠 Mind Map
 </div>
-<div class="mermaid" id="notesMindMapGroq">
-${mermaidCodeGroq}
-</div>
-</div>
-` : ""}
-${mermaidCodeGemini ? `
-<div class="ai-diagram-card" style="flex:1;position:relative;cursor:pointer;transition:all 0.3s;" id="mindMapGeminiCard" onclick="toggleMindMapExpand('mindMapGeminiCard')">
-<button onclick="event.stopPropagation();toggleMindMapExpand('mindMapGeminiCard')" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.08);border:none;color:#94a3b8;font-size:16px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10;font-weight:700;">⛶</button>
-<div class="ai-diagram-title">
-🧠 Gemini Mind Map (Improved)
-</div>
-<div class="mermaid" id="notesMindMapGemini">
-${mermaidCodeGemini}
+<div class="mermaid" id="notesMindMap">
+${mermaidCode}
 </div>
 </div>
-` : ""}
 </div>
 ` : ""}
 
 ${visualHtml}
 
 `;
+
+stopLoadingCountdown();
 
 setTimeout(function(){
   if(window.__visStoryScenes && document.getElementById("visStoryContainer")){
@@ -7122,7 +7133,7 @@ setTimeout(function(){
   }
 }, 100);
 
-if(mermaidCodeGroq || mermaidCodeGemini){
+if(mermaidCode){
 try{
 mermaid.initialize({
 startOnLoad:false,
@@ -7130,24 +7141,14 @@ securityLevel:"loose",
 theme:"dark",
 mindmap:{}
 });
-const selectors = [];
-if(mermaidCodeGroq) selectors.push("#notesMindMapGroq");
-if(mermaidCodeGemini) selectors.push("#notesMindMapGemini");
 await mermaid.run({
-querySelector: selectors.join(",")
+querySelector: "#notesMindMap"
 });
 }catch(error){
 console.log(error);
-if(mermaidCodeGroq){
-const fallbackGroq = buildFallbackMindMap(topic, `${topic}\n${extractedText}\n${isJson ? JSON.stringify(groqData) : groqResult}`);
-const groqContainer = notesOutput.querySelector("#notesMindMapGroq");
-if(groqContainer) groqContainer.outerHTML = renderFallbackMindMapHtml(fallbackGroq);
-}
-if(mermaidCodeGemini){
-const fallbackGemini = buildFallbackMindMap(topic, `${topic}\n${extractedText}\n${isJson ? JSON.stringify(data) : ""}`);
-const geminiContainer = notesOutput.querySelector("#notesMindMapGemini");
-if(geminiContainer) geminiContainer.outerHTML = renderFallbackMindMapHtml(fallbackGemini);
-}
+const fallback = buildFallbackMindMap(topic, `${topic}\n${extractedText}\n${isJson ? JSON.stringify(data) : ""}`);
+const container = notesOutput.querySelector("#notesMindMap");
+if(container) container.outerHTML = renderFallbackMindMapHtml(fallback);
 }
 }
 
@@ -7164,6 +7165,15 @@ populateVoiceList();
 appData.notesGenerated++;
 appData.xp += 10;
 updateUI();
+
+const rawText = notesOutput.textContent || "";
+const trimmed = rawText.trim();
+if(trimmed.startsWith("{") || trimmed.includes('"search_term"') || trimmed.startsWith("[") || (trimmed.length > 20 && trimmed.includes('"topic"'))){
+console.warn("⚠️ JSON detected in output! Replacing with fallback.");
+console.warn("First 200 chars:", trimmed.substring(0,200));
+const fbTopic = document.getElementById("topic")?.value || topic;
+notesOutput.innerHTML = marked.parse(generateSmartFallbackNotes(fbTopic));
+}
 
 }catch(error){
 console.error(error);
@@ -7258,14 +7268,19 @@ text = notesOutput.textContent || "";
 return text.substring(0, 5000);
 }
 
-function toggleAudioPlay(){
-const playBtn = document.getElementById("audioPlayBtn");
-const pauseBtn = document.getElementById("audioPauseBtn");
+let audioProgressTimer = null;
+let audioStartTime = 0;
+let audioPausedDuration = 0;
+let audioLastPauseTime = 0;
+let audioTotalEstimate = 0;
 
-if(!currentSpeechUtterance || isSpeechPaused === false && !speechSynthesis.speaking){
-playAudio();
-}else if(isSpeechPaused){
+function toggleAudioPlay(){
+if(speechSynthesis.speaking && !speechSynthesis.paused){
+pauseAudio();
+}else if(speechSynthesis.paused){
 resumeAudio();
+}else{
+playAudio();
 }
 }
 
@@ -7284,6 +7299,14 @@ return;
 if(speechSynthesis.speaking){
 speechSynthesis.cancel();
 }
+clearInterval(audioProgressTimer);
+
+const wordCount = text.split(/\s+/).length;
+audioTotalEstimate = Math.max(Math.round(wordCount / 3 * (1 / speechRate)), 5);
+
+audioStartTime = Date.now();
+audioPausedDuration = 0;
+audioLastPauseTime = 0;
 
 currentSpeechUtterance = new SpeechSynthesisUtterance(text);
 currentSpeechUtterance.rate = speechRate;
@@ -7294,47 +7317,119 @@ if(selectedVoice){
 currentSpeechUtterance.voice = selectedVoice;
 }
 
+const progressRow = document.getElementById("audioProgressRow");
+const progressFill = document.getElementById("audioProgressFill");
+const timeDisplay = document.getElementById("audioTimeDisplay");
+
 currentSpeechUtterance.onstart = function(){
 const playBtn = document.getElementById("audioPlayBtn");
-const pauseBtn = document.getElementById("audioPauseBtn");
-if(playBtn) playBtn.style.display = "none";
-if(pauseBtn) pauseBtn.style.display = "inline-block";
+if(playBtn) playBtn.textContent = "⏸ Pause";
 isSpeechPaused = false;
+if(progressRow) progressRow.style.display = "flex";
+audioStartTime = Date.now();
+audioProgressTimer = setInterval(updateAudioProgress, 200);
 };
 
 currentSpeechUtterance.onend = function(){
 const playBtn = document.getElementById("audioPlayBtn");
-const pauseBtn = document.getElementById("audioPauseBtn");
-if(playBtn) playBtn.style.display = "inline-block";
-if(pauseBtn) pauseBtn.style.display = "none";
+if(playBtn) playBtn.textContent = "▶ Play";
 currentSpeechUtterance = null;
 isSpeechPaused = false;
+clearInterval(audioProgressTimer);
+if(progressFill) progressFill.style.width = "100%";
+if(timeDisplay) timeDisplay.textContent = formatTime(audioTotalEstimate) + " / " + formatTime(audioTotalEstimate);
+setTimeout(()=>{ if(progressRow) progressRow.style.display = "none"; }, 2000);
 };
 
 currentSpeechUtterance.onerror = function(){
 const playBtn = document.getElementById("audioPlayBtn");
-const pauseBtn = document.getElementById("audioPauseBtn");
-if(playBtn) playBtn.style.display = "inline-block";
-if(pauseBtn) pauseBtn.style.display = "none";
+if(playBtn) playBtn.textContent = "▶ Play";
 currentSpeechUtterance = null;
 isSpeechPaused = false;
+clearInterval(audioProgressTimer);
+if(progressRow) progressRow.style.display = "none";
+};
+
+currentSpeechUtterance.onboundary = function(e){
+if(e.name === "word" && progressFill){
+const elapsed = (Date.now() - audioStartTime - audioPausedDuration) / 1000;
+const progress = Math.min(elapsed / audioTotalEstimate, 0.95);
+progressFill.style.width = (progress * 100) + "%";
+}
 };
 
 speechSynthesis.speak(currentSpeechUtterance);
 }
 
+function updateAudioProgress(){
+if(speechSynthesis.paused) return;
+const elapsed = (Date.now() - audioStartTime - audioPausedDuration) / 1000;
+const progress = Math.min(elapsed / audioTotalEstimate, 0.95);
+const progressFill = document.getElementById("audioProgressFill");
+const timeDisplay = document.getElementById("audioTimeDisplay");
+if(progressFill) progressFill.style.width = (progress * 100) + "%";
+if(timeDisplay) timeDisplay.textContent = formatTime(Math.round(elapsed)) + " / " + formatTime(audioTotalEstimate);
+}
+
+function formatTime(seconds){
+const m = Math.floor(seconds / 60);
+const s = seconds % 60;
+return m + ":" + (s < 10 ? "0" : "") + s;
+}
+
 function pauseAudio(){
-if(speechSynthesis.speaking && !isSpeechPaused){
+if(speechSynthesis.speaking && !speechSynthesis.paused){
 speechSynthesis.pause();
 isSpeechPaused = true;
+audioLastPauseTime = Date.now();
 const playBtn = document.getElementById("audioPlayBtn");
-const pauseBtn = document.getElementById("audioPauseBtn");
-if(playBtn){
-playBtn.style.display = "inline-block";
-playBtn.textContent = "▶ Resume";
+if(playBtn) playBtn.textContent = "▶ Resume";
 }
-if(pauseBtn) pauseBtn.style.display = "none";
 }
+
+function resumeAudio(){
+speechSynthesis.resume();
+if(audioLastPauseTime > 0){
+audioPausedDuration += Date.now() - audioLastPauseTime;
+audioLastPauseTime = 0;
+}
+isSpeechPaused = false;
+const playBtn = document.getElementById("audioPlayBtn");
+if(playBtn) playBtn.textContent = "⏸ Pause";
+}
+
+function stopAudio(){
+speechSynthesis.cancel();
+currentSpeechUtterance = null;
+isSpeechPaused = false;
+clearInterval(audioProgressTimer);
+const playBtn = document.getElementById("audioPlayBtn");
+if(playBtn) playBtn.textContent = "▶ Play";
+const progressRow = document.getElementById("audioProgressRow");
+const progressFill = document.getElementById("audioProgressFill");
+const timeDisplay = document.getElementById("audioTimeDisplay");
+if(progressRow) progressRow.style.display = "none";
+if(progressFill) progressFill.style.width = "0%";
+if(timeDisplay) timeDisplay.textContent = "0:00 / 0:00";
+}
+
+function seekAudio(event){
+if(!currentSpeechUtterance && !speechSynthesis.speaking) return;
+const row = document.getElementById("audioProgressRow");
+if(!row) return;
+const rect = row.firstElementChild.getBoundingClientRect();
+const x = event.clientX - rect.left;
+const pct = Math.max(0, Math.min(1, x / rect.width));
+const seekTime = Math.round(pct * audioTotalEstimate);
+speechSynthesis.cancel();
+currentSpeechUtterance = null;
+clearInterval(audioProgressTimer);
+const playBtn = document.getElementById("audioPlayBtn");
+if(playBtn) playBtn.textContent = "▶ Play";
+const progressFill = document.getElementById("audioProgressFill");
+const timeDisplay = document.getElementById("audioTimeDisplay");
+if(progressFill) progressFill.style.width = "0%";
+if(timeDisplay) timeDisplay.textContent = "0:00 / " + formatTime(audioTotalEstimate);
 }
 
 let storyUtterance = null;
@@ -8228,8 +8323,14 @@ document.getElementById(
 window.currentQuizTopic =
 topic;
 
-quizOutput.innerHTML =
-"<div class='loader'></div>";
+quizOutput.innerHTML = `<div style="text-align:center;padding:50px 20px;">
+<div class="loader" style="margin:0 auto 24px;"></div>
+<div style="font-size:22px;font-weight:800;color:#c4b5fd;margin-bottom:6px;">🧪 Generating Quiz...</div>
+<div style="color:#94a3b8;font-size:14px;">AI is preparing ${count} questions on <span style="color:#c4b5fd;">${escapeHtml(topic)}</span></div>
+<div id="quizCountdown" style="margin-top:16px;font-size:40px;font-weight:900;background:linear-gradient(to right,#a78bfa,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">10</div>
+<div style="color:#64748b;font-size:12px;">Estimated time remaining</div>
+</div>`;
+startLoadingCountdown("quizCountdown", 15);
 
 const extractedText =
 await extractFileText(file);
@@ -8304,10 +8405,15 @@ if(!quizQuestions || !quizQuestions.length){
 quizQuestions = generateFallbackQuiz(topic,count);
 }
 
+clearInterval(loadingCountdownTimer);
+const qcEl = document.getElementById("quizCountdown");
+if(qcEl) qcEl.textContent = "✅";
+
 currentQuestion = 0;
 currentQuizCorrect = 0;
 currentQuizWrong = 0;
 currentQuizMissed = [];
+quizUserAnswers = [];
 
 renderQuestion();
 
@@ -8482,13 +8588,16 @@ if(timeLeft <= 0){
 
 clearInterval(timer);
 
+const tq = quizQuestions[currentQuestion];
+quizUserAnswers[currentQuestion] = { question: tq?.question || "", selected: "⏱ Time over", correct: tq?.answer || "", status: "timeout" };
+
 ensureDailyProgress();
 appData.wrongAnswers++;
 appData.dailyQuizQuestions++;
 currentQuizWrong++;
 currentQuizMissed.push({
-question:quizQuestions[currentQuestion]?.question || "",
-answer:quizQuestions[currentQuestion]?.answer || "",
+question:tq?.question || "",
+answer:tq?.answer || "",
 reason:"Time over"
 });
 
@@ -8513,6 +8622,8 @@ const selectedOption =
 q.options?.[optionIndex] ?? "";
 const correct =
 q.answer;
+
+quizUserAnswers[currentQuestion] = { question: q.question, selected: selectedOption, correct: correct, status: "" };
 
 const correctIndex =
 q.options.findIndex(opt=>
@@ -8545,6 +8656,7 @@ element.classList.add(
 
 appData.correctAnswers++;
 currentQuizCorrect++;
+if(quizUserAnswers[currentQuestion]) quizUserAnswers[currentQuestion].status = "correct";
 
 confetti();
 
@@ -8561,6 +8673,7 @@ question:q?.question || "",
 answer:correct,
 reason:"Wrong answer"
 });
+if(quizUserAnswers[currentQuestion]) quizUserAnswers[currentQuestion].status = "wrong";
 
 }
 
@@ -8577,6 +8690,8 @@ if(!typed){ alert("Type your answer"); return; }
 
 const q = quizQuestions[currentQuestion];
 if(!q) return;
+
+quizUserAnswers[currentQuestion] = { question: q.question, selected: typed, correct: q.answer, status: "" };
 
 clearInterval(timer);
 
@@ -8617,6 +8732,7 @@ if(allOpts[idx]) allOpts[idx].classList.add("correct");
 if(isCorrect){
 appData.correctAnswers++;
 currentQuizCorrect++;
+if(quizUserAnswers[currentQuestion]) quizUserAnswers[currentQuestion].status = "correct";
 confetti();
 input.style.border="2px solid #22c55e";
 }else{
@@ -8627,6 +8743,7 @@ question:q?.question || "",
 answer:q.answer,
 reason:"Wrong typed answer"
 });
+if(quizUserAnswers[currentQuestion]) quizUserAnswers[currentQuestion].status = "wrong";
 input.style.border="2px solid #ef4444";
 }
 
@@ -8851,6 +8968,35 @@ Performance Breakdown
 <div style="height:14px;border-radius:999px;background:rgba(255,255,255,0.08);overflow:hidden;">
 <div style="width:${wrongWidth}%;height:100%;background:linear-gradient(90deg,#ef4444,#f87171);"></div>
 </div>
+</div>
+</div>
+
+ <div style="margin-top:30px;">
+<div style="font-size:24px;font-weight:800;text-align:left;margin-bottom:16px;">
+📋 All Questions Review
+</div>
+<div style="display:grid;gap:12px;">
+${quizUserAnswers.map((ua, idx) => {
+const isCorrect = ua.status === "correct";
+const isTimeout = ua.status === "timeout";
+const borderColor = isCorrect ? "rgba(34,197,94,0.3)" : "rgba(248,113,113,0.3)";
+const bgColor = isCorrect ? "rgba(34,197,94,0.06)" : "rgba(248,113,113,0.06)";
+const icon = isCorrect ? "✅" : isTimeout ? "⏱️" : "❌";
+const statusLabel = isCorrect ? "Correct" : isTimeout ? "Time Out" : "Wrong";
+const statusColor = isCorrect ? "#4ade80" : "#f87171";
+return `
+<div style="padding:16px 18px;border-radius:16px;background:${bgColor};border:1px solid ${borderColor};text-align:left;">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+<span>${icon}</span>
+<span style="font-size:14px;font-weight:700;color:${statusColor};">Q${idx+1}. ${statusLabel}</span>
+</div>
+<div style="font-size:16px;font-weight:600;color:#e2e8f0;margin-bottom:8px;line-height:1.5;">${escapeHtml(ua.question)}</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:14px;">
+<div><span style="color:#94a3b8;">Your answer:</span> <span style="color:${isCorrect ? "#4ade80" : "#f87171"};font-weight:600;">${escapeHtml(ua.selected)}</span></div>
+<div><span style="color:#94a3b8;">Correct answer:</span> <span style="color:#22c55e;font-weight:600;">${escapeHtml(ua.correct)}</span></div>
+</div>
+</div>`;
+}).join("")}
 </div>
 </div>
 
