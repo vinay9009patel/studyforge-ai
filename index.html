@@ -4165,17 +4165,45 @@ const cleaned = String(response ?? "")
 
 report = JSON.parse(cleaned);
 
-try{
-if(report?.results?.length){
-const geminiReviewPrompt = `Review and improve this interview evaluation for "${currentInterviewTopic}".
+    try{
+        if(report?.results?.length){
+          const geminiReviewPrompt = `You are a SENIOR INTERVIEW COACH reviewing a mock interview for "${currentInterviewTopic}".
 
 Current evaluation:
 ${JSON.stringify(report, null, 2)}
 
-Facial expressions: ${JSON.stringify(facialScores)}
+Facial expressions per answer: ${JSON.stringify(facialScores)}
 Dual-AI per-question evals: ${JSON.stringify(evalResults)}
 
-Fix scores, feedback, strengths/weaknesses. Return ONLY valid JSON with same structure.`;
+YOUR JOB:
+1. For EACH question: identify the SPECIFIC mistake (wrong concept, incomplete answer, weak explanation, etc.)
+2. Give ACTIONABLE improvement tip for each mistake
+3. Score fairly based on answer accuracy + facial confidence
+4. Overall strengths/weaknesses with clear "How to Improve" steps
+5. Add "mistake" and "improvement_tip" fields to each result entry
+
+Return ONLY valid JSON with this structure:
+{
+  "summary":{
+    "overall_score":0,
+    "strengths":["",""],
+    "weaknesses":["",""],
+    "recommendation":"specific steps to improve",
+    "confidence_verdict":"Confident | Nervous | Mixed"
+  },
+  "results":[
+    {
+      "question":"",
+      "candidate_answer":"",
+      "ideal_answer":"",
+      "verdict":"Strong | Partial | Weak",
+      "score":0,
+      "feedback":"",
+      "mistake":"specific mistake made",
+      "improvement_tip":"how to fix this mistake"
+    }
+  ]
+}`;
 
 const geminiRaw = await askGemini(geminiReviewPrompt, "You are a strict interview professor. Return ONLY valid JSON.");
 if(geminiRaw){
@@ -4330,16 +4358,26 @@ ${facialScores[index] ? `
 <div style="color:#94a3b8;margin-bottom:6px;">Expected Answer</div>
 <div>${escapeHtml(String(item.ideal_answer || ""))}</div>
 </div>
-<div style="line-height:1.8;">
-<div style="color:#94a3b8;margin-bottom:6px;">AI Feedback</div>
-<div>${escapeHtml(String(item.feedback || ""))}</div>
-</div>
-</div>
-`).join("")}
-</div>
-`;
-
-appData.xp += 30;
+    <div style="line-height:1.8;">
+    <div style="color:#94a3b8;margin-bottom:6px;">AI Feedback</div>
+    <div>${escapeHtml(String(item.feedback || ""))}</div>
+    </div>
+    ${item.mistake ? `
+    <div style="margin-top:10px;padding:12px;border-radius:12px;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2);">
+    <div style="color:#fca5a5;font-weight:700;margin-bottom:4px;">❌ Mistake</div>
+    <div style="color:#dbeafe;font-size:14px;">${escapeHtml(String(item.mistake))}</div>
+    </div>` : ""}
+    ${item.improvement_tip ? `
+    <div style="margin-top:10px;padding:12px;border-radius:12px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.2);">
+    <div style="color:#86efac;font-weight:700;margin-bottom:4px;">💡 How to Improve</div>
+    <div style="color:#dbeafe;font-size:14px;">${escapeHtml(String(item.improvement_tip))}</div>
+    </div>` : ""}
+    </div>
+    `).join("")}
+    </div>
+    `;
+    
+    appData.xp += 30;
 updateUI();
 interviewEnding = false;
 }
