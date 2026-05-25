@@ -7043,49 +7043,18 @@ const hasPlaceholders = JSON.stringify(data).includes("search_term") || data.sec
 (s.title || "").includes("Core Concept") || (s.title || "").includes("Overview") || (s.points || []).every?.(p =>
 (p.heading || "").includes("What is") || (p.explanation || "").length < 50
 ));
-if(isGeneric || hasPlaceholders){
+    if(isGeneric || hasPlaceholders){
 const fallback = generateSmartFallbackNotes(topic);
 notesOutput.innerHTML = marked.parse(fallback);
 stopLoadingCountdown();
 return;
 }
-    visualHtml = buildVisualNotesHTML(data, topic);
-    console.log("📝 visualHtml length:", visualHtml.length);
-    if(!visualHtml || visualHtml.length < 50) console.warn("⚠️ visualHtml too short or empty!");
-    const mindMapSrc = topic + (extractedText ? "\n" + extractedText.substring(0,500) : "");
-    mermaidCode = await generateDetailedMindMap(topic, mindMapSrc);
 }
 
-if(isJson && data && mermaidCode && mermaidCode.length > 10){
-try{
-    const geminiImprovePrompt = `Fix and improve this Mermaid mind map for "${topic}". Reorder: Definition→Features→Types→How It Works→Applications→Pros→Cons→Terms→Summary. Fix syntax, remove dupes. Each node 1-3 words. Return only Mermaid code.
-
-${mermaidCode}`;
-const geminiResult = await askGemini(geminiImprovePrompt, "You are a mind map expert.");
-if(geminiResult){
-const improved = normalizeMindMapCode(geminiResult, topic, topic);
-if(improved && improved.length > mindMapCode.length) mermaidCode = improved;
-}
-}catch(e){
-console.log("Gemini mind map improvement skipped:", e.message);
-}
-}
-
-if(!isJson && groqResult && !groqResult.startsWith("🔴")){
-  try{
-    const asMarkdown = marked.parse(groqResult);
-    if(asMarkdown && asMarkdown.length > 100 && !asMarkdown.startsWith("{")){
-      notesOutput.innerHTML = asMarkdown;
-      stopLoadingCountdown();
-      return;
-    }
-  }catch(e){}
-}
-
-let formatted = "";
 if(!isJson){
   const fallback = generateSmartFallbackNotes(topic);
   notesOutput.innerHTML = marked.parse(fallback);
+  stopLoadingCountdown();
   return;
 }
 
@@ -7099,29 +7068,101 @@ class="upload-preview"
 `;
 }
 
-notesOutput.innerHTML = `
+let statusLine = '<div id="genStatus" style="text-align:center;padding:20px;color:#94a3b8;font-size:14px;">⏳ Generating...</div>';
 
-${preview}
-
-${mermaidCode ? `
-<div class="row" style="display:flex;gap:20px;margin-bottom:30px;">
-<div class="ai-diagram-card" style="flex:1;position:relative;cursor:pointer;transition:all 0.3s;" id="mindMapCard" onclick="toggleMindMapExpand('mindMapCard')">
-<button onclick="event.stopPropagation();toggleMindMapExpand('mindMapCard')" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.08);border:none;color:#94a3b8;font-size:16px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10;font-weight:700;">⛶</button>
-<div class="ai-diagram-title">
-🧠 Mind Map
-</div>
-<div class="mermaid" id="notesMindMap">
-${mermaidCode}
-</div>
-</div>
-</div>
-` : ""}
-
-${visualHtml}
-
-`;
+const initialHtml = buildVisualNotesHTML(data, topic);
+notesOutput.innerHTML = `\n${preview}\n${statusLine}\n${initialHtml}\n`;
 
 stopLoadingCountdown();
+
+// --- Background progressive improvement (Groq → Gemini, chunk by chunk) ---
+(async function(){
+const sections = data.sections || [];
+const improvedData = JSON.parse(JSON.stringify(data));
+
+// 1. Generate mind map with Groq → show when ready
+let mmCode = "";
+const statusEl = document.getElementById("genStatus");
+if(statusEl) statusEl.textContent = "🧠 Generating mind map...";
+
+const mindMapSrc = topic + (extractedText ? "\n" + extractedText.substring(0,500) : "");
+mmCode = await generateDetailedMindMap(topic, mindMapSrc);
+
+if(mmCode && mmCode.length > 10){
+const mmHtml = `\n<div class="row" style="display:flex;gap:20px;margin-bottom:30px;">
+<div class="ai-diagram-card" style="flex:1;position:relative;cursor:pointer;transition:all 0.3s;" id="mindMapCard" onclick="toggleMindMapExpand('mindMapCard')">
+<button onclick="event.stopPropagation();toggleMindMapExpand('mindMapCard')" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.08);border:none;color:#94a3b8;font-size:16px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10;font-weight:700;">⛶</button>
+<div class="ai-diagram-title">🧠 Mind Map</div>
+<div class="mermaid" id="notesMindMap">${mmCode}</div>
+</div>
+</div>\n`;
+notesOutput.innerHTML = `\n${preview}\n${mmHtml}\n${statusLine}\n${initialHtml}\n`;
+try{
+mermaid.initialize({startOnLoad:false,securityLevel:"loose",theme:"dark",mindmap:{}});
+await mermaid.run({querySelector:"#notesMindMap"});
+}catch(err){ console.log("Mermaid err:", err.message); }
+} else {
+if(statusEl) statusEl.textContent = "⚠️ Mind map generation failed, continuing...";
+}
+
+// 2. Try improving mind map with Gemini
+if(mmCode && mmCode.length > 10){
+if(statusEl) statusEl.textContent = "🔮 Gemini improving mind map...";
+try{
+const gemPrompt = `Fix and improve this Mermaid mind map for "${topic}". Reorder: Definition→Features→Types→How It Works→Applications→Pros→Cons→Terms→Summary. Fix syntax, remove dupes. Each node 1-3 words. Return only Mermaid code.\n\n${mmCode}`;
+const gemResult = await askGemini(gemPrompt, "You are a mind map expert.");
+if(gemResult){
+const improved = normalizeMindMapCode(gemResult, topic, topic);
+if(improved && improved.length > mmCode.length && improved.length > 50){
+mmCode = improved;
+const mmDiv = document.querySelector("#notesMindMap");
+if(mmDiv) mmDiv.textContent = mmCode;
+try{
+mermaid.initialize({startOnLoad:false,securityLevel:"loose",theme:"dark",mindmap:{}});
+await mermaid.run({querySelector:"#notesMindMap"});
+}catch(err){ console.log("Mermaid improve err:", err.message); }
+}
+}
+}catch(e){ console.log("Gemini mind map improve skipped:", e.message); }
+}
+
+// 3. Improve each section with Gemini one at a time
+for(let i = 0; i < sections.length; i++){
+const s = sections[i];
+if(!s || !s.title) continue;
+if(statusEl) statusEl.textContent = `✦ Gemini improving: "${s.title}"...`;
+
+try{
+const sectionPrompt = `Improve this section for "${topic}". Expand explanation, add real examples, fix errors. Return ONLY JSON: {"title":"...","points":[{"heading":"...","explanation":"..."}]}.
+
+Section: ${s.title}
+Points: ${JSON.stringify((s.points || []).map(p => ({heading:p.heading})))}
+First point explanation (context): ${((s.points?.[0]?.explanation || "")).substring(0,300)}`;
+
+const gemResult = await askGemini(sectionPrompt, "You are a professor. Return ONLY valid JSON.");
+if(gemResult){
+try{
+const cleaned = extractJsonFromText(String(gemResult ?? ""));
+const improvedSection = JSON.parse(cleaned);
+if(improvedSection && improvedSection.points && improvedSection.points.length){
+improvedData.sections[i] = improvedSection;
+const newHtml = buildVisualNotesHTML(improvedData, topic);
+notesOutput.innerHTML = `\n${preview}\n${mmCode && mmCode.length > 10 ? `\n<div class="row" style="display:flex;gap:20px;margin-bottom:30px;"><div class="ai-diagram-card" style="flex:1;position:relative;cursor:pointer;transition:all 0.3s;" id="mindMapCard" onclick="toggleMindMapExpand('mindMapCard')"><button onclick="event.stopPropagation();toggleMindMapExpand('mindMapCard')" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.08);border:none;color:#94a3b8;font-size:16px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10;font-weight:700;">⛶</button><div class="ai-diagram-title">🧠 Mind Map</div><div class="mermaid" id="notesMindMap">${mmCode}</div></div></div>\n` : ""}\n${statusLine}\n${newHtml}\n`;
+if(mmCode && mmCode.length > 10){
+try{
+mermaid.initialize({startOnLoad:false,securityLevel:"loose",theme:"dark",mindmap:{}});
+await mermaid.run({querySelector:"#notesMindMap"});
+}catch(err){}
+}
+}
+}catch(e){ console.log("Section parse err:", e.message); }
+}
+} catch(e){ console.log("Section fail:", s.title, e.message); }
+}
+
+if(statusEl) statusEl.textContent = "✅ Done!";
+setTimeout(() => { if(statusEl) statusEl.style.display = "none"; }, 4000);
+})();
 
 setTimeout(function(){
   if(window.__visStoryScenes && document.getElementById("visStoryContainer")){
