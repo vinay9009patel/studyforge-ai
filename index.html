@@ -4465,6 +4465,7 @@ renderInterviewScreen();
                 const video = document.getElementById("ownCamVideo");
                 if(video){
                     video.srcObject = stream;
+                    video.muted = true;
                     video.style.display = "block";
                 }
                 const camMsg = document.getElementById("ownCamMessage");
