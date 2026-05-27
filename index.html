@@ -7641,12 +7641,13 @@ REMEMBER: Write ENTIRE story in ${langUpper}.${forbidEnglish}`;
 
 let storyTimer;
   try{
-const storyStartTime = Date.now();
+let storyCountdown = 10;
 storyTimer = setInterval(function(){
-const sec = Math.floor((Date.now() - storyStartTime) / 1000);
-if(status) status.textContent = "⏳ " + sec + "s...";
+if(status) status.textContent = "⏳ " + storyCountdown + "s...";
+storyCountdown--;
+if(storyCountdown < 0) storyCountdown = 0;
 }, 1000);
-if(status) status.textContent = "⏳ AI writing story...";
+if(status) status.textContent = "⏳ 10s...";
 let storyText = await askGemini(prompt, "You are a fun storyteller for kids. Be cheerful. " + langInstr, 2500);
 if(storyText){
 clearInterval(storyTimer);
