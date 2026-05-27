@@ -7643,7 +7643,8 @@ RULES:
 - Use fun sounds and expressions in ${langUpper}
 - Short paragraphs (2-3 lines) for easy listening
 - End with a fun conclusion in ${langUpper}
-- 400-800 words only
+- 150-300 words only (short but covers the FULL topic)
+- CRITICAL: Keep it short but make sure the ENTIRE topic is explained clearly
 - STRICT: If the story doesn't teach ${topic}, rewrite it. The story IS the lesson.
 
 REMEMBER: Write ENTIRE story in ${langUpper}.${forbidEnglish}`;
@@ -7685,7 +7686,8 @@ RULES:
 - Use simple words, fun characters, magical places
 - Short paragraphs (2-3 lines)
 - End with a fun conclusion
-- 400-800 words only
+- 150-300 words only (short but covers the FULL topic)
+- CRITICAL: Keep it short but make sure the ENTIRE topic is explained clearly
 - The story IS the lesson.`;
 storyText = await askGroq(groqPrompt, "You are a fun storyteller for kids. Be cheerful. Always write in English.", 4096, "llama-3.3-70b-versatile", sig);
 if(sig.aborted) return;
