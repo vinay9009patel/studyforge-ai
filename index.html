@@ -2459,6 +2459,22 @@ function isAdmin(){
   };
 });
 
+let appData = {
+
+xp:0,
+notesGenerated:0,
+correctAnswers:0,
+wrongAnswers:0,
+streak:0,
+history:[],
+badges:[],
+weakTopics:{},
+totalQuizzes:0,
+dailyQuizQuestions:0,
+lastActiveDate:""
+
+};
+
 (async function(){
   const authBtn = document.querySelector("#authScreen .btn.primary");
   if(authBtn) authBtn.textContent = "⏳ Loading...";
@@ -2554,22 +2570,6 @@ async function checkLimitAndTrack(type){
   saveDailyUsage(usage);
   return { allowed: true, remaining: limit - used - 1, used: used + 1, limit };
 }
-
-let appData = {
-
-xp:0,
-notesGenerated:0,
-correctAnswers:0,
-wrongAnswers:0,
-streak:0,
-history:[],
-badges:[],
-weakTopics:{},
-totalQuizzes:0,
-dailyQuizQuestions:0,
-lastActiveDate:""
-
-};
 
 let signingKey = null;
 let dataSaveTimer = null;
