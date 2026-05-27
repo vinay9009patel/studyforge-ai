@@ -7639,18 +7639,19 @@ RULES:
 
 REMEMBER: Write ENTIRE story in ${langUpper}.${forbidEnglish}`;
 
-let storyTimer;
+window.__storyTimer = null;
   try{
 let storyCountdown = 10;
-storyTimer = setInterval(function(){
-if(status) status.textContent = "⏳ " + storyCountdown + "s...";
+window.__storyTimer = setInterval(function(){
 storyCountdown--;
 if(storyCountdown < 0) storyCountdown = 0;
+if(status) status.textContent = "⏳ " + storyCountdown + "s...";
 }, 1000);
 if(status) status.textContent = "⏳ 10s...";
+window.__storyPlayTimeout = null;
 let storyText = await askGemini(prompt, "You are a fun storyteller for kids. Be cheerful. " + langInstr, 2500);
 if(storyText){
-clearInterval(storyTimer);
+clearInterval(window.__storyTimer);
 __lastApiSource = "gemini";
 __storyContentLang = lang;
  }else{
@@ -7693,25 +7694,27 @@ if(__lastApiSource === "groq" && lang !== "english"){
 if(content) content.innerHTML += '<div style="margin-top:12px;padding:10px 14px;border-radius:12px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.2);color:#fde68a;font-size:13px;">🌐 English mein story generate hui (Groq Hindi support nahi karta)</div>';
 }
 
-clearInterval(storyTimer);
+clearInterval(window.__storyTimer);
 if(status) status.textContent = "🔊 Playing... 🎵";
-setTimeout(function(){ playStoryAudio(); }, 500);
+window.__storyPlayTimeout = setTimeout(function(){ playStoryAudio(); }, 500);
 const storyPlayBtn = document.getElementById("storyPlayBtn");
 if(storyPlayBtn) storyPlayBtn.textContent = "⏸ Pause";
 return;
 }
 }
-clearInterval(storyTimer);
+clearInterval(window.__storyTimer);
 if(content) content.innerHTML = "☹️ APIs busy right now. Please try again after a minute!";
 if(status) status.textContent = "❌ Failed";
 }catch(e){
-clearInterval(storyTimer);
+clearInterval(window.__storyTimer);
 if(content) content.innerHTML = "☹️ Error: " + e.message;
 if(status) status.textContent = "❌ Error";
 }
 }
 
 function stopStoryMode(){
+clearInterval(window.__storyTimer);
+clearTimeout(window.__storyPlayTimeout);
 const container = document.getElementById("storyContainer");
 if(container) container.style.display = "none";
 stopStoryAudio();
