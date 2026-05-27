@@ -7658,7 +7658,7 @@ if(storyCountdown < -60){ clearInterval(window.__storyTimer); }
 }, 1000);
 if(status) status.textContent = "⏳ 20s...";
 window.__storyPlayTimeout = null;
-let storyText = await askGemini(prompt, "You are a fun storyteller for kids. Be cheerful. " + langInstr, 2500, sig);
+let storyText = await askGemini(prompt, "You are a fun storyteller for kids. Be cheerful. " + langInstr, 4096, sig);
 if(sig.aborted) return;
 if(storyText){
 clearInterval(window.__storyTimer);
@@ -7687,7 +7687,7 @@ RULES:
 - End with a fun conclusion
 - 400-800 words only
 - The story IS the lesson.`;
-storyText = await askGroq(groqPrompt, "You are a fun storyteller for kids. Be cheerful. Always write in English.", 2500, "llama-3.3-70b-versatile", sig);
+storyText = await askGroq(groqPrompt, "You are a fun storyteller for kids. Be cheerful. Always write in English.", 4096, "llama-3.3-70b-versatile", sig);
 if(sig.aborted) return;
 if(storyText){
 __lastApiSource = "groq";
@@ -7753,7 +7753,7 @@ if(!content || !content.textContent.trim()) return;
 speechSynthesis.cancel();
 storyUtterance = null;
 
-const text = content.textContent.substring(0, 4000);
+const text = content.textContent.substring(0, 10000);
 storyUtterance = new SpeechSynthesisUtterance(text);
 storyUtterance.rate = 0.9;
 storyUtterance.pitch = 1.0;
