@@ -199,11 +199,16 @@ export default {
 
       if (url.pathname.includes("gemini-text")) {
         if (!env.GEMINI_API_KEY) return new Response(JSON.stringify({ success: false, error: "GEMINI_API_KEY missing" }), { status: 200, headers: { "Content-Type": "application/json", ...cors } });
-        const fp = body.systemMsg ? body.systemMsg + "\n\n" + (body.prompt || "") : (body.prompt || "");
+        const sysMsg = body.systemMsg || "";
+        const userPrompt = body.prompt || "";
         const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + env.GEMINI_API_KEY, {
           method: "POST", 
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contents: [{ parts: [{ text: fp }] }], generationConfig: { temperature: 0.3, maxOutputTokens: body.maxTok || 3500 } })
+          body: JSON.stringify({
+            system_instruction: sysMsg ? { parts: [{ text: sysMsg }] } : undefined,
+            contents: [{ parts: [{ text: userPrompt }] }],
+            generationConfig: { temperature: 0.3, maxOutputTokens: body.maxTok || 3500 }
+          })
         });
         const d = await r.json();
         if (!r.ok) {
