@@ -1940,7 +1940,7 @@ Download Notes
 
 </div>
 
-<div id="audioControls" style="margin-top:20px;display:none;flex-direction:column;gap:12px;">
+ <div id="audioControls" style="margin-top:20px;display:none;flex-direction:column;gap:12px;">
 <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
 <button id="audioPlayBtn" class="btn" style="background:linear-gradient(135deg,#22c55e,#16a34a);color:white;padding:12px 20px;border-radius:14px;border:none;font-size:15px;cursor:pointer;font-weight:700;min-width:120px;" onclick="toggleAudioPlay()">▶ Play</button>
 <button id="audioStopBtn" class="btn" style="background:rgba(239,68,68,0.2);color:#fca5a5;padding:12px 20px;border-radius:14px;border:1px solid rgba(239,68,68,0.3);font-size:15px;cursor:pointer;font-weight:700;" onclick="stopAudio()">⏹ Stop</button>
@@ -1950,12 +1950,6 @@ Download Notes
 <input type="range" id="speechRate" min="0.5" max="2" step="0.1" value="1" style="width:80px;" oninput="changeSpeechRate()">
 <span id="speechRateValue" style="color:#94a3b8;font-size:13px;min-width:30px;">1x</span>
 </div>
-<button id="storyModeBtn" class="btn" style="background:linear-gradient(135deg,#ec4899,#8b5cf6);color:white;padding:10px 18px;border-radius:14px;border:none;font-size:14px;cursor:pointer;font-weight:700;" onclick="startStoryMode()">🎧 Story</button>
-<select id="storyLangSelect" class="input dark-select" style="max-width:120px;padding:10px 14px;font-size:13px;">
-<option value="hindi">हिन्दी</option>
-<option value="english" selected>English</option>
-<option value="hinglish">Hinglish</option>
-</select>
 </div>
 <div id="audioProgressRow" style="display:none;align-items:center;gap:12px;">
 <div style="flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,0.08);cursor:pointer;position:relative;" onclick="seekAudio(event)">
@@ -1964,7 +1958,15 @@ Download Notes
 <span id="audioTimeDisplay" style="color:#94a3b8;font-size:12px;min-width:100px;text-align:right;">0:00 / 0:00</span>
 </div>
 </div>
-
+ 
+<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:20px;">
+<button id="storyModeBtn" class="btn" style="background:linear-gradient(135deg,#ec4899,#8b5cf6);color:white;padding:10px 18px;border-radius:14px;border:none;font-size:14px;cursor:pointer;font-weight:700;" onclick="startStoryMode()">🎧 Story</button>
+<select id="storyLangSelect" class="input dark-select" style="max-width:120px;padding:10px 14px;font-size:13px;">
+<option value="hindi">हिन्दी</option>
+<option value="english" selected>English</option>
+<option value="hinglish">Hinglish</option>
+</select>
+</div>
 <div id="storyContainer" style="display:none;margin-top:20px;padding:24px;border-radius:20px;background:linear-gradient(135deg,rgba(236,72,153,0.05),rgba(139,92,246,0.08));border:2px solid rgba(236,72,153,0.2);">
 <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
 <span style="font-size:28px;">📖</span>
@@ -7655,18 +7657,20 @@ RULES:
 
 REMEMBER: Write ENTIRE story in ${langUpper}.${forbidEnglish}`;
 
-try{
+ try{
 if(status) status.textContent = "⏳ AI writing story...";
 let storyText = await askGemini(prompt, "You are a fun storyteller for kids. Be cheerful. " + langInstr, 2500);
 if(storyText){
 __lastApiSource = "gemini";
 __storyContentLang = lang;
 }else{
-const groqPrompt = `The user typed topic as "${topic}". If this has a small spelling mistake, auto-correct it to the intended topic.
+const groqPrompt = `CRITICAL LANGUAGE RULE: You MUST write the ENTIRE story in ${langUpper}.${forbidEnglish}
 
-You are a FUN STORYTELLER TEACHER. Teach the corrected topic to a 10-year-old child through a story.
+The user typed topic as "${topic}". If this has a small spelling mistake, auto-correct it to the intended topic.
 
-Write in English only.
+You are a FUN STORYTELLER TEACHER. Teach the corrected topic to a 10-year-old child through a story in ${langUpper}.
+
+${langInstr}
 
 CRITICAL: The story MUST teach what "${topic}" actually IS. Every part of the story must explain a real concept of "${topic}". Do NOT write a generic fairy tale - the story itself IS the lesson.
 
@@ -7680,15 +7684,17 @@ RULES:
 - Child knows NOTHING about this topic. Explain from zero.
 - Every paragraph must teach something real about ${topic}
 - Use simple words, fun characters, magical places
-- Use fun sounds and expressions
+- Use fun sounds and expressions in ${langUpper}
 - Short paragraphs (2-3 lines)
-- End with a fun conclusion
+- End with a fun conclusion in ${langUpper}
 - 400-800 words only
-- The story IS the lesson.`;
-storyText = await askGroq(groqPrompt, "You are a fun storyteller for kids. Be cheerful. Always write in English.", 2500, "llama-3.3-70b-versatile");
+- The story IS the lesson.
+
+REMEMBER: Write ENTIRE story in ${langUpper}.${forbidEnglish}`;
+storyText = await askGroq(groqPrompt, "You are a fun storyteller for kids. Be cheerful. " + langInstr, 2500, "llama-3.3-70b-versatile");
 if(storyText){
 __lastApiSource = "groq";
-__storyContentLang = "english";
+__storyContentLang = lang;
 }
 }
 
@@ -7698,10 +7704,6 @@ if(storyText && !storyText.startsWith("🔴")){
 
 if(finalStory && !finalStory.startsWith("🔴") && finalStory.length > 50){
 if(content) content.innerHTML = finalStory.replace(/\n/g, "<br>");
-
-if(__lastApiSource === "groq" && lang !== "english"){
-if(content) content.innerHTML += '<div style="margin-top:12px;padding:10px 14px;border-radius:12px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.2);color:#fde68a;font-size:13px;">🌐 Story generated in English (language support unavailable on fallback API)</div>';
-}
 
 if(status) status.textContent = "🔊 Playing... 🎵";
 setTimeout(function(){ playStoryAudio(); }, 500);
