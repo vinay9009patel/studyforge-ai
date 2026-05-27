@@ -8851,6 +8851,7 @@ ${(currentQuestion < quizQuestions.length - 1 || _quizChunksRemaining > 0) ? "Ne
 
 if(quizUserAnswers[currentQuestion]){
 const saved = quizUserAnswers[currentQuestion];
+if(saved && saved.selected && saved.correct){
 document.querySelectorAll(".option").forEach((opt, idx) => {
 opt.style.pointerEvents = "none";
 const optText = quizQuestions[currentQuestion]?.options?.[idx] || "";
@@ -8863,6 +8864,7 @@ const ta = document.getElementById("typedAnswer");
 if(ta && saved.selected && saved.status !== "timeout" && !quizQuestions[currentQuestion]?.options?.includes(saved.selected)){
 ta.value = saved.selected;
 ta.disabled = true;
+}
 }
 }
 
@@ -9104,6 +9106,11 @@ function previousQuestion(){
 if(currentQuestion > 0){
 currentQuestion--;
 renderQuestion();
+if(quizUserAnswers[currentQuestion]){
+document.querySelectorAll(".option").forEach(opt => { opt.style.pointerEvents = "none"; });
+} else {
+startTimer();
+}
 }
 }
 
