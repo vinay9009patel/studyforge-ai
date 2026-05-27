@@ -7616,7 +7616,7 @@ if(__storyAbortController) __storyAbortController.abort();
 __storyAbortController = new AbortController();
 const sig = __storyAbortController.signal;
 
-const langInstr = lang === "hindi" ? "पूरी कहानी सिर्फ हिंदी में लिखो, बिल्कुल अंग्रेजी नहीं" : lang === "hinglish" ? "Write in Hinglish (Hindi + English mix). Technical terms MUST stay in English (e.g. 'photosynthesis', 'algorithm', 'gravity'). Common English words that people easily understand should also stay in English (e.g. 'game', 'power', 'speed', 'magic', 'world', 'brain', 'light', 'energy', 'water', 'tree', 'friend', 'school', 'book'). Everything else in Hindi. Write naturally like how people actually speak in India." : "Write in English only";
+const langInstr = lang === "hindi" ? "पूरी कहानी सिर्फ हिंदी में लिखो, बिल्कुल अंग्रेजी नहीं" : lang === "hinglish" ? "Write in simple, easy Hinglish — aajkal ki common bolchal wali Hindi. Shudh ya formal Hindi mat likho. Jahan natural lage wahan English words mix karo (jaise log actually bolte hain). Technical words apne aap English mein aa jayenge. Story aisi likho jaise koi friend samjha raha ho." : "Write in English only";
 
 const langUpper = lang === "hinglish" ? "HINGLISH (Mix Hindi + English)" : lang.toUpperCase();
 const forbidEnglish = lang === "hindi" ? " ZERO English words. ONLY Hindi." : "";
