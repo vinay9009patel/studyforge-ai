@@ -198,27 +198,22 @@ export default {
       }
 
       if (url.pathname.includes("gemini-text")) {
+        if (!env.GEMINI_API_KEY) return new Response(JSON.stringify({ success: false, error: "GEMINI_API_KEY missing" }), { status: 200, headers: { "Content-Type": "application/json", ...cors } });
         const fp = body.systemMsg ? body.systemMsg + "\n\n" + (body.prompt || "") : (body.prompt || "");
-        const keys = [env.GEMINI_API_KEY, env.GEMINI_API_KEY_2].filter(Boolean);
-        if (keys.length === 0) return new Response(JSON.stringify({ success: false, error: "GEMINI_API_KEY missing" }), { status: 200, headers: { "Content-Type": "application/json", ...cors } });
-        let lastError = "";
-        for (const key of keys) {
-          const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + key, {
-            method: "POST", 
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ contents: [{ parts: [{ text: fp }] }], generationConfig: { temperature: 0.3, maxOutputTokens: body.maxTok || 3500 } })
-          });
-          const d = await r.json();
-          if (r.ok) {
-            const resultText = d?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (resultText) {
-              return new Response(JSON.stringify({ text: resultText, success: true }), { status: 200, headers: { "Content-Type": "application/json", ...cors } });
-            }
-          }
-          lastError = d?.error?.message || "Gemini API error";
-          if (!lastError.toLowerCase().includes("quota")) break;
+        const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + env.GEMINI_API_KEY, {
+          method: "POST", 
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: [{ parts: [{ text: fp }] }], generationConfig: { temperature: 0.3, maxOutputTokens: body.maxTok || 3500 } })
+        });
+        const d = await r.json();
+        if (!r.ok) {
+          return new Response(JSON.stringify({ success: false, error: d?.error?.message || "Gemini API error", code: r.status }), { status: 200, headers: { "Content-Type": "application/json", ...cors } });
         }
-        return new Response(JSON.stringify({ success: false, error: lastError, code: 429 }), { status: 200, headers: { "Content-Type": "application/json", ...cors } });
+        const resultText = d?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!resultText) {
+          return new Response(JSON.stringify({ success: false, error: "Empty response from Gemini" }), { status: 200, headers: { "Content-Type": "application/json", ...cors } });
+        }
+        return new Response(JSON.stringify({ text: resultText, success: true }), { status: 200, headers: { "Content-Type": "application/json", ...cors } });
       }
 
       if (!env.GROQ_API_KEY) return new Response(JSON.stringify({ error: "GROQ_API_KEY missing" }), { status: 500, headers: { "Content-Type": "application/json", ...cors } });
