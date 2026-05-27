@@ -2663,6 +2663,7 @@ let interviewTimeLeft = 0;
 let interviewDurationMinutes = 20;
 let currentInterviewTopic = "";
 let interviewEnding = false;
+let __storyContentLang = "english";
 let currentInterviewAvatarUrl = "";
 let currentInterviewAvatarFallbacks = [];
 let interviewerGender = "male";
@@ -7475,7 +7476,7 @@ currentSpeechUtterance.rate = speechRate;
 currentSpeechUtterance.pitch = 1;
 currentSpeechUtterance.volume = 1;
 
-const notesLang = getStoryLang();
+const notesLang = __storyContentLang || getStoryLang();
 const voices = speechSynthesis.getVoices();
 if(notesLang === "hindi" || notesLang === "hinglish"){
 currentSpeechUtterance.lang = "hi-IN";
@@ -7659,10 +7660,14 @@ if(status) status.textContent = "⏳ AI writing story...";
 let storyText = await askGemini(prompt, "You are a fun storyteller for kids. Be cheerful. " + langInstr, 2500);
 if(storyText){
 __lastApiSource = "gemini";
+__storyContentLang = lang;
 }else{
 const groqStoryPrompt = prompt.replace(langInstr, "Write in English only");
 storyText = await askGroq(groqStoryPrompt, "You are a fun storyteller for kids. Be cheerful. Always write in English only.", 2500, "llama-3.3-70b-versatile");
-if(storyText) __lastApiSource = "groq";
+if(storyText){
+__lastApiSource = "groq";
+__storyContentLang = "english";
+}
 }
 
 let finalStory = storyText;
@@ -7720,10 +7725,10 @@ storyUtterance = new SpeechSynthesisUtterance(text);
 storyUtterance.rate = 0.9;
 storyUtterance.pitch = 1.0;
 
-const lang = getStoryLang();
+const storyLang = __storyContentLang || getStoryLang();
 const voices = speechSynthesis.getVoices();
 
-if(lang === "hindi" || lang === "hinglish"){
+if(storyLang === "hindi" || storyLang === "hinglish"){
 storyUtterance.lang = "hi-IN";
 const hf = voices.find(v => v.lang && v.lang.includes("hi") && (v.name.includes("Female") || v.name.includes("Google")));
 storyUtterance.voice = hf || voices.find(v => v.lang && v.lang.includes("hi")) || null;
