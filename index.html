@@ -5038,22 +5038,24 @@ if(idx>=0 && btns[idx]) btns[idx].classList.add("active");
 
 }
 
-async function askGemini(prompt, systemMsg, maxTok){
+async function askGemini(prompt, systemMsg, maxTok, signal){
   if(!maxTok) maxTok = 8192;
   try{
     const resp = await fetch(WORKER_URL + "/gemini-text", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt, systemMsg, maxTok: maxTok })
+      body: JSON.stringify({ prompt, systemMsg, maxTok: maxTok }),
+      signal
     });
     const data = await resp.json();
     return data.text || null;
   }catch(e){
+    if(e.name === "AbortError") throw e;
     console.log("Gemini text error:", e);
     return null;
   }
 }
 
-async function askGroq(prompt, systemMsg, maxTok, modelName){
+async function askGroq(prompt, systemMsg, maxTok, modelName, signal){
   if(!maxTok) maxTok = 8192;
   if(!modelName) modelName = "llama-3.3-70b-versatile";
   const messages = systemMsg ? [
@@ -5071,7 +5073,8 @@ async function askGroq(prompt, systemMsg, maxTok, modelName){
         messages,
         temperature:0.3,
         max_tokens:maxTok,
-      })
+      }),
+      signal
     });
     if(response.ok){
       const data = await response.json();
@@ -5082,6 +5085,7 @@ async function askGroq(prompt, systemMsg, maxTok, modelName){
     console.log("   âŒ Groq failed with status:", response.status);
     return null;
   }catch(e){
+    if(e.name === "AbortError") throw e;
     console.log("   âŒ Groq error:", e.message);
     return null;
   }
@@ -7589,6 +7593,7 @@ if(timeDisplay) timeDisplay.textContent = "0:00 / " + formatTime(audioTotalEstim
 }
 
 let storyUtterance = null;
+let __storyAbortController = null;
 
 function getStoryLang(){
 const sel = document.getElementById("storyLangSelect");
@@ -7606,6 +7611,10 @@ const status = document.getElementById("storyStatus");
 if(container) container.style.display = "block";
 if(content) content.innerHTML = "🧸 Generating a fun story for you...";
 if(status) status.textContent = "⏳ Creating story...";
+
+if(__storyAbortController) __storyAbortController.abort();
+__storyAbortController = new AbortController();
+const sig = __storyAbortController.signal;
 
 const langInstr = lang === "hindi" ? "पूरी कहानी सिर्फ हिंदी में लिखो, बिल्कुल अंग्रेजी नहीं" : lang === "hinglish" ? "Mix Hindi and English like Hinglish, writes as people speak" : "Write in English only";
 
@@ -7641,15 +7650,16 @@ REMEMBER: Write ENTIRE story in ${langUpper}.${forbidEnglish}`;
 
 window.__storyTimer = null;
   try{
-let storyCountdown = 10;
+let storyCountdown = 20;
 window.__storyTimer = setInterval(function(){
 storyCountdown--;
-if(storyCountdown < 0) storyCountdown = 0;
-if(status) status.textContent = "⏳ " + storyCountdown + "s...";
+if(status) status.textContent = "⏳ " + Math.max(0, storyCountdown) + "s...";
+if(storyCountdown < -60){ clearInterval(window.__storyTimer); }
 }, 1000);
-if(status) status.textContent = "⏳ 10s...";
+if(status) status.textContent = "⏳ 20s...";
 window.__storyPlayTimeout = null;
-let storyText = await askGemini(prompt, "You are a fun storyteller for kids. Be cheerful. " + langInstr, 2500);
+let storyText = await askGemini(prompt, "You are a fun storyteller for kids. Be cheerful. " + langInstr, 2500, sig);
+if(sig.aborted) return;
 if(storyText){
 clearInterval(window.__storyTimer);
 __lastApiSource = "gemini";
@@ -7677,7 +7687,8 @@ RULES:
 - End with a fun conclusion
 - 400-800 words only
 - The story IS the lesson.`;
-storyText = await askGroq(groqPrompt, "You are a fun storyteller for kids. Be cheerful. Always write in English.", 2500, "llama-3.3-70b-versatile");
+storyText = await askGroq(groqPrompt, "You are a fun storyteller for kids. Be cheerful. Always write in English.", 2500, "llama-3.3-70b-versatile", sig);
+if(sig.aborted) return;
 if(storyText){
 __lastApiSource = "groq";
 __storyContentLang = "english";
@@ -7688,13 +7699,14 @@ let finalStory = storyText;
 
 if(storyText && !storyText.startsWith("🔴")){
 
-if(finalStory && !finalStory.startsWith("🔴") && finalStory.length > 50){
+if(finalStory && !finalStory.startsWith("🔴") && finalStory.length > 10){
+if(sig.aborted) return;
+clearInterval(window.__storyTimer);
 if(content) content.innerHTML = finalStory.replace(/\n/g, "<br>");
 if(__lastApiSource === "groq" && lang !== "english"){
 if(content) content.innerHTML += '<div style="margin-top:12px;padding:10px 14px;border-radius:12px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.2);color:#fde68a;font-size:13px;">🌐 English mein story generate hui (Groq Hindi support nahi karta)</div>';
 }
 
-clearInterval(window.__storyTimer);
 if(status) status.textContent = "🔊 Playing... 🎵";
 window.__storyPlayTimeout = setTimeout(function(){ playStoryAudio(); }, 500);
 const storyPlayBtn = document.getElementById("storyPlayBtn");
@@ -7702,10 +7714,12 @@ if(storyPlayBtn) storyPlayBtn.textContent = "⏸ Pause";
 return;
 }
 }
+if(sig.aborted) return;
 clearInterval(window.__storyTimer);
-if(content) content.innerHTML = "☹️ APIs busy right now. Please try again after a minute!";
-if(status) status.textContent = "❌ Failed";
+if(content) content.innerHTML = storyText && !storyText.startsWith("🔴") ? storyText.replace(/\n/g, "<br>") : "☹️ APIs busy right now. Please try again after a minute!";
+if(status) status.textContent = storyText && !storyText.startsWith("🔴") ? "✅" : "❌ Failed";
 }catch(e){
+if(sig.aborted) return;
 clearInterval(window.__storyTimer);
 if(content) content.innerHTML = "☹️ Error: " + e.message;
 if(status) status.textContent = "❌ Error";
@@ -7713,6 +7727,7 @@ if(status) status.textContent = "❌ Error";
 }
 
 function stopStoryMode(){
+if(__storyAbortController){ __storyAbortController.abort(); __storyAbortController = null; }
 clearInterval(window.__storyTimer);
 clearTimeout(window.__storyPlayTimeout);
 const container = document.getElementById("storyContainer");
