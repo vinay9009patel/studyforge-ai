@@ -8756,7 +8756,7 @@ font-weight:700;
 font-size:18px;
 ">
 ⭐ Score:
-${appData.correctAnswers}
+${currentQuizCorrect}
 </div>
 
 </div>
@@ -9237,7 +9237,7 @@ border:1px solid rgba(255,255,255,0.08);
 text-align:left;
 ">
 <div style="color:#94a3b8;margin-bottom:8px;">Total Questions</div>
-<div style="font-size:34px;font-weight:900;">${total}</div>
+<div style="font-size:34px;font-weight:900;">${_quizTotalCount || total}</div>
 </div>
 <div style="
 padding:22px;
@@ -9332,6 +9332,9 @@ currentQuizTopic
 appData.xp += 20;
 
 appData.totalQuizzes++;
+
+_quizTotalCount = 0;
+_quizChunksRemaining = 0;
 
 updateUI();
 
