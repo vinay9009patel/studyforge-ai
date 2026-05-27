@@ -7641,12 +7641,11 @@ RULES:
 
 try{
 if(status) status.textContent = "⏳ AI writing story...";
-let storyText = await askGemini(prompt, "You are a fun storyteller for kids. Be cheerful.", 2500);
+let storyText = await askGemini(prompt, "You are a fun storyteller for kids. Be cheerful. " + langInstr, 2500);
 if(storyText){
 __lastApiSource = "gemini";
 }else{
-const groqStoryPrompt = prompt.replace(langInstr, "Write in English only");
-storyText = await askGroq(groqStoryPrompt, "You are a fun storyteller for kids. Be cheerful. Always write in English only.", 2500, "llama-3.3-70b-versatile");
+storyText = await askGroq(prompt, "You are a fun storyteller for kids. Be cheerful. " + langInstr, 2500, "llama-3.3-70b-versatile");
 if(storyText) __lastApiSource = "groq";
 }
 
@@ -7657,9 +7656,7 @@ if(storyText && !storyText.startsWith("🔴")){
 if(finalStory && !finalStory.startsWith("🔴") && finalStory.length > 50){
 if(content) content.innerHTML = finalStory.replace(/\n/g, "<br>");
 
-if(__lastApiSource === "groq" && lang !== "english"){
-if(content) content.innerHTML += '<div style="margin-top:12px;padding:10px 14px;border-radius:12px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.2);color:#fde68a;font-size:13px;">🌐 Story generated in English (language support unavailable on fallback API)</div>';
-}
+
 
 if(status) status.textContent = "🔊 Playing... 🎵";
 setTimeout(function(){ playStoryAudio(); }, 500);
