@@ -200,8 +200,7 @@ export default {
       if (url.pathname.includes("gemini-text")) {
         if (!env.GEMINI_API_KEY) return new Response(JSON.stringify({ success: false, error: "GEMINI_API_KEY missing" }), { status: 200, headers: { "Content-Type": "application/json", ...cors } });
         const fp = body.systemMsg ? body.systemMsg + "\n\n" + (body.prompt || "") : (body.prompt || "");
-        let model = "gemini-2.0-flash";
-        let r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + env.GEMINI_API_KEY, {
+        const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + env.GEMINI_API_KEY, {
           method: "POST", 
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -210,19 +209,7 @@ export default {
             generationConfig: { temperature: 0.3, maxOutputTokens: body.maxTok || 3500 }
           })
         });
-        let d = await r.json();
-        if (!r.ok && d?.error?.message?.includes("quota")) {
-          model = "gemini-2.0-flash-lite";
-          r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + env.GEMINI_API_KEY, {
-            method: "POST", 
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: fp }] }],
-              generationConfig: { temperature: 0.3, maxOutputTokens: body.maxTok || 3500 }
-            })
-          });
-          d = await r.json();
-        }
+        const d = await r.json();
         if (!r.ok) {
           return new Response(JSON.stringify({ success: false, error: d?.error?.message || "Gemini API error", code: r.status }), { status: 200, headers: { "Content-Type": "application/json", ...cors } });
         }
