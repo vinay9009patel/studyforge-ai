@@ -7475,8 +7475,17 @@ currentSpeechUtterance.rate = speechRate;
 currentSpeechUtterance.pitch = 1;
 currentSpeechUtterance.volume = 1;
 
+const notesLang = getStoryLang();
+const voices = speechSynthesis.getVoices();
+if(notesLang === "hindi" || notesLang === "hinglish"){
+currentSpeechUtterance.lang = "hi-IN";
+const hf = voices.find(v => v.lang && v.lang.includes("hi") && (v.name.includes("Female") || v.name.includes("Google")));
+currentSpeechUtterance.voice = hf || voices.find(v => v.lang && v.lang.includes("hi")) || null;
+}else{
+currentSpeechUtterance.lang = "en-US";
 if(selectedVoice){
 currentSpeechUtterance.voice = selectedVoice;
+}
 }
 
 const progressRow = document.getElementById("audioProgressRow");
@@ -7615,16 +7624,20 @@ if(status) status.textContent = "⏳ Creating story...";
 
 const langInstr = lang === "hindi" ? "पूरी कहानी सिर्फ हिंदी में लिखो, बिल्कुल अंग्रेजी नहीं" : lang === "hinglish" ? "Mix Hindi and English like Hinglish, writes as people speak" : "Write in English only";
 
-const prompt = `The user typed topic as "${topic}". If this has a small spelling mistake, auto-correct it to the intended topic.
+const langUpper = lang === "hinglish" ? "HINGLISH (Mix Hindi + English)" : lang.toUpperCase();
+const forbidEnglish = lang === "hindi" ? " ZERO English words. ONLY Hindi." : "";
+const prompt = `CRITICAL LANGUAGE RULE: You MUST write the ENTIRE story in ${langUpper}.${forbidEnglish}
 
-You are a FUN STORYTELLER TEACHER. Teach the corrected topic to a 10-year-old child through a story.
+The user typed topic as "${topic}". If this has a small spelling mistake, auto-correct it to the intended topic.
+
+You are a FUN STORYTELLER TEACHER. Teach the corrected topic to a 10-year-old child through a story in ${langUpper}.
 
 ${langInstr}
 
 CRITICAL: The story MUST teach what "${topic}" actually IS. Every part of the story must explain a real concept of "${topic}". Do NOT write a generic fairy tale - the story itself IS the lesson.
 
 STRUCTURE:
-1. Introduce the main concept of ${topic} in a fun way ("Once upon a time, in the land of...")
+1. Introduce the main concept of ${topic} in a fun way
 2. Show how it works through the story events (the characters' journey = the actual process of ${topic})
 3. Have characters face problems that demonstrate real aspects of ${topic}
 4. End with the characters succeeding because they understood ${topic}
@@ -7633,11 +7646,13 @@ RULES:
 - Child knows NOTHING about this topic. Explain from zero.
 - Every paragraph must teach something real about ${topic}
 - Use simple words, fun characters, magical places
-- Add fun sounds: "Whoooosh!", "Tada! 🤩", "Boing!", "✨"
+- Use fun sounds and expressions in ${langUpper}
 - Short paragraphs (2-3 lines) for easy listening
-- End with "Now you know all about ${topic}! 🎉"
+- End with a fun conclusion in ${langUpper}
 - 400-800 words only
-- STRICT: If the story doesn't teach ${topic}, rewrite it. The story IS the lesson.`;
+- STRICT: If the story doesn't teach ${topic}, rewrite it. The story IS the lesson.
+
+REMEMBER: Write ENTIRE story in ${langUpper}.${forbidEnglish}`;
 
 try{
 if(status) status.textContent = "⏳ AI writing story...";
