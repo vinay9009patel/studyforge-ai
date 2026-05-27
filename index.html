@@ -8828,19 +8828,42 @@ Submit
 </div>
 </div>
 
+<div style="display:flex;gap:12px;margin-top:20px;">
+${currentQuestion > 0 ? `
+<button
+class="btn dark"
+style="flex:1;"
+onclick="previousQuestion()">
+← Previous
+</button>
+` : ""}
 <button
 class="btn primary"
-style="margin-top:20px;"
+style="flex:2;"
 onclick="nextQuestion()">
-
-Next
-
+${(currentQuestion < quizQuestions.length - 1 || _quizChunksRemaining > 0) ? "Next →" : "See Results"}
 </button>
+</div>
 
 </div>
 
 `;
 
+if(quizUserAnswers[currentQuestion]){
+const saved = quizUserAnswers[currentQuestion];
+document.querySelectorAll(".option").forEach((opt, idx) => {
+opt.style.pointerEvents = "none";
+const optText = quizQuestions[currentQuestion]?.options?.[idx] || "";
+const isCorrect = normalizeQuizText(optText) === normalizeQuizText(saved.correct);
+const isSelected = normalizeQuizText(optText) === normalizeQuizText(saved.selected);
+if(isCorrect) opt.classList.add("correct");
+if(isSelected && !isCorrect) opt.classList.add("wrong");
+});
+const ta = document.getElementById("typedAnswer");
+if(ta && saved.selected && saved.status !== "timeout" && !quizQuestions[currentQuestion]?.options?.includes(saved.selected)){
+ta.value = saved.selected;
+ta.disabled = true;
+}
 }
 
 
@@ -9073,8 +9096,15 @@ showQuizAnalytics();
 
 showQuizAnalytics();
 
+ }
+
 }
 
+function previousQuestion(){
+if(currentQuestion > 0){
+currentQuestion--;
+renderQuestion();
+}
 }
 
 function showQuizAnalytics(){
