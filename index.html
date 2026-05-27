@@ -1940,24 +1940,6 @@ Download Notes
 
 </div>
 
- <div id="audioControls" style="margin-top:20px;display:none;flex-direction:column;gap:12px;">
-<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-<button id="audioPlayBtn" class="btn" style="background:linear-gradient(135deg,#22c55e,#16a34a);color:white;padding:12px 20px;border-radius:14px;border:none;font-size:15px;cursor:pointer;font-weight:700;min-width:120px;" onclick="toggleAudioPlay()">▶ Play</button>
-<button id="audioStopBtn" class="btn" style="background:rgba(239,68,68,0.2);color:#fca5a5;padding:12px 20px;border-radius:14px;border:1px solid rgba(239,68,68,0.3);font-size:15px;cursor:pointer;font-weight:700;" onclick="stopAudio()">⏹ Stop</button>
-<select id="voiceSelect" class="input dark-select" style="max-width:200px;padding:10px 14px;font-size:13px;" onchange="changeVoice()"></select>
-<div style="display:flex;align-items:center;gap:6px;">
-<span style="color:#94a3b8;font-size:13px;">Speed:</span>
-<input type="range" id="speechRate" min="0.5" max="2" step="0.1" value="1" style="width:80px;" oninput="changeSpeechRate()">
-<span id="speechRateValue" style="color:#94a3b8;font-size:13px;min-width:30px;">1x</span>
-</div>
-</div>
-<div id="audioProgressRow" style="display:none;align-items:center;gap:12px;">
-<div style="flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,0.08);cursor:pointer;position:relative;" onclick="seekAudio(event)">
-<div id="audioProgressFill" style="width:0%;height:100%;border-radius:3px;background:linear-gradient(to right,#22c55e,#16a34a);transition:width 0.3s;"></div>
-</div>
-<span id="audioTimeDisplay" style="color:#94a3b8;font-size:12px;min-width:100px;text-align:right;">0:00 / 0:00</span>
-</div>
-</div>
  
 <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:20px;padding:14px 20px;border-radius:16px;background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.12);">
 <button id="storyModeBtn" class="btn" style="background:linear-gradient(135deg,#ec4899,#8b5cf6);color:white;padding:10px 22px;border-radius:14px;border:none;font-size:14px;cursor:pointer;font-weight:700;" onclick="startStoryMode()">🎧 Story</button>
