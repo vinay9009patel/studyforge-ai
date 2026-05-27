@@ -7639,10 +7639,17 @@ RULES:
 
 REMEMBER: Write ENTIRE story in ${langUpper}.${forbidEnglish}`;
 
- try{
+let storyTimer;
+  try{
+const storyStartTime = Date.now();
+storyTimer = setInterval(function(){
+const sec = Math.floor((Date.now() - storyStartTime) / 1000);
+if(status) status.textContent = "⏳ " + sec + "s...";
+}, 1000);
 if(status) status.textContent = "⏳ AI writing story...";
 let storyText = await askGemini(prompt, "You are a fun storyteller for kids. Be cheerful. " + langInstr, 2500);
 if(storyText){
+clearInterval(storyTimer);
 __lastApiSource = "gemini";
 __storyContentLang = lang;
  }else{
@@ -7685,6 +7692,7 @@ if(__lastApiSource === "groq" && lang !== "english"){
 if(content) content.innerHTML += '<div style="margin-top:12px;padding:10px 14px;border-radius:12px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.2);color:#fde68a;font-size:13px;">🌐 English mein story generate hui (Groq Hindi support nahi karta)</div>';
 }
 
+clearInterval(storyTimer);
 if(status) status.textContent = "🔊 Playing... 🎵";
 setTimeout(function(){ playStoryAudio(); }, 500);
 const storyPlayBtn = document.getElementById("storyPlayBtn");
@@ -7692,9 +7700,11 @@ if(storyPlayBtn) storyPlayBtn.textContent = "⏸ Pause";
 return;
 }
 }
+clearInterval(storyTimer);
 if(content) content.innerHTML = "☹️ APIs busy right now. Please try again after a minute!";
 if(status) status.textContent = "❌ Failed";
 }catch(e){
+clearInterval(storyTimer);
 if(content) content.innerHTML = "☹️ Error: " + e.message;
 if(status) status.textContent = "❌ Error";
 }
