@@ -7213,6 +7213,7 @@ isJson = true;
 }
 
 if(isJson && data){
+stopLoadingCountdown();
 notesOutput.innerHTML = "";
 notesData = JSON.parse(JSON.stringify(data));
 }
@@ -7328,6 +7329,7 @@ updateUI();
 
 }catch(error){
 console.error(error);
+stopLoadingCountdown();
 notesOutput.innerHTML = `<div style="padding:30px;text-align:center;color:#ef4444;font-size:18px;">❌ Error generating notes: ${error.message || "Please try again"}</div>`;
 }
 }
