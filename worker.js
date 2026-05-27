@@ -65,6 +65,73 @@ export default {
       }
     }
 
+    if (request.method === "POST" && url.pathname === "/device-signup/check") {
+      const deviceId = String(body?.deviceId || "").trim();
+      const weekKey = String(body?.weekKey || "").trim();
+      const maxAllowed = Math.max(1, Math.min(Number(body?.maxAllowed || 2), 5));
+      if (!deviceId || !weekKey) {
+        return new Response(JSON.stringify({ success: false, error: "deviceId and weekKey required" }), { status: 400, headers: { "Content-Type": "application/json", ...cors } });
+      }
+      try {
+        const key = `device_signup_${deviceId}_${weekKey}`;
+        const raw = await env.LIMITS.get(key);
+        const data = raw ? JSON.parse(raw) : { count: 0, emails: [] };
+        const count = Number(data?.count || 0);
+        return new Response(JSON.stringify({
+          success: true,
+          allowed: count < maxAllowed,
+          count,
+          remaining: Math.max(0, maxAllowed - count),
+          maxAllowed
+        }), { status: 200, headers: { "Content-Type": "application/json", ...cors } });
+      } catch (e) {
+        return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: { "Content-Type": "application/json", ...cors } });
+      }
+    }
+
+    if (request.method === "POST" && url.pathname === "/device-signup/claim") {
+      const deviceId = String(body?.deviceId || "").trim();
+      const weekKey = String(body?.weekKey || "").trim();
+      const email = String(body?.email || "").trim().toLowerCase();
+      const maxAllowed = Math.max(1, Math.min(Number(body?.maxAllowed || 2), 5));
+      if (!deviceId || !weekKey || !email) {
+        return new Response(JSON.stringify({ success: false, error: "deviceId, weekKey, and email required" }), { status: 400, headers: { "Content-Type": "application/json", ...cors } });
+      }
+      try {
+        const key = `device_signup_${deviceId}_${weekKey}`;
+        const raw = await env.LIMITS.get(key);
+        const data = raw ? JSON.parse(raw) : { count: 0, emails: [] };
+        const emails = Array.isArray(data?.emails) ? data.emails : [];
+        const alreadyExists = emails.includes(email);
+        const count = Number(data?.count || 0);
+        if (!alreadyExists && count >= maxAllowed) {
+          return new Response(JSON.stringify({
+            success: true,
+            allowed: false,
+            count,
+            remaining: 0,
+            maxAllowed
+          }), { status: 200, headers: { "Content-Type": "application/json", ...cors } });
+        }
+        const nextEmails = alreadyExists ? emails : [...emails, email];
+        const nextCount = alreadyExists ? count : count + 1;
+        await env.LIMITS.put(key, JSON.stringify({
+          count: nextCount,
+          emails: nextEmails,
+          updatedAt: Date.now()
+        }), { expirationTtl: 60 * 60 * 24 * 8 });
+        return new Response(JSON.stringify({
+          success: true,
+          allowed: true,
+          count: nextCount,
+          remaining: Math.max(0, maxAllowed - nextCount),
+          maxAllowed
+        }), { status: 200, headers: { "Content-Type": "application/json", ...cors } });
+      } catch (e) {
+        return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: { "Content-Type": "application/json", ...cors } });
+      }
+    }
+
     if (request.method === "GET" && url.pathname.includes("/test-image")) {
       const result = await searchWikimediaImage("binary search algorithm");
       return new Response(JSON.stringify(result), { 

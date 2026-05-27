@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -28,86 +27,91 @@ box-sizing:border-box;
 --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
 }
 .light-mode{
-background:#f8fafc;
-color:#0f172a;
+background:#ece7df;
+color:#35312d;
 }
 .light-mode .sidebar{
-background:#ffffff;
-border-right:1px solid #e2e8f0;
-box-shadow:0 1px 3px rgba(0,0,0,0.04);
+background:#f3eee7;
+border-right:1px solid #d8d0c4;
+box-shadow:0 1px 2px rgba(0,0,0,0.025);
 }
 .light-mode .sidebar .nav-item{
-color:#475569;
+color:#5b554d;
 font-weight:500;
 }
 .light-mode .sidebar .nav-item:hover{
-background:#f1f5f9;
+background:#e4ddd2;
 }
 .light-mode .sidebar .nav-item.active{
-background:#f5f3ff;
-color:#7c3aed;
+background:#e5dfd8;
+color:#5a4b3f;
 font-weight:600;
 }
 
 .light-mode .card{
-background:#ffffff;
-border:1px solid #e2e8f0;
-box-shadow:0 1px 3px rgba(0,0,0,0.04);
+background:#f3eee7;
+border:1px solid #d8d0c4;
+box-shadow:0 1px 2px rgba(0,0,0,0.025);
 border-radius:16px;
 padding:28px;
 }
+.light-mode .card h1,.light-mode .card h2,.light-mode .card h3{color:#4b433b;}
+.light-mode .card strong{color:#5d5144;}
+.light-mode .card code{background:rgba(93,81,68,0.08);}
+.light-mode .card pre{background:#e8e1d8;}
+.light-mode .card blockquote{color:#6b6258;}
 .light-mode .card:hover{
-box-shadow:0 4px 12px rgba(0,0,0,0.06);
+box-shadow:0 4px 10px rgba(0,0,0,0.035);
 transform:translateY(-1px);
 }
 
 .light-mode .option{
-background:#f8fafc;
-border:1px solid #e2e8f0;
-color:#0f172a;
+background:#ebe4da;
+border:1px solid #d8d0c4;
+color:#35312d;
 border-radius:14px;
 padding:18px 22px;
 font-size:16px;
 font-weight:500;
 }
 .light-mode .option:hover{
-background:#f1f5f9;
-border-color:#7c3aed;
+background:#e1d9ce;
+border-color:#9d8f80;
 }
 
 .light-mode .input{
-background:#ffffff;
-border:1px solid #d1d5db;
-color:#0f172a;
+background:#f1ece5;
+border:1px solid #cfc5b8;
+color:#35312d;
 border-radius:12px;
 padding:14px 18px;
 font-size:15px;
 }
 .light-mode .input:focus{
-border-color:#7c3aed;
-box-shadow:0 0 0 3px rgba(124,58,237,0.1);
+border-color:#9d8f80;
+box-shadow:0 0 0 3px rgba(157,143,128,0.12);
 }
 
 .light-mode .bottom-nav{
-background:#ffffff;
-border-top:1px solid #e2e8f0;
+background:#f3eee7;
+border-top:1px solid #d8d0c4;
 }
-.light-mode .bottom-nav button{color:#64748b;font-size:22px;}
-.light-mode .bottom-nav button.active{color:#7c3aed;}
+.light-mode .bottom-nav button{color:#6a6258;font-size:22px;}
+.light-mode .bottom-nav button.active{color:#5a4b3f;}
 
 .light-mode .notes-content{
-background:#ffffff;
-border:1px solid #e2e8f0;
+background:#f3eee7;
+border:1px solid #d8d0c4;
 border-radius:16px;
 padding:28px 32px;
 line-height:1.9;
 font-size:16px;
-color:#1e293b;
+color:#433e38;
 }
 .light-mode .notes-content p{
 background:transparent;
-border-left:3px solid #7c3aed;
-color:#334155;
+border-left:3px solid #a39586;
+color:#504940;
 padding:8px 16px;
 margin-bottom:20px;
 font-size:16px;
@@ -116,23 +120,23 @@ font-size:16px;
 font-size:32px;
 font-weight:700;
 margin:40px 0 20px;
-color:#0f172a;
--webkit-text-fill-color:#0f172a;
+color:#2d2a24;
+-webkit-text-fill-color:#2d2a24;
 background:none;
 }
 .light-mode .notes-content h2{
 font-size:24px;
 font-weight:600;
 margin:32px 0 16px;
-color:#1e293b;
-border-bottom:1px solid #e2e8f0;
+color:#433e38;
+border-bottom:1px solid #d8d0c4;
 padding-bottom:8px;
 }
 .light-mode .notes-content h3{
 font-size:20px;
 font-weight:600;
 margin:24px 0 12px;
-color:#334155;
+color:#5a5248;
 }
 .light-mode .notes-content ul,
 .light-mode .notes-content ol{
@@ -140,7 +144,7 @@ padding-left:24px;
 margin-bottom:20px;
 }
 .light-mode .notes-content li{
-color:#475569;
+color:#5c5548;
 margin-bottom:8px;
 font-size:15px;
 }
@@ -150,171 +154,171 @@ overflow:hidden;
 margin:24px 0;
 }
 .light-mode .notes-content th{
-background:#f1f5f9;
-color:#0f172a;
+background:#e4ddd2;
+color:#35312d;
 font-weight:600;
 padding:14px 18px;
 }
 .light-mode .notes-content td{
-background:#f8fafc;
-color:#334155;
+background:#ebe4da;
+color:#504940;
 padding:14px 18px;
 }
 
-.light-mode .topbar h1{color:#0f172a;font-size:28px;font-weight:700;}
+.light-mode .topbar h1{color:#35312d;font-size:28px;font-weight:700;}
 .light-mode .topbar h1 span{font-weight:700;}
 
-.light-mode .stat-title{color:#64748b;font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;}
-.light-mode .stat-value{color:#0f172a;font-size:32px;font-weight:700;}
+.light-mode .stat-title{color:#6b6258;font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;}
+.light-mode .stat-value{color:#35312d;font-size:32px;font-weight:700;}
 
 .light-mode .btn.dark{
-background:#0f172a;
-color:#ffffff;
+background:#2d2a24;
+color:#fdfcfa;
 }
 .light-mode .btn.dark:hover{
-background:#1e293b;
+background:#3d3832;
 }
 
 .light-mode .auth-box{
-background:rgba(255,255,255,0.95);
-border:1px solid #e2e8f0;
+background:rgba(243,238,231,0.96);
+border:1px solid #d8d0c4;
 backdrop-filter:blur(20px);
 border-radius:24px;
 }
 .light-mode .auth-title{
-background:linear-gradient(to right,#7c3aed,#3b82f6);
+background:linear-gradient(to right,#7b6d5f,#8e9aab);
 -webkit-background-clip:text;
 -webkit-text-fill-color:transparent;
 font-size:36px;
 }
-.light-mode .auth-sub{color:#64748b;}
-.light-mode #authScreen{background:#f8fafc;}
+.light-mode .auth-sub{color:#6b6258;}
+.light-mode #authScreen{background:#ece7df;}
 .light-mode #authScreen .auth-box{
-background:#ffffff;
-border:1px solid #e2e8f0;
-box-shadow:0 4px 24px rgba(0,0,0,0.06);
+background:#f3eee7;
+border:1px solid #d8d0c4;
+box-shadow:0 4px 20px rgba(0,0,0,0.035);
 }
 
 .light-mode .mermaid{
-background:#ffffff !important;
-border:1px solid #e2e8f0 !important;
+background:#f3eee7 !important;
+border:1px solid #d8d0c4 !important;
 border-radius:16px !important;
 }
 .light-mode .ai-diagram-card{
-background:#ffffff;
-border:1px solid #e2e8f0;
+background:#f3eee7;
+border:1px solid #d8d0c4;
 border-radius:16px;
 }
 .light-mode .ai-diagram-title{
-background:#f8fafc;
-border-bottom:1px solid #e2e8f0;
+background:#ebe4da;
+border-bottom:1px solid #d8d0c4;
 padding:16px 20px;
 font-weight:600;
-color:#0f172a;
+color:#35312d;
 }
 
 .light-mode .interviewer-stage{
-background:#ffffff;
-border:1px solid #e2e8f0;
+background:#f3eee7;
+border:1px solid #d8d0c4;
 border-radius:16px;
 }
 .light-mode .interview-chat{
-background:#f8fafc;
-border:1px solid #e2e8f0;
+background:#ebe4da;
+border:1px solid #d8d0c4;
 border-radius:16px;
 padding:20px;
 }
 .light-mode .interview-line.ai{
-background:#f1f5f9;
-border:1px solid #e2e8f0;
+background:#e3dbcf;
+border:1px solid #d8d0c4;
 border-radius:12px;
 padding:14px 18px;
-color:#1e293b;
+color:#3d3832;
 }
 .light-mode .interview-line.user{
-background:#f5f3ff;
-border:1px solid #e2e8f0;
+background:#e9e2d8;
+border:1px solid #d8d0c4;
 border-radius:12px;
 padding:14px 18px;
-color:#1e293b;
+color:#3d3832;
 }
 .light-mode .interview-metric{
-background:#f8fafc;
-border:1px solid #e2e8f0;
+background:#ebe4da;
+border:1px solid #d8d0c4;
 border-radius:12px;
 padding:14px 18px;
 }
 .light-mode .interview-metric div:last-child{
-color:#0f172a;
+color:#2d2a24;
 font-weight:600;
 }
 
-.light-mode .mic-status{color:#64748b;font-size:13px;}
+.light-mode .mic-status{color:#6b6258;font-size:13px;}
 .light-mode .mic-status.active{color:#16a34a;}
 .light-mode .mic-status.warning{color:#d97706;}
 .light-mode .mic-status.error{color:#dc2626;}
 
-.light-mode .profile-box img{border-color:#7c3aed;}
-.light-mode .weak-topics{color:#0f172a;}
-.light-mode .weak-topics span{background:#f1f5f9;padding:4px 12px;border-radius:20px;font-size:13px;color:#475569;display:inline-block;margin:4px 4px 0 0;}
+.light-mode .profile-box img{border-color:#9d8f80;}
+.light-mode .weak-topics{color:#2d2a24;}
+.light-mode .weak-topics span{background:#ede8df;padding:4px 12px;border-radius:20px;font-size:13px;color:#5c5548;display:inline-block;margin:4px 4px 0 0;}
 
 .light-mode .mindmap-fallback{
-background:#ffffff;
-border:1px solid #e2e8f0;
+background:#f3eee7;
+border:1px solid #d8d0c4;
 border-radius:16px;
 }
 .light-mode .mindmap-fallback-node{
-background:#f8fafc;
-border:1px solid #e2e8f0;
+background:#ebe4da;
+border:1px solid #d8d0c4;
 border-radius:12px;
 padding:10px 16px;
 }
 
 .light-mode .loader{
-border-color:#e2e8f0;
-border-top-color:#7c3aed;
+border-color:#d8d0c4;
+border-top-color:#9d8f80;
 }
 
 .light-mode .dark-select{
-background:#ffffff !important;
-color:#0f172a !important;
-border:1px solid #d1d5db !important;
+background:#f1ece5 !important;
+color:#35312d !important;
+border:1px solid #cfc5b8 !important;
 border-radius:10px !important;
 padding:10px 14px !important;
 font-size:14px !important;
 }
 .light-mode .dark-select option{
-background:#ffffff;
-color:#0f172a;
+background:#f1ece5;
+color:#35312d;
 }
 
 .light-mode .card::before,
 .light-mode .interviewer-stage::before{display:none;}
-.light-mode .interviewer-stage [style*="color:#94a3b8"]{color:#64748b !important;}
-.light-mode .interviewer-stage [style*="background:rgba(255,255,255,0.05)"]{background:#f8fafc !important;border-color:#e2e8f0 !important;}
-.light-mode .interviewer-stage [style*="border:1px solid rgba(255,255,255,0.08)"]{border-color:#e2e8f0 !important;}
-.light-mode .interviewer-face{border-color:#e2e8f0 !important;background:#f1f5f9 !important;}
+.light-mode .interviewer-stage [style*="color:#94a3b8"]{color:#6b6258 !important;}
+.light-mode .interviewer-stage [style*="background:rgba(255,255,255,0.05)"]{background:#f7f4ee !important;border-color:#e5dfd4 !important;}
+.light-mode .interviewer-stage [style*="border:1px solid rgba(255,255,255,0.08)"]{border-color:#e5dfd4 !important;}
+.light-mode .interviewer-face{border-color:#e5dfd4 !important;background:#ede8df !important;}
 
 .light-mode .notes-content blockquote{
-border-left:3px solid #7c3aed;
-background:#f8fafc;
+border-left:3px solid #6d28d9;
+background:#f7f4ee;
 padding:12px 18px;
 margin:20px 0;
 border-radius:0 10px 10px 0;
-color:#475569;
+color:#5c5548;
 }
 
 .light-mode ::selection{
-background:rgba(124,58,237,0.15);
-color:#0f172a;
+background:rgba(109,40,217,0.12);
+color:#2d2a24;
 }
 
-.light-mode [style*="color:#dbeafe"]{color:#334155 !important;}
-.light-mode [style*="color:#c4b5fd"]{color:#7c3aed !important;}
-.light-mode [style*="color:#cbd5e1"]{color:#475569 !important;}
+.light-mode [style*="color:#dbeafe"]{color:#4a453d !important;}
+.light-mode [style*="color:#c4b5fd"]{color:#6d28d9 !important;}
+.light-mode [style*="color:#cbd5e1"]{color:#5c5548 !important;}
 .light-mode [style*="background:linear-gradient(145deg,rgba(139,92,246,0.22),rgba(59,130,246,0.14))"],
-.light-mode [style*="background:linear-gradient(145deg,rgba(139,92,246,0.18),rgba(59,130,246,0.1))"]{background:#f5f3ff !important;border-color:#e2e8f0 !important;}
-.light-mode [style*="background:rgba(255,255,255,0.05)"]{background:#f8fafc !important;border-color:#e2e8f0 !important;}
+.light-mode [style*="background:linear-gradient(145deg,rgba(139,92,246,0.18),rgba(59,130,246,0.1))"]{background:#f0ecff !important;border-color:#e5dfd4 !important;}
+.light-mode [style*="background:rgba(255,255,255,0.05)"]{background:#f7f4ee !important;border-color:#e5dfd4 !important;}
 
 body{
 font-family:var(--font),'Inter',sans-serif;
@@ -346,24 +350,26 @@ radial-gradient(circle at bottom right,#111827,#020617 40%);
 
 .auth-box{
 width:100%;
-max-width:480px;
-padding:40px;
+max-width:440px;
+padding:36px 32px;
 border-radius:32px;
 
 background:
-rgba(255,255,255,0.04);
+rgba(255,255,255,0.045);
 
 border:
 1px solid rgba(255,255,255,0.06);
 
 backdrop-filter:blur(20px);
+box-shadow:0 24px 60px rgba(0,0,0,0.28);
 }
 
 .auth-title{
-font-size:42px;
+font-size:34px;
 font-weight:900;
 text-align:center;
-margin-bottom:14px;
+line-height:1.2;
+margin-bottom:10px;
 
 background:
 linear-gradient(
@@ -378,9 +384,11 @@ to right,
 
 .auth-sub{
 text-align:center;
-line-height:1.8;
-color:#94a3b8;
-margin-bottom:30px;
+line-height:1.6;
+color:#9aa6b7;
+margin:0 auto 24px auto;
+max-width:300px;
+font-size:15px;
 }
 
 /* APP */
@@ -823,6 +831,15 @@ box-shadow:0 10px 30px rgba(0,0,0,0.4);
 overflow:hidden;
 position:relative;
 }
+.card h1,.card h2,.card h3{color:#f0abfc;margin:12px 0 8px 0;font-size:1.1em;}
+.card p{margin:6px 0 10px 0;line-height:1.6;}
+.card ul,.card ol{padding-left:22px;margin:6px 0 10px 0;}
+.card li{margin:4px 0;}
+.card code{background:rgba(139,92,246,0.15);padding:2px 6px;border-radius:6px;font-size:0.9em;}
+.card pre{background:rgba(0,0,0,0.3);padding:12px 16px;border-radius:10px;overflow-x:auto;margin:8px 0;}
+.card pre code{background:none;padding:0;}
+.card strong{color:#f0abfc;font-weight:700;}
+.card blockquote{border-left:3px solid #8b5cf6;padding:4px 0 4px 14px;margin:8px 0;color:#94a3b8;}
 
 .card::before{
 content:'';
@@ -1642,12 +1659,12 @@ AI Learning Platform
 <input type="email"
 id="email"
 class="input"
-placeholder="Enter Email">
+placeholder="user123@gmail.com">
 
 <input type="password"
 id="password"
 class="input"
-placeholder="Enter Password">
+placeholder="Strong password">
 
 <div
 style="text-align:right;margin:-10px 0 16px 0;">
@@ -1659,6 +1676,7 @@ Forgot Password?
 </div>
 
 <button
+id="signupBtn"
 class="btn primary"
 style="width:100%;margin-bottom:14px;"
 onclick="signup()">
@@ -1668,6 +1686,7 @@ Create Account
 </button>
 
 <button
+id="loginBtn"
 class="btn dark"
 style="width:100%;margin-bottom:14px;"
 onclick="login()">
@@ -1676,18 +1695,7 @@ Login
 
 </button>
 
-<button
-class="btn google"
-style="width:100%;"
-onclick="googleLogin()">
-
-<img
-src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-style="width:22px;height:22px;">
-
-Continue with Google
-
-</button>
+<div id="authStatus" style="margin-top:14px;padding:10px;border-radius:10px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.15);color:#fde68a;font-size:13px;display:none;"></div>
 
 </div>
 
@@ -1705,45 +1713,50 @@ Continue with Google
 
 <div class="nav-item active"
 onclick="showPage('dashboard',this)">
-🏠 Dashboard
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+Dashboard
 </div>
 
 <div class="nav-item"
 onclick="showPage('notes',this)">
-🧠 Notes
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+Notes
 </div>
 
 <div class="nav-item"
 onclick="showPage('quiz',this)">
-🧪 Quiz
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+Quiz
 </div>
-
 
 <div class="nav-item"
 onclick="showPage('mentor',this)">
-🤖 Mentor
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+Mentor
 </div>
 
 <div class="nav-item"
 onclick="showPage('interview',this)">
-👨‍🏫 AI Interview
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="12" y1="7" x2="12" y2="13"/></svg>
+AI Interview
 </div>
 
 <div class="nav-item"
 onclick="showPage('analytics',this)">
-📈 Analytics
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+Analytics
 </div>
-
-
 
 <div class="nav-item"
 onclick="showPage('profile',this)">
-👤 Profile
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+Profile
 </div>
 
 <div class="nav-item"
 onclick="showPage('settings',this)">
-⚙️ Settings
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+Settings
 </div>
 
 </div>
@@ -1755,7 +1768,7 @@ onclick="showPage('settings',this)">
 <div>
 
 <h1 id="welcomeText">
-Welcome 👋
+Welcome
 </h1>
 <span id="adminBadge" style="display:none;font-size:13px;background:linear-gradient(135deg,#8b5cf6,#ec4899);color:white;padding:4px 14px;border-radius:20px;font-weight:700;margin-left:8px;">👑 Admin</span>
 
@@ -1805,7 +1818,9 @@ class="page active">
 </div>
 
 <div class="card" id="dailyUsageCard" style="display:none;">
-<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">📊 Daily Usage</h2>
+<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;display:flex;align-items:center;gap:10px;">
+<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+Daily Usage</h2>
 <div id="dailyUsageContent"></div>
 </div>
 
@@ -1815,8 +1830,12 @@ class="page active">
 font-size:32px;
 font-weight:900;
 margin-bottom:20px;
+display:flex;
+align-items:center;
+gap:10px;
 ">
-🔥 Daily Challenge
+<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+Daily Challenge
 </h2>
 
 <p id="dailyChallengeText">
@@ -1831,8 +1850,12 @@ Solve 5 quiz questions today.
 font-size:32px;
 font-weight:900;
 margin-bottom:20px;
+display:flex;
+align-items:center;
+gap:10px;
 ">
-🏆 Achievements
+<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+Achievements
 </h2>
 
 <div id="badgesContainer">
@@ -1847,8 +1870,12 @@ No badges yet.
 font-size:32px;
 font-weight:900;
 margin-bottom:20px;
+display:flex;
+align-items:center;
+gap:10px;
 ">
-🧠 Weak Topics
+<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+Weak Topics
 </h2>
 
 <div id="weakTopics">
@@ -1942,7 +1969,7 @@ Download Notes
 <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
 <span style="font-size:28px;">📖</span>
 <h3 style="font-size:22px;font-weight:900;margin:0;background:linear-gradient(to right,#ec4899,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Story Time!</h3>
-<button onclick="stopStoryMode()" style="margin-left:auto;padding:8px 16px;border-radius:10px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.2);color:#fca5a5;cursor:pointer;font-weight:600;font-size:13px;">✕ Close</button>
+<button onclick="stopStoryMode()" style="margin-left:auto;padding:8px 16px;border-radius:10px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.2);color:#fca5a5;cursor:pointer;font-weight:600;font-size:13px;">Close</button>
 </div>
 <div id="storyContent" style="color:#f0d9ff;line-height:2;font-size:17px;white-space:pre-wrap;"></div>
 <div style="display:flex;gap:12px;margin-top:16px;align-items:center;" class="story-controls">
@@ -2099,7 +2126,7 @@ font-size:34px;
 font-weight:900;
 margin-bottom:20px;
 ">
-👨‍🏫 AI Interview
+AI Interview
 </h2>
 
 <input
@@ -2177,7 +2204,7 @@ font-size:34px;
 font-weight:900;
 margin-bottom:20px;
 ">
-🤖 AI Mentor
+AI Mentor
 </h2>
 
 <div
@@ -2273,7 +2300,7 @@ email
 </p>
 
 <p>
-🔥 Streak:
+Streak:
 <span id="profileStreak">0</span>
 days
 </p>
@@ -2324,13 +2351,13 @@ Toggle Theme
 </div>
 
 <div class="bottom-nav">
-<button onclick="showPage('dashboard',document.querySelector('.nav-item'))">🏠</button>
-<button onclick="showPage('notes',document.querySelectorAll('.nav-item')[1])">🧠</button>
-<button onclick="showPage('quiz',document.querySelectorAll('.nav-item')[2])">🧪</button>
-<button onclick="showPage('mentor',document.querySelectorAll('.nav-item')[3])">🤖</button>
-<button onclick="showPage('interview',document.querySelectorAll('.nav-item')[4])">👨</button>
-<button onclick="showPage('profile',document.querySelectorAll('.nav-item')[5])">👤</button>
-<button onclick="showPage('settings',document.querySelectorAll('.nav-item')[6])">⚙️</button>
+<button onclick="showPage('dashboard',document.querySelector('.nav-item'))"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg></button>
+<button onclick="showPage('notes',document.querySelectorAll('.nav-item')[1])"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg></button>
+<button onclick="showPage('quiz',document.querySelectorAll('.nav-item')[2])"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></button>
+<button onclick="showPage('mentor',document.querySelectorAll('.nav-item')[3])"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
+<button onclick="showPage('interview',document.querySelectorAll('.nav-item')[4])"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="12" y1="7" x2="12" y2="13"/></svg></button>
+<button onclick="showPage('profile',document.querySelectorAll('.nav-item')[5])"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
+<button onclick="showPage('settings',document.querySelectorAll('.nav-item')[6])"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -2348,7 +2375,7 @@ Toggle Theme
 const WORKER_URL =
 "https://gorq-proxy.vinaypatel975562.workers.dev";
 
-const ADMIN_EMAIL = "vinay9009patel@gmail.com";
+var ADMIN_EMAIL = "vinay9009patel@gmail.com";
 
 const DAILY_LIMITS = {
   notes: 5,
@@ -2358,6 +2385,61 @@ const DAILY_LIMITS = {
 };
 
 const WORKER_LIMIT_URL = WORKER_URL + "/limit";
+const WEEKLY_DEVICE_SIGNUP_LIMIT = 2;
+
+function getDeviceInstallId(){
+  let id = localStorage.getItem("deviceInstallId");
+  if(!id){
+    id = (crypto?.randomUUID ? crypto.randomUUID() : ("dev_" + Date.now() + "_" + Math.random().toString(36).slice(2)));
+    localStorage.setItem("deviceInstallId", id);
+  }
+  return id;
+}
+
+function getWeekKey(){
+  const now = new Date();
+  const utc = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  const dayNum = utc.getUTCDay() || 7;
+  utc.setUTCDate(utc.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(utc.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((utc - yearStart) / 86400000) + 1) / 7);
+  return utc.getUTCFullYear() + "-W" + String(weekNo).padStart(2, "0");
+}
+
+async function checkWeeklyDeviceSignupLimit(){
+  try{
+    const r = await fetch(WORKER_URL + "/device-signup/check", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        deviceId: getDeviceInstallId(),
+        weekKey: getWeekKey(),
+        maxAllowed: WEEKLY_DEVICE_SIGNUP_LIMIT
+      })
+    });
+    return await r.json();
+  }catch(e){
+    return { success:false, error:e.message };
+  }
+}
+
+async function claimWeeklyDeviceSignup(email){
+  try{
+    const r = await fetch(WORKER_URL + "/device-signup/claim", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        deviceId: getDeviceInstallId(),
+        weekKey: getWeekKey(),
+        email,
+        maxAllowed: WEEKLY_DEVICE_SIGNUP_LIMIT
+      })
+    });
+    return await r.json();
+  }catch(e){
+    return { success:false, error:e.message };
+  }
+}
 
 function getCurrentUserEmail(){
   try{
@@ -2370,16 +2452,25 @@ function isAdmin(){
   return getCurrentUserEmail() === ADMIN_EMAIL;
 }
 
+["login","signup","googleLogin","logout","resetPassword"].forEach(function(fn){
+  window[fn] = function(){
+    var s = document.getElementById("authStatus");
+    if(s) { s.style.display = "block"; s.textContent = "⏳ Initializing... Please wait."; }
+  };
+});
+
 (async function(){
+  const authBtn = document.querySelector("#authScreen .btn.primary");
+  if(authBtn) authBtn.textContent = "⏳ Loading...";
   const u = JSON.parse(localStorage.getItem("user") || "{}");
   if(u && u.email){
     document.getElementById("authScreen").style.display = "none";
     document.querySelector(".app").style.display = "block";
-    if(u.name) document.getElementById("welcomeText").innerText = "Welcome Back, " + u.name + " 👋";
+    if(u.name) document.getElementById("welcomeText").innerText = "Welcome Back, " + u.name;
     if(u.email){
       document.getElementById("profileEmail").innerText = u.email;
       if(u.email === ADMIN_EMAIL){
-        document.getElementById("welcomeText").innerHTML = "Welcome Back, " + u.name + " 👑 Admin";
+        document.getElementById("welcomeText").innerHTML = "Welcome Back, " + u.name + " — Admin";
         document.getElementById("adminBadge").style.display = "inline-block";
         document.getElementById("profileAdminBadge").style.display = "inline";
       }
@@ -2399,6 +2490,7 @@ function isAdmin(){
     }
     updateUI();
   }
+  if(authBtn) authBtn.textContent = "Create Account";
 })();
 
 async function fetchDailyUsage(email){
@@ -2984,9 +3076,9 @@ if(isAdmin()){
     const today = getTodayKey();
     let html = '<div style="display:grid;gap:10px;">';
     html += `<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:8px;padding:10px 14px;background:rgba(255,255,255,0.05);border-radius:12px;font-weight:700;color:#94a3b8;font-size:13px;">
-      <div>User</div><div>📝Notes</div><div>🧪Quiz</div><div>🤖Mentor</div><div>👨‍🏫Interview</div>
+      <div>User</div><div>Notes</div><div>Quiz</div><div>Mentor</div><div>Interview</div>
     </div>`;
-    const labels = { notes:"📝", quiz:"🧪", mentor:"🤖", interview:"👨‍🏫" };
+    const labels = { notes:"", quiz:"", mentor:"", interview:"" };
     for(const [key, usage] of Object.entries(allData)){
       const email = key.replace(`limit_`,"").replace(`_${today}`,"");
       if(!email) continue;
@@ -3008,7 +3100,7 @@ if(isAdmin()){
 
 const usage = getDailyUsage();
 let html = '<div style="display:grid;gap:12px;">';
-const labels = { notes:"📝 Notes", quiz:"🧪 Quiz", mentor:"🤖 Mentor", interview:"👨‍🏫 Interview" };
+const labels = { notes:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px;"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Notes`, quiz:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px;"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Quiz`, mentor:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px;"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Mentor`, interview:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="12" y1="7" x2="12" y2="13"/></svg>Interview` };
 for(const [key, label] of Object.entries(labels)){
   const used = usage[key] || 0;
   const limit = DAILY_LIMITS[key] || 999;
@@ -3139,11 +3231,13 @@ face.classList.toggle("talking",isTalking);
 }
 
 let loadingCountdownTimer = null;
+let loadingCountdownElementId = null;
 
 function startLoadingCountdown(elementId, seconds){
 const el = document.getElementById(elementId);
 if(!el) return;
 clearInterval(loadingCountdownTimer);
+loadingCountdownElementId = elementId;
 let remaining = seconds;
 el.textContent = remaining;
 loadingCountdownTimer = setInterval(() => {
@@ -3159,8 +3253,9 @@ el.textContent = remaining;
 
 function stopLoadingCountdown(){
 clearInterval(loadingCountdownTimer);
-const el = document.getElementById("notesCountdown");
+const el = document.getElementById(loadingCountdownElementId || "notesCountdown");
 if(el) el.textContent = "✅";
+loadingCountdownElementId = null;
 }
 
 let speechVoicesLoaded = false;
@@ -3371,7 +3466,7 @@ Return ONLY valid JSON:
 
 If already good, return as-is.`;
 
-const geminiRaw = await askGemini(geminiCheckPrompt, "You are a strict interview quality checker.");
+const geminiRaw = await askAI(geminiCheckPrompt, "You are a strict interview quality checker.");
 if(geminiRaw){
 const gCleaned = String(geminiRaw ?? "").replace(/```json/g,"").replace(/```/g,"").trim();
 const gParsed = JSON.parse(gCleaned);
@@ -3654,7 +3749,7 @@ const     geminiImprovePrompt = `Fix and improve this Mermaid mind map for "${to
 
 ${mindMapCode}`;
 
-const geminiRaw = await askGemini(geminiImprovePrompt, "You are a mind map expert.");
+const geminiRaw = await askAI(geminiImprovePrompt, "You are a mind map expert.");
 if(geminiRaw){
 const gImproved = normalizeMindMapCode(geminiRaw, topic, topic);
 if(gImproved && gImproved.length > mindMapCode.length) mindMapCode = gImproved;
@@ -3836,7 +3931,9 @@ function renderComparisonTable(table){
   
   return `
 <div class="card" style="margin-bottom:30px;">
-<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">📊 Comparison</h2>
+<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;display:flex;align-items:center;gap:10px;">
+<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+Comparison</h2>
 <div style="overflow:auto;border-radius:16px;border:1px solid rgba(255,255,255,0.06);">
 <table style="width:100%;border-collapse:collapse;">
 <thead>
@@ -4205,7 +4302,7 @@ Return ONLY valid JSON with this structure:
   ]
 }`;
 
-const geminiRaw = await askGemini(geminiReviewPrompt, "You are a strict interview professor. Return ONLY valid JSON.");
+const geminiRaw = await askAI(geminiReviewPrompt, "You are a strict interview professor. Return ONLY valid JSON.");
 if(geminiRaw){
 const gCleaned = String(geminiRaw ?? "").replace(/```json/g,"").replace(/```/g,"").trim();
 const gParsed = JSON.parse(gCleaned);
@@ -4404,7 +4501,7 @@ function retryOwnCamera(){
     ownCamStream = null;
     stopVoiceInput();
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const constraints = {video:{width:320,height:240,facingMode:"user"},audio:true};
+    const constraints = {video:{width:320,height:240,facingMode:"user"},audio:false};
     navigator.mediaDevices.getUserMedia(constraints)
     .then(stream=>{
         ownCamStream = stream;
@@ -4495,7 +4592,7 @@ renderInterviewScreen();
             }
         }else{
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            const constraints = {video:{width:320,height:240,facingMode:"user"},audio:true};
+            const constraints = {video:{width:320,height:240,facingMode:"user"},audio:false};
             navigator.mediaDevices.getUserMedia(constraints)
             .then(stream=>{
                 ownCamStream = stream;
@@ -4620,10 +4717,10 @@ Return ONLY valid JSON:
 
 let dualResult = null;
 try{
-const groqEval = await askAI(evalPrompt, "You are an interview evaluator.");
-const cleaned1 = String(groqEval ?? "").replace(/```json/g,"").replace(/```/g,"").trim();
+const aiEval = await askAI(evalPrompt, "You are an interview evaluator.");
+const cleaned1 = String(aiEval ?? "").replace(/```json/g,"").replace(/```/g,"").trim();
 dualResult = JSON.parse(cleaned1);
-}catch(e){console.log("Groq eval error:",e.message)}
+}catch(e){console.log("AI eval parse error:",e.message)}
 
 try{
 if(dualResult){
@@ -4645,7 +4742,7 @@ Return ONLY valid JSON with your FINAL evaluation:
   "expression_appropriate": true|false,
   "overall_verdict": ""
 }`;
-const geminiResult = await askGemini(geminiReviewPrompt, "You are a strict interview professor.");
+const geminiResult = await askAI(geminiReviewPrompt, "You are a strict interview professor.");
 if(geminiResult){
 const cleaned2 = String(geminiResult ?? "").replace(/```json/g,"").replace(/```/g,"").trim();
 const parsed = JSON.parse(cleaned2);
@@ -4893,21 +4990,11 @@ function stopVoiceInput(){
 
 function startOwnAutoMic(stream){
     stream = stream || ownCamStream;
-    if(!stream){
-        showMicStatus("No mic stream available. Tap 🎤 to speak.","warning");
-        return;
-    }
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if(!SpeechRecognition){
         showMicStatus("Voice typing not supported on this browser. Tap 🎤 to record manually.","error");
         return;
     }
-    const audioTrack = stream.getAudioTracks()[0];
-    if(!audioTrack || !audioTrack.enabled){
-        showMicStatus("Microphone not available. Tap 🎤 to speak.","warning");
-        return;
-    }
-    micStream = stream;
     stopVoiceInput();
     voiceCommittedText = "";
     setTimeout(() => {
@@ -4966,11 +5053,12 @@ if(idx>=0 && btns[idx]) btns[idx].classList.add("active");
 
 }
 
-async function askGemini(prompt, systemMsg){
+async function askGemini(prompt, systemMsg, maxTok){
+  if(!maxTok) maxTok = 8192;
   try{
     const resp = await fetch(WORKER_URL + "/gemini-text", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt, systemMsg, maxTok: 3500 })
+      body: JSON.stringify({ prompt, systemMsg, maxTok: maxTok })
     });
     const data = await resp.json();
     return data.text || null;
@@ -4980,9 +5068,45 @@ async function askGemini(prompt, systemMsg){
   }
 }
 
+async function askGroq(prompt, systemMsg, maxTok, modelName){
+  if(!maxTok) maxTok = 8192;
+  if(!modelName) modelName = "llama-3.3-70b-versatile";
+  const messages = systemMsg ? [
+    {role:"system",content:systemMsg},
+    {role:"user",content:prompt}
+  ] : [
+    {role:"user",content:prompt}
+  ];
+  try{
+    const response = await fetch(WORKER_URL + "/openai/v1/chat/completions",{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({
+        model:modelName,
+        messages,
+        temperature:0.3,
+        max_tokens:maxTok,
+      })
+    });
+    if(response.ok){
+      const data = await response.json();
+      if(data?.choices?.[0]?.message?.content){
+        return data.choices[0].message.content;
+      }
+    }
+    console.log("   âŒ Groq failed with status:", response.status);
+    return null;
+  }catch(e){
+    console.log("   âŒ Groq error:", e.message);
+    return null;
+  }
+}
+
+let __lastApiSource = "none";
+
 async function askAI(prompt, systemMsg, maxTok, modelName){
-  if(!maxTok) maxTok = 3500;
-  if(!modelName) modelName = "llama-3.1-8b-instant";
+  if(!maxTok) maxTok = 8192;
+  if(!modelName) modelName = "llama-3.3-70b-versatile";
   
   const messages = systemMsg ? [
     {role:"system",content:systemMsg},
@@ -4993,8 +5117,21 @@ async function askAI(prompt, systemMsg, maxTok, modelName){
   
   console.log("🤖 === askAI called ===");
   
-  // Groq first (primary)
-  console.log("   🌐 Trying Groq...");
+  // Gemini first (primary)
+  console.log("   🌐 Trying Gemini...");
+  try{
+    const geminiResult = await askGemini(prompt, systemMsg, maxTok);
+    if(geminiResult){
+      console.log("   ✅ Gemini success!");
+      __lastApiSource = "gemini";
+      return geminiResult;
+    }
+  }catch(gemErr){
+    console.log("   ❌ Gemini error:", gemErr.message);
+  }
+  
+  // Groq fallback
+  console.log("   🔄 Trying Groq fallback...");
   try{
     const response = await fetch(WORKER_URL + "/openai/v1/chat/completions",{
       method:"POST",
@@ -5011,6 +5148,7 @@ async function askAI(prompt, systemMsg, maxTok, modelName){
       const data = await response.json();
       if(data?.choices?.[0]){
         console.log("   ✅ Groq success!");
+        __lastApiSource = "groq";
         return data.choices[0].message.content;
       }
     }
@@ -5021,19 +5159,8 @@ async function askAI(prompt, systemMsg, maxTok, modelName){
     console.log("   ❌ Groq error:", workerErr.message);
   }
   
-  // Gemini fallback (if quota resets)
-  console.log("   🔄 Trying Gemini fallback...");
-  try{
-    const geminiResult = await askGemini(prompt, systemMsg);
-    if(geminiResult){
-      console.log("   ✅ Gemini success!");
-      return geminiResult;
-    }
-  }catch(gemErr){
-    console.log("   ❌ Gemini error:", gemErr.message);
-  }
-  
   console.log("   🧠 All APIs failed.");
+  __lastApiSource = "none";
   return null;
 }
 
@@ -6526,7 +6653,7 @@ const response = await fetch(WORKER_URL + "/openai/v1/chat/completions",{
 method:"POST",
 headers:{"Content-Type":"application/json"},
 body:JSON.stringify({
-model:"llama-3.2-11b-vision-preview",
+model:"meta-llama/llama-4-scout-17b-16e-instruct",
 messages:[
 {role:"user",content:[
 {type:"text",text:promptText},
@@ -6639,7 +6766,7 @@ ${data.types_or_variants.map((t, idx)=>`
 ${t.explanation ? `<p style="color:#dbeafe;line-height:1.7;font-size:15px;margin-bottom:12px;">${escapeHtml(t.explanation)}</p>` : ""}
 ${t.characteristics && t.characteristics.length ? `
 <div style="margin-bottom:10px;">
-<div style="font-weight:600;color:#6ee7b7;margin-bottom:6px;">✨ Characteristics:</div>
+<div style="font-weight:600;color:#6ee7b7;margin-bottom:6px;">Characteristics:</div>
 <ul style="color:#dbeafe;line-height:1.7;padding-left:20px;margin:0;">
 ${t.characteristics.map(c => `<li>${escapeHtml(c)}</li>`).join("")}
 </ul>
@@ -6669,7 +6796,7 @@ ${concept.simple_explanation ? `
 </div>` : ''}
 ${concept.detailed_explanation ? `
 <div style="margin-bottom:10px;">
-<span style="color:#94a3b8;font-weight:600;">📝 Detailed:</span>
+<span style="color:#94a3b8;font-weight:600;">Detailed:</span>
 <span style="color:#93c5fd;"> ${escapeHtml(concept.detailed_explanation)}</span>
 </div>` : ''}
 ${concept.code_snippet ? `
@@ -6856,7 +6983,9 @@ ${ep.exam_tip ? `<div style="padding:10px 14px;border-radius:8px;background:rgba
 if(data.summary){
 html += `
 <div class="card">
-<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;">📝 Summary</h2>
+<h2 style="font-size:32px;font-weight:900;margin-bottom:20px;display:flex;align-items:center;gap:10px;">
+<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+Summary</h2>
 <div style="padding:24px;border-radius:20px;background:linear-gradient(145deg,rgba(139,92,246,0.08),rgba(59,130,246,0.04));border:1px solid rgba(255,255,255,0.06);">
 <div style="font-size:18px;color:#dbeafe;line-height:2;">${escapeHtml(data.summary)}</div>
 </div>
@@ -6894,7 +7023,7 @@ ${cs.critical_points.map((p, i) => `<div style="display:flex;gap:10px;padding:10
 </div>` : ""}
 ${cs.quick_recall && cs.quick_recall.length ? `
 <div>
-<div style="font-weight:700;color:#fbbf24;margin-bottom:8px;">🧠 Quick Recall:</div>
+<div style="font-weight:700;color:#fbbf24;margin-bottom:8px;">Quick Recall:</div>
 <div style="display:grid;gap:8px;">
 ${cs.quick_recall.map(r => `<div style="padding:10px 16px;border-radius:8px;background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.15);color:#c4b5fd;font-style:italic;">💡 ${escapeHtml(r)}</div>`).join("")}
 </div>
@@ -6945,6 +7074,52 @@ desc.style.color = "#94a3b8";
 }
 }
 
+function buildNotesJsonPrompt(topic, extractedText){
+const extraContext = extractedText ? "EXTRA CONTEXT:\n" + extractedText : "";
+return `Create exam-ready study notes for "${topic}" and return ONLY valid JSON.
+
+${extraContext}
+
+RULES:
+- Be concise but complete.
+- Use short headings, short explanations, and point-wise content.
+- Cover the full topic clearly: definition, core idea, steps/method, examples, uses, advantages, disadvantages, important points, summary.
+- Every explanation should be 1-3 short sentences max.
+- For advantages, disadvantages, examples, operations, interview questions, FAQ, and exam pattern, keep each item compact but useful.
+- If the topic has methods, process, workflow, or algorithm, include all major steps in order.
+- If the topic has variants/types, include the main ones only with concise explanation.
+- Use simple teacher-style language.
+- Keep all content specific to "${topic}".
+- Return ONLY JSON. No markdown. No extra text.
+- For NON-programming topics, never include code.
+- Include code only for clearly programming/technical topics.
+
+JSON STRUCTURE:
+{
+  "topic": "${topic}",
+  "introduction": { "title": "${topic}", "definition": "1-2 line definition", "simple_explanation": "easy analogy or simple explanation in 1-2 lines" },
+  "sections": [
+    { "title": "Definition & Core Idea", "content": "1 short line", "points": [{ "heading": "heading", "explanation": "1-3 short sentences" }] },
+    { "title": "How It Works / Method", "content": "1 short line", "points": [{ "heading": "step or method", "explanation": "concise explanation" }] },
+    { "title": "Applications / Uses", "content": "1 short line", "points": [{ "heading": "use case", "explanation": "concise explanation" }] }
+  ],
+  "operations": [{ "name": "op name", "description": "short meaning", "algorithm_steps": ["step1","step2","step3"], "time_complexity": "O(?)", "space_complexity": "O(?)", "code_example": "only if programming topic", "example": "short walkthrough" }],
+  "types_or_variants": [{ "name": "type", "explanation": "short explanation", "characteristics": ["c1","c2"], "when_to_use": "short use case", "example": "short example" }],
+  "key_concepts": [{ "concept": "name", "simple_explanation": "1 line", "detailed_explanation": "1-3 short sentences" }],
+  "examples": [{ "title": "example title", "scenario": "short scenario", "explanation": "step-by-step short explanation", "visualization": "short text visualization" }],
+  "comparison_table": { "headers": ["A","B","C"], "rows": [["a1","b1","c1"]] },
+  "advantages": [{ "point": "advantage", "explanation": "short explanation" }],
+  "disadvantages": [{ "point": "disadvantage", "explanation": "short explanation" }],
+  "important_points": ["short exam point 1","short exam point 2"],
+  "common_mistakes": [{ "mistake": "common mistake", "correction": "short correction" }],
+  "interview_questions": [{ "question": "question", "answer": "short answer", "difficulty": "easy/medium/hard" }],
+  "faq": [{ "question": "question", "answer": "short answer" }],
+  "exam_pattern": [{ "question": "exam question", "answer": "expected short answer", "marks": "2/5/10", "exam_tip": "short tip" }],
+  "cheat_sheet": { "definition_line": "one-line definition", "key_formulas": ["f1"], "critical_points": ["p1"], "quick_recall": ["hook 1","hook 2"], "memory_tricks": [{"hint":"hook","for":"what it helps remember","type":"acronym/story/visual/rhyme","story":"short memory story","visual_clue":"mental image"}] },
+  "summary": "2-3 short sentences"
+}`;
+}
+
 async function generateNotes(){
 try{
 
@@ -6983,12 +7158,15 @@ startLoadingCountdown("notesCountdown", 20);
 const extractedText =
 await extractFileText(file);
 
-const groqPrompt = `Generate COMPLETE, DETAILED study notes about "${topic}" in valid JSON.
+const notesPrompt = buildNotesJsonPrompt(topic, extractedText);
+
+const groqPrompt = `Generate concise, exam-ready study notes about "${topic}" in valid JSON. Keep everything SHORT — bullet points, short sentences, one-line definitions.
 
 ${extractedText ? "Extra context: " + extractedText : ""}
 
 RULES:
 - Return ONLY valid JSON, no markdown
+- SHORT AND CONCISE — use bullet-style points, short definitions, avoid long paragraphs
 - ALL content must be SPECIFICALLY about "${topic}" — real examples, real use cases, real interview questions
 - Write explanations like a teacher explaining to a student — use analogies, simple language, real-life comparisons
 - For coding topics (DS, Algo, programming), include code examples
@@ -7013,34 +7191,30 @@ JSON STRUCTURE:
   "interview_questions": [{ "question": "real interview question", "answer": "answer with example", "difficulty": "easy/medium/hard" }],
   "faq": [{ "question": "frequently asked question", "answer": "clear answer" }],
   "exam_pattern": [{ "question": "exam question", "answer": "expected answer", "marks": "2/5/10" }],
-   "cheat_sheet": { "definition_line": "one line definition", "key_formulas": ["f1"], "critical_points": ["p1"], "memory_tricks": [{"hint":"catchy phrase/hook","for":"what it helps remember","type":"acronym/story/visual/rhyme","story":"a short fun story that makes it stick","visual_clue":"mental image to visualize"}] },
+   "cheat_sheet": { "definition_line": "one line definition", "key_formulas": ["f1"], "critical_points": ["p1"], "quick_recall": ["1-line memory hook 1","1-line memory hook 2"], "memory_tricks": [{"hint":"catchy phrase/hook","for":"what it helps remember","type":"acronym/story/visual/rhyme","story":"a short fun story that makes it stick","visual_clue":"mental image to visualize"}] },
   "summary": "2-3 sentence summary"
 }`;
 
-const groqResult =
-await askAI(groqPrompt,"",8192,"llama-3.3-70b-versatile");
-
-if(!groqResult || groqResult.startsWith("🔴")){
-const fallback = generateSmartFallbackNotes(topic);
-notesOutput.innerHTML = marked.parse(fallback);
-return;
-}
+let aiResult = null;
+try{
+aiResult = await askAI(notesPrompt, "You are an expert teacher. Return ONLY valid JSON.");
+}catch(e){ console.log("AI call error:", e); }
 
 let data;
 let isJson = false;
-let groqData;
+let notesData;
 try{
-const cleaned = extractJsonFromText(String(groqResult ?? ""));
+const cleaned = extractJsonFromText(String(aiResult ?? ""));
 data = JSON.parse(cleaned);
 isJson = true;
 }catch(parseError){
-console.log("Groq JSON parse failed, trying Gemini directly", parseError);
+console.log("Gemini/Groq JSON parse failed, trying fallback", parseError);
 }
 
 if(!isJson){
-const geminiPrompt = `Create comprehensive, structured exam-ready notes for topic: ${topic}\n\n${extractedText ? "EXTRA CONTEXT: " + extractedText : ""}\n\nReturn ONLY valid JSON with sections, key_concepts, examples, advantages, disadvantages, important_points, summary. Make sure every concept is accurate and exam-focused.`;
+const geminiPrompt = buildNotesJsonPrompt(topic, extractedText) + `\n\nPrevious response was invalid or incomplete. Rewrite it into fully valid JSON using the exact same schema.`;
 try{
-const geminiResult = await askGemini(geminiPrompt, "You are an expert teacher. Return ONLY valid JSON.");
+const geminiResult = await askAI(geminiPrompt, "You are an expert teacher. Return ONLY valid JSON.");
 if(geminiResult){
 const cleaned = extractJsonFromText(String(geminiResult ?? ""));
 data = JSON.parse(cleaned);
@@ -7051,7 +7225,7 @@ isJson = true;
 
 if(isJson && data){
 notesOutput.innerHTML = "";
-groqData = JSON.parse(JSON.stringify(data));
+notesData = JSON.parse(JSON.stringify(data));
 }
 
 if(data){
@@ -7119,130 +7293,24 @@ ${pct ? `<div style="font-size:12px;color:#64748b;margin-top:4px;">${pct}% compl
 </div>`;
 }
 
+// Render everything at once from GROQ data (no progressive delays)
 (async function(){
-const improvedData = JSON.parse(JSON.stringify(data));
-const totalChunks = 2 + (data.sections?.length || 0) + 1;
-let chunkDone = 0;
-const delay = ms => new Promise(r => setTimeout(r, ms));
-
-function progress(label){
-chunkDone++;
-const pct = Math.round((chunkDone / totalChunks) * 100);
-setStatus(`<span style="color:#fbbf24;">Step ${chunkDone}/${totalChunks}:</span> ${label}`, pct);
-}
-
-// 1. MIND MAP: Groq generate → Gemini improve (small prompt) → screen
 try{
-progress("🧠 Generating mind map (Groq)...");
-const mindMapSrc = topic + (extractedText ? "\n" + extractedText.substring(0,500) : "");
-mmCode = await generateDetailedMindMap(topic, mindMapSrc);
-if(mmCode && mmCode.length > 10){
-progress("🔮 Improving mind map (Gemini)...");
-try{
-await delay(4000);
-const gemPrompt = `Fix and improve this Mermaid mind map for "${topic}". Reorder: Definition→Features→Types→How It Works→Applications→Pros→Cons→Terms→Summary. Fix syntax, remove dupes. Each node 1-3 words. Return only Mermaid code.\n\n${mmCode}`;
-const gemResult = await askGemini(gemPrompt, "You are a mind map expert.");
-if(gemResult){
-const improved = normalizeMindMapCode(gemResult, topic, topic);
-if(improved && improved.length > mmCode.length && improved.length > 50) mmCode = improved;
-}
-}catch(e){}
-}
-pendingOutput += `\n<div class="row" style="display:flex;gap:20px;margin-bottom:30px;"><div class="ai-diagram-card" style="flex:1;position:relative;cursor:pointer;transition:all 0.3s;" id="mindMapCard" onclick="toggleMindMapExpand('mindMapCard')"><button onclick="event.stopPropagation();toggleMindMapExpand('mindMapCard')" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.08);border:none;color:#94a3b8;font-size:16px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10;font-weight:700;">⛶</button><div class="ai-diagram-title">🧠 Mind Map</div><div class="mermaid" id="notesMindMap">${mmCode ? mmCode : "mindmap\ngraph TD\n  A[" + topic + "]\\n  B[Definition]\\n  C[Features]\\n  D[Types]\\n  E[Applications]\\n  A-->B\\n  A-->C\\n  A-->D\\n  A-->E"}</div></div></div>\n`;
-updateScreen();
-try{
+setStatus("Generating mind map...", 30);
+mmCode = await generateDetailedMindMap(topic, topic + (extractedText ? "\n" + extractedText.substring(0,500) : ""));
+} catch(e){}
+setStatus("Building notes...", 60);
+let fullHtml = preview || "";
 if(mmCode){
-mermaid.initialize({startOnLoad:false,securityLevel:"loose",theme:"dark",mindmap:{}});
-await mermaid.run({querySelector:"#notesMindMap"});
+fullHtml += `\n<div class="row" style="display:flex;gap:20px;margin-bottom:30px;"><div class="ai-diagram-card" style="flex:1;position:relative;cursor:pointer;transition:all 0.3s;" id="mindMapCard" onclick="toggleMindMapExpand('mindMapCard')"><button onclick="event.stopPropagation();toggleMindMapExpand('mindMapCard')" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.08);border:none;color:#94a3b8;font-size:16px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10;font-weight:700;">⛶</button><div class="ai-diagram-title">Mind Map</div><div class="mermaid" id="notesMindMap">${mmCode}</div></div></div>\n`;
 }
-}catch(err){}
-chunkDone++;
-} catch(e){ console.log("Mind map failed:", e.message); chunkDone++; }
-
-// 2. INTRODUCTION: Groq data → Gemini improve (small prompt) → screen
-try{
-progress("📖 Improving introduction (Gemini)...");
-await delay(4000);
-const intro = improvedData.introduction || {};
-const introPrompt = `Write a better introduction for "${topic}" notes. Return ONLY JSON: {"title":"Introduction to ${topic}","definition":"clear definition","simple_explanation":"simple analogy with story"}. Make it exam-focused.\n\nCurrent definition: ${(intro.definition || "").substring(0,200)}\nCurrent simple: ${(intro.simple_explanation || "").substring(0,200)}`;
-const gemResult = await askGemini(introPrompt, "You are a professor.");
-if(gemResult){
-try{
-const cleaned = extractJsonFromText(String(gemResult ?? ""));
-const improved = JSON.parse(cleaned);
-if(improved && improved.definition) improvedData.introduction = improved;
-}catch(e){}
-}
-const newHtml = buildVisualNotesHTML(improvedData, topic);
-pendingOutput = preview;
-pendingOutput += mmCode ? `\n<div class="row" style="display:flex;gap:20px;margin-bottom:30px;"><div class="ai-diagram-card" style="flex:1;position:relative;cursor:pointer;transition:all 0.3s;" id="mindMapCard" onclick="toggleMindMapExpand('mindMapCard')"><button onclick="event.stopPropagation();toggleMindMapExpand('mindMapCard')" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.08);border:none;color:#94a3b8;font-size:16px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10;font-weight:700;">⛶</button><div class="ai-diagram-title">🧠 Mind Map</div><div class="mermaid" id="notesMindMap">${mmCode}</div></div></div>\n` : "";
-pendingOutput += newHtml;
-updateScreen();
+fullHtml += buildVisualNotesHTML(data, topic);
+notesOutput.innerHTML = fullHtml;
 try{
 if(mmCode){ mermaid.initialize({startOnLoad:false,securityLevel:"loose",theme:"dark",mindmap:{}}); await mermaid.run({querySelector:"#notesMindMap"}); }
 }catch(err){}
-chunkDone++;
-} catch(e){ console.log("Intro failed:", e.message); chunkDone++; }
-
-// 3. EACH SECTION: Groq data → Gemini improve (small prompt each) → screen
-const sections = data.sections || [];
-for(let i = 0; i < sections.length; i++){
-const s = sections[i];
-if(!s || !s.title){ chunkDone++; continue; }
-try{
-progress(`✦ Improving "${s.title}" (Gemini)...`);
-await delay(4000);
-const sectionPrompt = `Improve this section for "${topic}". Expand, add examples, real-life analogy. Return ONLY JSON: {"title":"...","points":[{"heading":"...","explanation":"..."}]}.\n\nSection: ${s.title}\nHeadings: ${JSON.stringify((s.points || []).map(p => p.heading))}\nContext: ${((s.points?.[0]?.explanation || "")).substring(0,200)}`;
-const gemResult = await askGemini(sectionPrompt, "You are a professor. Return ONLY valid JSON.");
-if(gemResult){
-try{
-const cleaned = extractJsonFromText(String(gemResult ?? ""));
-const improved = JSON.parse(cleaned);
-if(improved && improved.points && improved.points.length) improvedData.sections[i] = improved;
-}catch(e){}
-}
-const partialData = JSON.parse(JSON.stringify(improvedData));
-partialData.sections = partialData.sections?.slice(0, i + 1);
-const newHtml = buildVisualNotesHTML(partialData, topic);
-pendingOutput = preview;
-if(mmCode){ pendingOutput += `\n<div class="row" style="display:flex;gap:20px;margin-bottom:30px;"><div class="ai-diagram-card" style="flex:1;position:relative;cursor:pointer;transition:all 0.3s;" id="mindMapCard" onclick="toggleMindMapExpand('mindMapCard')"><button onclick="event.stopPropagation();toggleMindMapExpand('mindMapCard')" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.08);border:none;color:#94a3b8;font-size:16px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10;font-weight:700;">⛶</button><div class="ai-diagram-title">🧠 Mind Map</div><div class="mermaid" id="notesMindMap">${mmCode}</div></div></div>\n`; }
-pendingOutput += newHtml;
-updateScreen();
-try{
-if(mmCode){ mermaid.initialize({startOnLoad:false,securityLevel:"loose",theme:"dark",mindmap:{}}); await mermaid.run({querySelector:"#notesMindMap"}); }
-}catch(err){}
-chunkDone++;
-} catch(e){ console.log("Section failed:", s?.title, e.message); chunkDone++; }
-}
-
-// 4. CHEAT SHEET: Groq concise → Gemini details + stories → screen
-try{
-const cs = improvedData.cheat_sheet || data.cheat_sheet;
-if(cs){
-progress("🧠 Generating memory tricks (Gemini)...");
-await delay(4000);
-const csPrompt = `Create MEMORABLE memory tricks for "${topic}" study notes. Return ONLY JSON with this structure:
-{"definition_line":"one line definition","key_formulas":["f1"],"critical_points":["p1"],"memory_tricks":[{"hint":"catchy phrase","for":"what it helps","type":"story/visual/rhyme/acronym","story":"fun short story that makes it stick","visual_clue":"mental image"}]}
-Be creative! Use stories, visual imagery, rhymes. Topic: ${topic}`;
-const gemResult = await askGemini(csPrompt, "You are a memory expert. Return ONLY valid JSON.");
-if(gemResult){
-try{
-const cleaned = extractJsonFromText(String(gemResult ?? ""));
-const improved = JSON.parse(cleaned);
-if(improved && improved.memory_tricks) improvedData.cheat_sheet = improved;
-}catch(e){}
-}
-const fullHtml = buildVisualNotesHTML(improvedData, topic);
-pendingOutput = preview;
-if(mmCode){ pendingOutput += `\n<div class="row" style="display:flex;gap:20px;margin-bottom:30px;"><div class="ai-diagram-card" style="flex:1;position:relative;cursor:pointer;transition:all 0.3s;" id="mindMapCard" onclick="toggleMindMapExpand('mindMapCard')"><button onclick="event.stopPropagation();toggleMindMapExpand('mindMapCard')" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.08);border:none;color:#94a3b8;font-size:16px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10;font-weight:700;">⛶</button><div class="ai-diagram-title">🧠 Mind Map</div><div class="mermaid" id="notesMindMap">${mmCode}</div></div></div>\n`; }
-pendingOutput += fullHtml;
-updateScreen();
-}
-chunkDone++;
-} catch(e){ console.log("Cheat sheet failed:", e.message); chunkDone++; }
-
 setStatus("✅ All done! Notes ready", 100);
-setTimeout(() => { const el = document.getElementById("genStatus"); if(el) el.style.display = "none"; }, 5000);
+setTimeout(() => { const el = document.getElementById("genStatus"); if(el) el.style.display = "none"; }, 3000);
 })();
 
 setTimeout(function(){
@@ -7573,29 +7641,30 @@ RULES:
 
 try{
 if(status) status.textContent = "⏳ AI writing story...";
-const storyText = await askAI(prompt, "You are a fun storyteller for kids. Be cheerful.", 2500);
+let storyText = await askGemini(prompt, "You are a fun storyteller for kids. Be cheerful.", 2500);
+if(storyText){
+__lastApiSource = "gemini";
+}else{
+const groqStoryPrompt = prompt.replace(langInstr, "Write in English only");
+storyText = await askGroq(groqStoryPrompt, "You are a fun storyteller for kids. Be cheerful. Always write in English only.", 2500, "llama-3.3-70b-versatile");
+if(storyText) __lastApiSource = "groq";
+}
 
 let finalStory = storyText;
 
-if(storyText && !storyText.startsWith("🔴") && !storyText.includes("\n## ") && !storyText.includes("\n# ")){
-try{
 if(storyText && !storyText.startsWith("🔴")){
-const geminiPrompt = `Improve this educational story about "${topic}" for a 10-year-old child. CRITICAL: The story MUST teach what "${topic}" is. Every paragraph must explain a real concept of "${topic}". Make it more engaging, fix any errors, keep it simple and magical. If the story does not actually teach "${topic}", rewrite it to do so.
 
-Story:
-${storyText}
-
-Return ONLY the improved story. Keep 400-800 words. ${lang === "hindi" ? "Only Hindi." : lang === "hinglish" ? "Keep Hinglish style." : "Keep English."}`;
-const geminiResult = await askGemini(geminiPrompt, "You are a children's story editor.");
-if(geminiResult && !geminiResult.startsWith("🔴") && geminiResult.length > 100){
-finalStory = geminiResult;
-}
-}
-}catch(e){console.log("Gemini story improvement skipped:",e.message)}
-
-if(finalStory && !finalStory.startsWith("🔴")){
+if(finalStory && !finalStory.startsWith("🔴") && finalStory.length > 50){
 if(content) content.innerHTML = finalStory.replace(/\n/g, "<br>");
-if(status) status.textContent = "✅ Ready! Press 🔊 Listen to hear 🎧";
+
+if(__lastApiSource === "groq" && lang !== "english"){
+if(content) content.innerHTML += '<div style="margin-top:12px;padding:10px 14px;border-radius:12px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.2);color:#fde68a;font-size:13px;">🌐 Story generated in English (language support unavailable on fallback API)</div>';
+}
+
+if(status) status.textContent = "🔊 Playing... 🎵";
+setTimeout(function(){ playStoryAudio(); }, 500);
+const storyPlayBtn = document.getElementById("storyPlayBtn");
+if(storyPlayBtn) storyPlayBtn.textContent = "⏸ Pause";
 return;
 }
 }
@@ -7794,7 +7863,7 @@ ${diagram}
 
 Return ONLY clean Mermaid syntax. No markdown. No explanation.`;
 
-const geminiRaw = await askGemini(geminiImprovePrompt, "You are a diagram expert. Return ONLY Mermaid code.");
+const geminiRaw = await askAI(geminiImprovePrompt, "You are a diagram expert. Return ONLY Mermaid code.");
 if(geminiRaw){
 const gClean = geminiRaw
 .replace(/```mermaid/g,"")
@@ -7848,7 +7917,7 @@ container.innerHTML = `
 
 <div class="ai-diagram-title">
 
-📊 AI Generated Diagram
+AI Generated Diagram
 
 </div>
 
@@ -8490,7 +8559,7 @@ topic;
 
 quizOutput.innerHTML = `<div style="text-align:center;padding:50px 20px;">
 <div class="loader" style="margin:0 auto 24px;"></div>
-<div style="font-size:22px;font-weight:800;color:#c4b5fd;margin-bottom:6px;">🧪 Generating Quiz...</div>
+<div style="font-size:22px;font-weight:800;color:#c4b5fd;margin-bottom:6px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px;"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Generating Quiz...</div>
 <div style="color:#94a3b8;font-size:14px;">AI is preparing ${count} questions on <span style="color:#c4b5fd;">${escapeHtml(topic)}</span></div>
 <div id="quizCountdown" style="margin-top:16px;font-size:40px;font-weight:900;background:linear-gradient(to right,#a78bfa,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">10</div>
 <div style="color:#64748b;font-size:12px;">Estimated time remaining</div>
@@ -8517,17 +8586,17 @@ Format:
 
 IMPORTANT: Generate exactly ${count} questions.`;
 
-const groqResult =
+const aiResult =
 await askAI(prompt,"You are a quiz generator.", Math.min(parseInt(count) * 400 + 1000, 16000), "llama-3.3-70b-versatile");
 
 try{
-quizQuestions = parseQuizResponse(groqResult);
+quizQuestions = parseQuizResponse(aiResult);
 }catch(error){
-console.log("Groq quiz parse error:",error);
+console.log("Quiz parse error:",error);
 try{
-quizQuestions = parseQuizResponse(groqResult,true);
+quizQuestions = parseQuizResponse(aiResult,true);
 }catch(error2){
-console.log("Groq quiz parse retry failed:",error2);
+console.log("Quiz parse retry failed:",error2);
 }
 }
 
@@ -8547,7 +8616,7 @@ Questions:
 ${JSON.stringify(quizQuestions, null, 2)}`;
 
 try{
-const geminiResult = await askGemini(geminiPrompt, "You are a strict professor. Return ONLY valid JSON array.");
+const geminiResult = await askAI(geminiPrompt, "You are a strict professor. Return ONLY valid JSON array.");
 if(geminiResult){
 const cleaned = String(geminiResult ?? "")
 .replace(/```json/g,"")
@@ -9268,6 +9337,8 @@ if(!chk.allowed){
 const input =
 mentorInput.value;
 
+if(!input || !input.trim()) return;
+
 chatHistory.innerHTML += `
 
 <div class="card">
@@ -9278,8 +9349,21 @@ chatHistory.innerHTML += `
 
 `;
 
+chatHistory.innerHTML += `
+<div class="card" id="mentorLoadingCard" style="text-align:center;padding:30px;">
+<div class="loader" style="margin:0 auto 20px;"></div>
+<div style="font-size:20px;font-weight:800;color:#c4b5fd;margin-bottom:6px;">⏳ AI Mentor is thinking...</div>
+<div style="color:#94a3b8;font-size:14px;">AI is preparing your answer</div>
+<div id="mentorCountdown" style="margin-top:16px;font-size:36px;font-weight:900;background:linear-gradient(to right,#a78bfa,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">8</div>
+<div style="color:#64748b;font-size:12px;">Estimated time remaining</div>
+</div>
+`;
+chatHistory.scrollTop =
+chatHistory.scrollHeight;
+startLoadingCountdown("mentorCountdown", 8);
+
 const response =
-await askAI(input,`You are a helpful AI study mentor. Always respond in English.`);
+await askAI(input,`You are a helpful AI study mentor. Always respond in English. Format your answer clearly: use **bold** for key terms, bullet points for lists, short paragraphs, and code blocks with \`\`\` where relevant. Start with a brief direct answer, then explain step by step.`);
 
 let mentorResponse = response;
 
@@ -9292,18 +9376,22 @@ ${response}
 
 Fix any errors, add missing key points, improve clarity. Return ONLY the improved response.`;
 
-const geminiResult = await askGemini(geminiCheckPrompt, "You are a strict professor fact-checker.");
+const geminiResult = await askAI(geminiCheckPrompt, "You are a strict professor fact-checker.");
 if(geminiResult && !geminiResult.startsWith("🔴") && geminiResult.length > 50){
 mentorResponse = geminiResult;
 }
 }
 }catch(e){console.log("Gemini mentor check skipped:",e.message)}
 
+stopLoadingCountdown();
+const mentorLoadingCard = document.getElementById("mentorLoadingCard");
+if(mentorLoadingCard) mentorLoadingCard.remove();
+
 chatHistory.innerHTML += `
 
 <div class="card">
 
-🤖 ${marked.parse(mentorResponse)}
+${marked.parse(mentorResponse)}
 
 </div>
 
@@ -9431,6 +9519,8 @@ reader.readAsDataURL(file);
 
 }
 
+const profilePic = document.getElementById("profilePic");
+
 if(localStorage.getItem("profilePic")){
 
 profilePic.src =
@@ -9438,6 +9528,22 @@ localStorage.getItem("profilePic");
 
 }
 
+</script>
+
+<script>
+(function(){
+  var s = document.getElementById("authStatus");
+  window.signup = window.signup || function(){ if(s){ s.textContent="⏳ Firebase loading... Please wait a moment."; s.style.display="block"; } };
+  window.login = window.login || function(){ if(s){ s.textContent="⏳ Firebase loading... Please wait a moment."; s.style.display="block"; } };
+  window.googleLogin = window.googleLogin || function(){ if(s){ s.textContent="⏳ Firebase loading... Please wait a moment."; s.style.display="block"; } };
+  window.resetPassword = window.resetPassword || function(){ if(s){ s.textContent="⏳ Firebase loading... Please wait a moment."; s.style.display="block"; } };
+  window.logout = window.logout || function(){};
+  setTimeout(function(){
+    if(window.signup.toString().includes("Firebase loading")){
+      if(s){ s.textContent="⚠️ Firebase failed to load. Check your network, allow popups, or add this domain to Firebase authorized domains."; s.style.display="block"; }
+    }
+  }, 15000);
+})();
 </script>
 
 <script type="module">
@@ -9471,6 +9577,15 @@ sendPasswordResetEmail
 
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
+(function(){
+  var b = document.getElementById("signupBtn");
+  var l = document.getElementById("loginBtn");
+  var s = document.getElementById("authStatus");
+  if(b) b.textContent = "Create Account";
+  if(l) l.textContent = "Login";
+  if(s) s.style.display = "none";
+})();
+
 const firebaseConfig = {
 
 apiKey:
@@ -9500,6 +9615,47 @@ const auth =
 getAuth(app);
 
 setPersistence(auth, browserLocalPersistence).catch(e=>console.warn("Persistence:",e));
+
+function isValidEmailFormat(email){
+return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || "").trim());
+}
+
+function isStrongPassword(password){
+return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(String(password || ""));
+}
+
+function setAuthStatus(message, tone){
+const s = document.getElementById("authStatus");
+if(!s) return;
+const styles = {
+  info: {
+    bg: "rgba(59,130,246,0.10)",
+    border: "rgba(59,130,246,0.18)",
+    color: "#bfdbfe"
+  },
+  success: {
+    bg: "rgba(34,197,94,0.10)",
+    border: "rgba(34,197,94,0.18)",
+    color: "#bbf7d0"
+  },
+  error: {
+    bg: "rgba(239,68,68,0.10)",
+    border: "rgba(239,68,68,0.18)",
+    color: "#fecaca"
+  },
+  warning: {
+    bg: "rgba(251,191,36,0.10)",
+    border: "rgba(251,191,36,0.18)",
+    color: "#fde68a"
+  }
+};
+const ui = styles[tone || "info"] || styles.info;
+s.style.display = "block";
+s.style.background = ui.bg;
+s.style.border = "1px solid " + ui.border;
+s.style.color = ui.color;
+s.textContent = message;
+}
 
 const provider =
 new GoogleAuthProvider();
@@ -9552,30 +9708,44 @@ async function(){
 const email =
 document.getElementById(
 "email"
-).value;
+).value.trim();
 
-if(!email || !email.includes("@")){
-alert("Enter your email address first");
+if(!email || !isValidEmailFormat(email)){
+alert("Enter a valid email like user123@gmail.com");
 document.getElementById("email").focus();
 return;
 }
 
 try {
+const actionCodeSettings = location.protocol === "file:"
+? undefined
+: {
+    url: location.origin + location.pathname,
+    handleCodeInApp: false
+  };
+setAuthStatus("Sending reset email...", "info");
 await sendPasswordResetEmail(
 auth,
-email
+email,
+actionCodeSettings
 );
-alert("Password reset email sent to " + email + ". Check your inbox.");
+setAuthStatus("Password reset email sent to " + email + ". Check inbox and spam folder.", "success");
 } catch(error) {
 let msg = "Failed to send reset email.";
 if(error.code === "auth/user-not-found") {
 msg = "No account found with this email.";
 } else if(error.code === "auth/invalid-email") {
 msg = "Invalid email address.";
+} else if(error.code === "auth/unauthorized-domain") {
+msg = "This domain is not authorized in Firebase Console. Add this site under Authentication > Settings > Authorized domains.";
+} else if(error.code === "auth/missing-continue-uri" || error.code === "auth/invalid-continue-uri") {
+msg = "Password reset link configuration is invalid. Check Firebase Authentication email action settings.";
+} else if(error.code === "auth/too-many-requests") {
+msg = "Too many reset requests. Try again later.";
 } else {
 msg = "Error: " + (error.message || error);
 }
-alert(msg);
+setAuthStatus(msg, "error");
 }
 
 };
@@ -9586,7 +9756,7 @@ async function(){
 const email =
 document.getElementById(
 "email"
-).value;
+).value.trim();
 
 const password =
 document.getElementById(
@@ -9594,19 +9764,38 @@ document.getElementById(
 ).value;
 
 try {
-const result = await createUserWithEmailAndPassword(
-auth,
-email,
-password
-);
-localStorage.setItem("user", JSON.stringify({
-name: result.user.email.split("@")[0],
-email: result.user.email,
-photo: ""
-}));
-location.reload();
+  if(!email || !password) { alert("Enter email and password"); return; }
+  if(!isValidEmailFormat(email)) { alert("Use a valid email like user123@gmail.com"); return; }
+  if(!isStrongPassword(password)) { alert("Password must be at least 8 characters and include uppercase, lowercase, and a number"); return; }
+  const signupGate = await checkWeeklyDeviceSignupLimit();
+  if(signupGate.success && !signupGate.allowed){
+    alert(`This device has already created ${signupGate.count}/${signupGate.maxAllowed} accounts this week. Try again next week or log in with an existing account.`);
+    return;
+  }
+  const result = await createUserWithEmailAndPassword(
+    auth,
+    email,
+    password
+  );
+  const claimResult = await claimWeeklyDeviceSignup(email);
+  if(claimResult.success === false){
+    console.warn("Weekly signup claim failed:", claimResult.error);
+  }
+  localStorage.setItem("user", JSON.stringify({
+    name: result.user.email.split("@")[0],
+    email: result.user.email,
+    photo: ""
+  }));
+  location.reload();
 } catch(error) {
-alert("Signup failed: " + (error.message || error));
+  let msg = "Signup failed";
+  if(error.code === "auth/email-already-in-use") msg = "This email is already registered. Try logging in instead.";
+  else if(error.code === "auth/weak-password") msg = "Password is too weak. Use at least 8 characters with uppercase, lowercase, and a number.";
+  else if(error.code === "auth/invalid-email") msg = "Use a valid email like user123@gmail.com.";
+  else if(error.code === "auth/operation-not-allowed") msg = "Email/Password sign-in is not enabled in Firebase Console. Enable it under Authentication > Sign-in methods.";
+  else if(error.code === "auth/unauthorized-domain") msg = "This domain is not authorized in Firebase Console. Add it in Authentication > Settings > Authorized domains.";
+  else msg = "Signup failed: " + (error.message || error);
+  alert(msg);
 }
 
 };
@@ -9617,7 +9806,7 @@ async function(){
 const email =
 document.getElementById(
 "email"
-).value;
+).value.trim();
 
 const password =
 document.getElementById(
@@ -9625,19 +9814,30 @@ document.getElementById(
 ).value;
 
 try {
-const result = await signInWithEmailAndPassword(
-auth,
-email,
-password
-);
-localStorage.setItem("user", JSON.stringify({
-name: result.user.email.split("@")[0],
-email: result.user.email,
-photo: result.user.photoURL || ""
-}));
-location.reload();
+  if(!email || !password) { alert("Enter email and password"); return; }
+  if(!isValidEmailFormat(email)) { alert("Use a valid email like user123@gmail.com"); return; }
+  const result = await signInWithEmailAndPassword(
+    auth,
+    email,
+    password
+  );
+  localStorage.setItem("user", JSON.stringify({
+    name: result.user.email.split("@")[0],
+    email: result.user.email,
+    photo: result.user.photoURL || ""
+  }));
+  location.reload();
 } catch(error) {
-alert("Login failed: " + (error.message || error));
+  let msg = "Login failed";
+  if(error.code === "auth/invalid-credential") msg = "Invalid email or password. Check your credentials or click 'Forgot Password' to reset.";
+  else if(error.code === "auth/user-not-found") msg = "No account found with this email. Did you mean to sign up?";
+  else if(error.code === "auth/wrong-password") msg = "Incorrect password. Try again or click 'Forgot Password' to reset.";
+  else if(error.code === "auth/invalid-email") msg = "Use a valid email like user123@gmail.com.";
+  else if(error.code === "auth/too-many-requests") msg = "Too many failed login attempts. Try again later or reset your password.";
+  else if(error.code === "auth/user-disabled") msg = "This account has been disabled.";
+  else if(error.code === "auth/unauthorized-domain") msg = "This domain is not authorized in Firebase Console. Add it in Authentication > Settings > Authorized domains.";
+  else msg = "Login failed: " + (error.message || error);
+  alert(msg);
 }
 
 };
@@ -9645,7 +9845,6 @@ alert("Login failed: " + (error.message || error));
 window.logout =
 async function(){
 
-signingKey = null;
 sessionStorage.clear();
 localStorage.removeItem("secureAppData");
 localStorage.removeItem(
@@ -9681,7 +9880,7 @@ document.querySelector(
 "block";
 
 welcomeText.innerText =
-`Welcome Back, ${user.displayName || user.email.split("@")[0]} 👋`;
+`Welcome Back, ${user.displayName || user.email.split("@")[0]}`;
 
 profileName.innerText =
 user.displayName || user.email.split("@")[0];
@@ -9689,15 +9888,15 @@ user.displayName || user.email.split("@")[0];
 profileEmail.innerText =
 user.email;
 
-if(user.email === ADMIN_EMAIL){
-document.getElementById("welcomeText").innerHTML = `Welcome Back, ${user.displayName || user.email.split("@")[0]} 👑 Admin`;
+if(user.email === window.ADMIN_EMAIL){
+document.getElementById("welcomeText").innerHTML = `Welcome Back, ${user.displayName || user.email.split("@")[0]} — Admin`;
 document.getElementById("adminBadge").style.display = "inline-block";
 document.getElementById("profileAdminBadge").style.display = "inline";
 }
 
 if(user.photoURL){
 
-profilePic.src =
+document.getElementById("profilePic").src =
 user.photoURL;
 
 }
