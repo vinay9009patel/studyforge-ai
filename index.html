@@ -7663,14 +7663,12 @@ let storyText = await askGemini(prompt, "You are a fun storyteller for kids. Be 
 if(storyText){
 __lastApiSource = "gemini";
 __storyContentLang = lang;
-}else{
-const groqPrompt = `CRITICAL LANGUAGE RULE: You MUST write the ENTIRE story in ${langUpper}.${forbidEnglish}
+ }else{
+const groqPrompt = `You are a FUN STORYTELLER TEACHER. Teach the corrected topic to a 10-year-old child through a story.
 
 The user typed topic as "${topic}". If this has a small spelling mistake, auto-correct it to the intended topic.
 
-You are a FUN STORYTELLER TEACHER. Teach the corrected topic to a 10-year-old child through a story in ${langUpper}.
-
-${langInstr}
+Write in English only.
 
 CRITICAL: The story MUST teach what "${topic}" actually IS. Every part of the story must explain a real concept of "${topic}". Do NOT write a generic fairy tale - the story itself IS the lesson.
 
@@ -7684,17 +7682,14 @@ RULES:
 - Child knows NOTHING about this topic. Explain from zero.
 - Every paragraph must teach something real about ${topic}
 - Use simple words, fun characters, magical places
-- Use fun sounds and expressions in ${langUpper}
 - Short paragraphs (2-3 lines)
-- End with a fun conclusion in ${langUpper}
+- End with a fun conclusion
 - 400-800 words only
-- The story IS the lesson.
-
-REMEMBER: Write ENTIRE story in ${langUpper}.${forbidEnglish}`;
-storyText = await askGroq(groqPrompt, "You are a fun storyteller for kids. Be cheerful. " + langInstr, 2500, "llama-3.3-70b-versatile");
+- The story IS the lesson.`;
+storyText = await askGroq(groqPrompt, "You are a fun storyteller for kids. Be cheerful. Always write in English.", 2500, "llama-3.3-70b-versatile");
 if(storyText){
 __lastApiSource = "groq";
-__storyContentLang = lang;
+__storyContentLang = "english";
 }
 }
 
@@ -7704,6 +7699,9 @@ if(storyText && !storyText.startsWith("🔴")){
 
 if(finalStory && !finalStory.startsWith("🔴") && finalStory.length > 50){
 if(content) content.innerHTML = finalStory.replace(/\n/g, "<br>");
+if(__lastApiSource === "groq" && lang !== "english"){
+if(content) content.innerHTML += '<div style="margin-top:12px;padding:10px 14px;border-radius:12px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.2);color:#fde68a;font-size:13px;">🌐 English mein story generate hui (Groq Hindi support nahi karta)</div>';
+}
 
 if(status) status.textContent = "🔊 Playing... 🎵";
 setTimeout(function(){ playStoryAudio(); }, 500);
