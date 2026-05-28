@@ -7194,7 +7194,7 @@ notesOutput.innerHTML = `<div style="text-align:center;padding:50px 20px;">
 <div id="notesCountdown" style="margin-top:16px;font-size:40px;font-weight:900;background:linear-gradient(to right,#a78bfa,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">5</div>
 <div style="color:#64748b;font-size:12px;">Estimated time remaining</div>
 </div>`;
-startLoadingCountdown("notesCountdown", 35);
+startLoadingCountdown("notesCountdown", 10);
 
 const extractedText =
 await extractFileText(file);
@@ -7666,7 +7666,7 @@ REMEMBER: Write ENTIRE story in ${langUpper}.${forbidEnglish}`;
 
 window.__storyTimer = null;
   try{
-let storyCountdown = 20;
+let storyCountdown = 10;
 window.__storyTimer = setInterval(function(){
 storyCountdown--;
 if(status) status.textContent = "⏳ " + Math.max(0, storyCountdown) + "s...";
