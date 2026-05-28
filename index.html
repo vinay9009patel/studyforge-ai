@@ -3769,13 +3769,8 @@ RULES:
 - STRICT: Follow the exact order above — Definition → Core Idea → Features → Types → How It Works → Applications → Pros → Cons → Terms → Summary. This order teaches from basic to advanced.
 `;
 
-const ctrl = new AbortController();
-const tim = setTimeout(() => { try{ctrl.abort()}catch(e){} }, 20000);
-let result;
-try{
-result = await askGroq(prompt, "You are a mindmap generator. Write in English.", 4096, "llama-3.3-70b-versatile", ctrl.signal);
-}catch(e){ result = null; }
-clearTimeout(tim);
+let result = await askAI(prompt, "You are a mindmap generator. Write in English.", 4096);
+if(!result) result = await askGroq(prompt, "You are a mindmap generator. Write in English.", 4096, "llama-3.3-70b-versatile");
 
 return normalizeMindMapCode(result, topic, sourceText);
 }
