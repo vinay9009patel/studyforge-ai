@@ -5109,21 +5109,28 @@ async function askAI(prompt, systemMsg, maxTok, modelName){
   
   console.log("🤖 === askAI called ===");
   
-  // Gemini first (primary)
-  console.log("   🌐 Trying Gemini...");
+  // Gemini with 12s timeout
+  console.log("   🌐 Trying Gemini (12s timeout)...");
+  const geminiController = new AbortController();
+  const geminiTimer = setTimeout(() => { try{geminiController.abort()}catch(e){} }, 12000);
   try{
-    const geminiResult = await askGemini(prompt, systemMsg, maxTok);
+    const geminiResult = await askGemini(prompt, systemMsg, maxTok, geminiController.signal);
+    clearTimeout(geminiTimer);
     if(geminiResult){
       console.log("   ✅ Gemini success!");
       __lastApiSource = "gemini";
       return geminiResult;
     }
   }catch(gemErr){
-    console.log("   ❌ Gemini error:", gemErr.message);
+    clearTimeout(geminiTimer);
+    if(gemErr.name !== "AbortError") console.log("   ❌ Gemini error:", gemErr.message);
+    else console.log("   ⏱ Gemini timed out, switching to Groq...");
   }
   
-  // Groq fallback
-  console.log("   🔄 Trying Groq fallback...");
+  // Groq fallback with 25s timeout
+  console.log("   🔄 Trying Groq fallback (25s timeout)...");
+  const groqController = new AbortController();
+  const groqTimer = setTimeout(() => { try{groqController.abort()}catch(e){} }, 25000);
   try{
     const response = await fetch(WORKER_URL + "/openai/v1/chat/completions",{
       method:"POST",
@@ -5133,8 +5140,10 @@ async function askAI(prompt, systemMsg, maxTok, modelName){
         messages,
         temperature:0.3,
         max_tokens:maxTok,
-      })
+      }),
+      signal: groqController.signal
     });
+    clearTimeout(groqTimer);
     
     if(response.ok){
       const data = await response.json();
@@ -5148,6 +5157,7 @@ async function askAI(prompt, systemMsg, maxTok, modelName){
     console.log("   ❌ Groq failed with status:", response.status);
     
   }catch(workerErr){
+    clearTimeout(groqTimer);
     console.log("   ❌ Groq error:", workerErr.message);
   }
   
@@ -8597,7 +8607,15 @@ Format:
 
 IMPORTANT: Generate exactly ${chunkCount} unique questions.`;
 
-const aiResult = await askAI(prompt,"You are a quiz generator.", Math.min(chunkCount * 400 + 1000, 16000), "llama-3.3-70b-versatile");
+let aiResult;
+try{
+  const groqCtrl = new AbortController();
+  const groqTim = setTimeout(() => { try{groqCtrl.abort()}catch(e){} }, 25000);
+  aiResult = await askGroq(prompt,"You are a quiz generator.", Math.min(chunkCount * 400 + 1000, 16000), "llama-3.3-70b-versatile", groqCtrl.signal);
+  clearTimeout(groqTim);
+}catch(e){
+  aiResult = null;
+}
 
 let chunk;
 try{
