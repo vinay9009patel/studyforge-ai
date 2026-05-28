@@ -3576,7 +3576,7 @@ items:Array.from(new Set(group.items))
 .filter(group=>group.title)
 .slice(0,4);
 
-if(usefulHeadingGroups.length >= 3){
+if(usefulHeadingGroups.length >= 1){
 return [
 "mindmap",
 `  root((${normalizedTopic.replace(/[()]/g,"")}))`,
@@ -3589,13 +3589,51 @@ return [
 ].join("\n");
 }
 
+const topicWords = normalizedTopic.split(/\s+/).filter(Boolean);
+const keywords = Array.from(new Set([
+...topicWords,
+...(String(sourceText || "")
+.toLowerCase()
+.match(/[a-zA-Z]{4,}/g) || [])
+])).slice(0,20);
+
+const genericBranches = [
+{
+title:"Definition",
+items:topicWords.length ? [`What is ${normalizedTopic}`] : ["Core concept"]
+},
+{
+title:"Key Features",
+items:keywords.slice(0,4).map(k=>k.charAt(0).toUpperCase()+k.slice(1))
+},
+{
+title:"How It Works",
+items:keywords.slice(4,8).map(k=>k.charAt(0).toUpperCase()+k.slice(1))
+},
+{
+title:"Applications",
+items:keywords.slice(8,12).map(k=>k.charAt(0).toUpperCase()+k.slice(1))
+}
+].filter(b=>b.items.length);
+
+if(genericBranches.length >= 2){
+return [
+"mindmap",
+`  root((${normalizedTopic.replace(/[()]/g,"")}))`,
+...genericBranches.flatMap(group=>[
+`    ${group.title}`,
+...group.items.map(item=>`      ${item}`)
+])
+].join("\n");
+}
+
 const sentences = String(sourceText || "")
 .replace(/\r/g," ")
 .split(/[.!?]\s+/)
 .map(sentence=>sentence.trim())
 .filter(sentence=>sentence.split(/\s+/).length >= 4);
 
-const keywords = Array.from(
+const fallbackKeywords = Array.from(
 new Set(
 String(sourceText || "")
 .replace(/[^a-zA-Z0-9\s]/g," ")
@@ -3606,24 +3644,24 @@ String(sourceText || "")
 )
 ).slice(0,20);
 
-const genericBranches = [
+const fallbackBranches = [
 {
 title:"Overview",
 items:sentences.slice(0,2).map(item=>cleanNodeText(item,6))
 },
 {
 title:"Key Concepts",
-items:keywords.slice(0,4).map(item=>cleanNodeText(item,3))
+items:fallbackKeywords.slice(0,4).map(item=>cleanNodeText(item,3))
 },
 {
 title:"Structure or Types",
-items:[...keywords.slice(4,8), ...sentences.slice(2,3)]
+items:[...fallbackKeywords.slice(4,8), ...sentences.slice(2,3)]
 .map(item=>cleanNodeText(item,5))
 .filter(Boolean)
 },
 {
 title:"Uses and Importance",
-items:[...keywords.slice(8,12), ...sentences.slice(3,4)]
+items:[...fallbackKeywords.slice(8,12), ...sentences.slice(3,4)]
 .map(item=>cleanNodeText(item,5))
 .filter(Boolean)
 }
@@ -3635,7 +3673,7 @@ items:Array.from(new Set(group.items)).filter(Boolean).slice(0,4)
 return [
 "mindmap",
 `  root((${normalizedTopic.replace(/[()]/g,"")}))`,
-...genericBranches.flatMap(group=>[
+...fallbackBranches.flatMap(group=>[
 `    ${group.title}`,
 ...(group.items.length
 ? group.items.map(item=>`      ${item.replace(/[()]/g,"")}`)
@@ -3648,9 +3686,10 @@ return [
 }
 
 function normalizeMindMapCode(rawCode,topic,sourceText = ""){
-const code =
+let code =
 String(rawCode || "")
-.replace(/```mermaid/g,"")
+.replace(/```mermaid/gi,"")
+.replace(/```/g,"")
 .replace(/```/g,"")
 .trim();
 
@@ -3658,7 +3697,7 @@ if(!code){
 return buildFallbackMindMap(topic,sourceText);
 }
 
-const lines = code
+let lines = code
 .split("\n")
 .map(line=>line.replace(/\t/g,"  ").trimEnd())
 .filter(line=>line.trim());
@@ -3667,9 +3706,12 @@ if(!lines.length){
 return buildFallbackMindMap(topic,sourceText);
 }
 
-if(!/^mindmap\b/i.test(lines[0].trim())){
+const mindmapIdx = lines.findIndex(l => /^mindmap\b/i.test(l.trim()));
+if(mindmapIdx < 0){
 return buildFallbackMindMap(topic,sourceText);
 }
+
+lines = lines.slice(mindmapIdx);
 
 const cleaned = lines.map((line,index)=>{
 if(index === 0){
@@ -3730,21 +3772,7 @@ RULES:
 const result =
 await askAI(prompt,"You are a mindmap generator. Write in English.");
 
-let mindMapCode = normalizeMindMapCode(result, topic, sourceText);
-
-try{
-const     geminiImprovePrompt = `Fix and improve this Mermaid mind map for "${topic}". Reorder: Definition→Core Idea→Features→Types→How It Works→Applications→Pros→Cons→Terms→Summary. Fix syntax, remove dupes. 1-3 word nodes. Return only Mermaid code.
-
-${mindMapCode}`;
-
-const geminiRaw = await askAI(geminiImprovePrompt, "You are a mind map expert.");
-if(geminiRaw){
-const gImproved = normalizeMindMapCode(geminiRaw, topic, topic);
-if(gImproved && gImproved.length > mindMapCode.length) mindMapCode = gImproved;
-}
-}catch(e){console.log("Gemini mind map improvement skipped:",e.message)}
-
-return mindMapCode;
+return normalizeMindMapCode(result, topic, sourceText);
 }
 
 function renderFallbackMindMapHtml(code){
@@ -7311,7 +7339,11 @@ fullHtml += buildVisualNotesHTML(data, topic);
 notesOutput.innerHTML = fullHtml;
 try{
 if(mmCode){ mermaid.initialize({startOnLoad:false,securityLevel:"loose",theme:"dark",mindmap:{}}); await mermaid.run({querySelector:"#notesMindMap"}); }
-}catch(err){}
+}catch(err){
+console.log("Mermaid error:",err);
+const mmEl = document.getElementById("notesMindMap");
+if(mmEl) mmEl.innerHTML = renderFallbackMindMapHtml(mmCode);
+}
 setStatus("✅ All done! Notes ready", 100);
 setTimeout(() => { const el = document.getElementById("genStatus"); if(el) el.style.display = "none"; }, 3000);
 })();
