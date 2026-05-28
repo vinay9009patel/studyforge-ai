@@ -7205,9 +7205,14 @@ let data;
 let isJson = false;
 let notesData;
 
-async function callApiForNotes(prompt){
-const r = await askAI(prompt, "You are an expert teacher. Return ONLY valid JSON.", 8192, "llama-3.3-70b-versatile");
-if(r) return r;
+const callApiForNotes = async (prompt) => {
+const gc = new AbortController();
+const gt = setTimeout(() => { try{gc.abort()}catch(e){} }, 15000);
+try{
+  const r = await askGemini(prompt, "You are an expert teacher. Return ONLY valid JSON.", 8192, gc.signal);
+  clearTimeout(gt);
+  if(r) return r;
+}catch(e){ clearTimeout(gt); }
 return await askGroq(prompt, "You are an expert teacher. Return ONLY valid JSON.", 8192, "llama-3.3-70b-versatile");
 }
 
