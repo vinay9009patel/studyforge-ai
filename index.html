@@ -7205,27 +7205,20 @@ let data;
 let isJson = false;
 let notesData;
 
-async function callGroqForNotes(prompt){
-const ctrl = new AbortController();
-const tim = setTimeout(() => { try{ctrl.abort()}catch(e){} }, 25000);
-try{
-const r = await askGroq(prompt, "You are an expert teacher. Return ONLY valid JSON.", 8192, "llama-3.3-70b-versatile", ctrl.signal);
-clearTimeout(tim);
-return r;
-}catch(e){
-clearTimeout(tim);
-return null;
-}
+async function callApiForNotes(prompt){
+const r = await askAI(prompt, "You are an expert teacher. Return ONLY valid JSON.", 8192, "llama-3.3-70b-versatile");
+if(r) return r;
+return await askGroq(prompt, "You are an expert teacher. Return ONLY valid JSON.", 8192, "llama-3.3-70b-versatile");
 }
 
-let aiResult = await callGroqForNotes(notesPrompt);
+let aiResult = await callApiForNotes(notesPrompt);
 try{
   const cleaned = extractJsonFromText(String(aiResult ?? ""));
   data = JSON.parse(cleaned);
   if(data && typeof data === "object") isJson = true;
 }catch(parseError){
   console.log("Groq JSON parse failed, retrying once", parseError);
-  aiResult = await callGroqForNotes(notesPrompt);
+  aiResult = await callApiForNotes(notesPrompt);
   try{
     const cleaned = extractJsonFromText(String(aiResult ?? ""));
     data = JSON.parse(cleaned);
