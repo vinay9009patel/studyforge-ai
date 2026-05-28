@@ -3769,8 +3769,13 @@ RULES:
 - STRICT: Follow the exact order above — Definition → Core Idea → Features → Types → How It Works → Applications → Pros → Cons → Terms → Summary. This order teaches from basic to advanced.
 `;
 
-const result =
-await askAI(prompt,"You are a mindmap generator. Write in English.");
+const ctrl = new AbortController();
+const tim = setTimeout(() => { try{ctrl.abort()}catch(e){} }, 20000);
+let result;
+try{
+result = await askGroq(prompt, "You are a mindmap generator. Write in English.", 4096, "llama-3.3-70b-versatile", ctrl.signal);
+}catch(e){ result = null; }
+clearTimeout(tim);
 
 return normalizeMindMapCode(result, topic, sourceText);
 }
@@ -7106,48 +7111,19 @@ desc.style.color = "#94a3b8";
 
 function buildNotesJsonPrompt(topic, extractedText){
 const extraContext = extractedText ? "EXTRA CONTEXT:\n" + extractedText : "";
-return `Create exam-ready study notes for "${topic}" and return ONLY valid JSON.
+return `Create exam-ready study notes for "${topic}". Return ONLY valid JSON.
 
 ${extraContext}
 
 RULES:
-- Be concise but complete.
-- Use short headings, short explanations, and point-wise content.
-- Cover the full topic clearly: definition, core idea, steps/method, examples, uses, advantages, disadvantages, important points, summary.
-- Every explanation should be 1-3 short sentences max.
-- For advantages, disadvantages, examples, operations, interview questions, FAQ, and exam pattern, keep each item compact but useful.
-- If the topic has methods, process, workflow, or algorithm, include all major steps in order.
-- If the topic has variants/types, include the main ones only with concise explanation.
-- Use simple teacher-style language.
-- Keep all content specific to "${topic}".
+- Concise, short sentences, point-wise. 1-3 sentences per item.
+- Cover: definition, core idea, how it works, examples, uses, pros/cons, key points, interview Q&A, cheat sheet.
+- Simple teacher language. Specific to "${topic}".
 - Return ONLY JSON. No markdown. No extra text.
-- For NON-programming topics, never include code.
-- Include code only for clearly programming/technical topics.
+- Code examples only for programming topics. No code for non-programming.
 
-JSON STRUCTURE:
-{
-  "topic": "${topic}",
-  "introduction": { "title": "${topic}", "definition": "1-2 line definition", "simple_explanation": "easy analogy or simple explanation in 1-2 lines" },
-  "sections": [
-    { "title": "Definition & Core Idea", "content": "1 short line", "points": [{ "heading": "heading", "explanation": "1-3 short sentences" }] },
-    { "title": "How It Works / Method", "content": "1 short line", "points": [{ "heading": "step or method", "explanation": "concise explanation" }] },
-    { "title": "Applications / Uses", "content": "1 short line", "points": [{ "heading": "use case", "explanation": "concise explanation" }] }
-  ],
-  "operations": [{ "name": "op name", "description": "short meaning", "algorithm_steps": ["step1","step2","step3"], "time_complexity": "O(?)", "space_complexity": "O(?)", "code_example": "only if programming topic", "example": "short walkthrough" }],
-  "types_or_variants": [{ "name": "type", "explanation": "short explanation", "characteristics": ["c1","c2"], "when_to_use": "short use case", "example": "short example" }],
-  "key_concepts": [{ "concept": "name", "simple_explanation": "1 line", "detailed_explanation": "1-3 short sentences" }],
-  "examples": [{ "title": "example title", "scenario": "short scenario", "explanation": "step-by-step short explanation", "visualization": "short text visualization" }],
-  "comparison_table": { "headers": ["A","B","C"], "rows": [["a1","b1","c1"]] },
-  "advantages": [{ "point": "advantage", "explanation": "short explanation" }],
-  "disadvantages": [{ "point": "disadvantage", "explanation": "short explanation" }],
-  "important_points": ["short exam point 1","short exam point 2"],
-  "common_mistakes": [{ "mistake": "common mistake", "correction": "short correction" }],
-  "interview_questions": [{ "question": "question", "answer": "short answer", "difficulty": "easy/medium/hard" }],
-  "faq": [{ "question": "question", "answer": "short answer" }],
-  "exam_pattern": [{ "question": "exam question", "answer": "expected short answer", "marks": "2/5/10", "exam_tip": "short tip" }],
-  "cheat_sheet": { "definition_line": "one-line definition", "key_formulas": ["f1"], "critical_points": ["p1"], "quick_recall": ["hook 1","hook 2"], "memory_tricks": [{"hint":"hook","for":"what it helps remember","type":"acronym/story/visual/rhyme","story":"short memory story","visual_clue":"mental image"}] },
-  "summary": "2-3 short sentences"
-}`;
+SCHEMA:
+topic:string, introduction:{title,definition,simple_explanation}, sections:[{title,content,points:[{heading,explanation}]}], operations:[{name,description,algorithm_steps,time_complexity,space_complexity,code_example,example}], types_or_variants:[{name,explanation,characteristics,when_to_use,example}], key_concepts:[{concept,simple_explanation,detailed_explanation}], examples:[{title,scenario,explanation,visualization}], comparison_table:{headers,rows}, advantages:[{point,explanation}], disadvantages:[{point,explanation}], important_points:[], common_mistakes:[{mistake,correction}], interview_questions:[{question,answer,difficulty}], faq:[{question,answer}], exam_pattern:[{question,answer,marks,exam_tip}], cheat_sheet:{definition_line,key_formulas,critical_points,quick_recall,memory_tricks:[{hint,for,type,story,visual_clue}]}, summary:"2-3 sentences"`;
 }
 
 async function generateNotes(){
@@ -7183,74 +7159,43 @@ notesOutput.innerHTML = `<div style="text-align:center;padding:50px 20px;">
 <div id="notesCountdown" style="margin-top:16px;font-size:40px;font-weight:900;background:linear-gradient(to right,#a78bfa,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">5</div>
 <div style="color:#64748b;font-size:12px;">Estimated time remaining</div>
 </div>`;
-startLoadingCountdown("notesCountdown", 20);
+startLoadingCountdown("notesCountdown", 35);
 
 const extractedText =
 await extractFileText(file);
 
 const notesPrompt = buildNotesJsonPrompt(topic, extractedText);
 
-const groqPrompt = `Generate concise, exam-ready study notes about "${topic}" in valid JSON. Keep everything SHORT — bullet points, short sentences, one-line definitions.
-
-${extractedText ? "Extra context: " + extractedText : ""}
-
-RULES:
-- Return ONLY valid JSON, no markdown
-- SHORT AND CONCISE — use bullet-style points, short definitions, avoid long paragraphs
-- ALL content must be SPECIFICALLY about "${topic}" — real examples, real use cases, real interview questions
-- Write explanations like a teacher explaining to a student — use analogies, simple language, real-life comparisons
-- For coding topics (DS, Algo, programming), include code examples
-- Include clever memory tricks / mnemonics (acronyms, rhymes, stories, visual imagery) — make them unforgettable
-- CRITICAL: If "${topic}" is a NON-programming topic (biology, history, chemistry, physics, arts, etc.), NEVER include code_example, code_snippet, or any programming code in any field. Return pure text/content only.
-- CRITICAL: ONLY include code_example/code_snippet if "${topic}" is explicitly a programming/technical topic (like Python, Java, Data Structures, Algorithms, Web Dev, etc.)
-
-JSON STRUCTURE:
-{
-  "topic": "${topic}",
-  "introduction": { "definition": "clear definition", "simple_explanation": "simple analogy-based explanation" },
-  "sections": [{ "title": "section title", "points": [{ "heading": "point", "explanation": "detailed explanation with examples" }] }],
-  "operations": [{ "name": "op name", "description": "what it does", "algorithm_steps": ["step1","step2"], "time_complexity": "O(?)", "space_complexity": "O(?)", "code_example": "code for coding topics only", "example": "walkthrough" }],
-  "types_or_variants": [{ "name": "type name", "explanation": "details", "characteristics": ["c1","c2"], "when_to_use": "when to use", "example": "example" }],
-  "key_concepts": [{ "concept": "name", "simple_explanation": "simple explanation", "detailed_explanation": "in-depth explanation" }],
-  "examples": [{ "title": "title", "scenario": "real scenario", "explanation": "step by step explanation", "visualization": "text diagram" }],
-  "comparison_table": { "headers": ["A","B","C"], "rows": [["a1","b1","c1"]] },
-  "advantages": [{ "point": "advantage", "explanation": "detail" }],
-  "disadvantages": [{ "point": "disadvantage", "explanation": "detail" }],
-  "important_points": ["point1","point2"],
-  "common_mistakes": [{ "mistake": "mistake", "correction": "correction" }],
-  "interview_questions": [{ "question": "real interview question", "answer": "answer with example", "difficulty": "easy/medium/hard" }],
-  "faq": [{ "question": "frequently asked question", "answer": "clear answer" }],
-  "exam_pattern": [{ "question": "exam question", "answer": "expected answer", "marks": "2/5/10" }],
-   "cheat_sheet": { "definition_line": "one line definition", "key_formulas": ["f1"], "critical_points": ["p1"], "quick_recall": ["1-line memory hook 1","1-line memory hook 2"], "memory_tricks": [{"hint":"catchy phrase/hook","for":"what it helps remember","type":"acronym/story/visual/rhyme","story":"a short fun story that makes it stick","visual_clue":"mental image to visualize"}] },
-  "summary": "2-3 sentence summary"
-}`;
-
-let aiResult = null;
-try{
-aiResult = await askAI(notesPrompt, "You are an expert teacher. Return ONLY valid JSON.");
-}catch(e){ console.log("AI call error:", e); }
-
 let data;
 let isJson = false;
 let notesData;
+
+async function callGroqForNotes(prompt){
+const ctrl = new AbortController();
+const tim = setTimeout(() => { try{ctrl.abort()}catch(e){} }, 25000);
+try{
+const r = await askGroq(prompt, "You are an expert teacher. Return ONLY valid JSON.", 8192, "llama-3.3-70b-versatile", ctrl.signal);
+clearTimeout(tim);
+return r;
+}catch(e){
+clearTimeout(tim);
+return null;
+}
+}
+
+let aiResult = await callGroqForNotes(notesPrompt);
 try{
 const cleaned = extractJsonFromText(String(aiResult ?? ""));
 data = JSON.parse(cleaned);
 isJson = true;
 }catch(parseError){
-console.log("Gemini/Groq JSON parse failed, trying fallback", parseError);
-}
-
-if(!isJson){
-const geminiPrompt = buildNotesJsonPrompt(topic, extractedText) + `\n\nPrevious response was invalid or incomplete. Rewrite it into fully valid JSON using the exact same schema.`;
+console.log("Groq JSON parse failed, retrying once", parseError);
+aiResult = await callGroqForNotes(notesPrompt);
 try{
-const geminiResult = await askAI(geminiPrompt, "You are an expert teacher. Return ONLY valid JSON.");
-if(geminiResult){
-const cleaned = extractJsonFromText(String(geminiResult ?? ""));
+const cleaned = extractJsonFromText(String(aiResult ?? ""));
 data = JSON.parse(cleaned);
 isJson = true;
-}
-}catch(e){}
+}catch(e2){}
 }
 
 if(isJson && data){
@@ -7324,12 +7269,15 @@ ${pct ? `<div style="font-size:12px;color:#64748b;margin-top:4px;">${pct}% compl
 </div>`;
 }
 
+// Start mind map generation in parallel with notes API
+const mmPromise = generateDetailedMindMap(topic, topic + (extractedText ? "\n" + extractedText.substring(0,500) : ""));
+
 // Render everything at once from GROQ data (no progressive delays)
 (async function(){
 try{
 setStatus("Generating mind map...", 30);
-mmCode = await generateDetailedMindMap(topic, topic + (extractedText ? "\n" + extractedText.substring(0,500) : ""));
-} catch(e){}
+mmCode = await mmPromise;
+} catch(e){ console.log("Mind map error:",e); }
 setStatus("Building notes...", 60);
 let fullHtml = preview || "";
 if(mmCode){
@@ -7706,8 +7654,19 @@ if(storyCountdown < -60){ clearInterval(window.__storyTimer); }
 }, 1000);
 if(status) status.textContent = "⏳ 20s...";
 window.__storyPlayTimeout = null;
-let storyText = await askGemini(prompt, "You are a fun storyteller for kids. Be cheerful. " + langInstr, 4096, sig);
-if(sig.aborted) return;
+// Race Gemini with 22s timeout
+let storyTimeoutSig = null;
+const storyTimId = setTimeout(() => { storyTimeoutSig = "done"; }, 22000);
+let storyText = await Promise.race([
+askGemini(prompt, "You are a fun storyteller for kids. Be cheerful. " + langInstr, 4096, sig).catch(e => {
+if(e?.name === "AbortError") return "__ABORTED__";
+throw e;
+}),
+new Promise(r => setTimeout(() => r("__TIMEOUT__"), 22000))
+]);
+clearTimeout(storyTimId);
+if(sig.aborted || storyText === "__ABORTED__") return;
+if(storyText === "__TIMEOUT__") storyText = null;
 if(storyText){
 clearInterval(window.__storyTimer);
 __lastApiSource = "gemini";
