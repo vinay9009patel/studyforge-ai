@@ -3783,39 +3783,36 @@ return normalizeMindMapCode(result, topic, sourceText);
 function renderFallbackMindMapHtml(code){
 const lines = String(code || "")
 .split("\n")
-.filter(line=>line.trim() && line.trim().toLowerCase() !== "mindmap");
+.map(l=>{
+let t=l.trim();
+t=t.replace(/^root\s*[\[({][\[({]\s*/i,"").replace(/\s*[\]})][\]})]\s*$/,"");
+t=t.replace(/^[\[({]/,"").replace(/[\]})]$/,"");
+return t;
+})
+.filter(l=>l && l.toLowerCase()!=="mindmap" && !/^root/i.test(l));
 
-if(!lines.length){
-return `<div class="mindmap-fallback-root">Mind Map</div>`;
-}
+if(!lines.length) return `<div class="mindmap-fallback-root">Mind Map</div>`;
 
 const nodes = lines.map(line=>({
-level:Math.max(0,Math.floor(((line.match(/^\s*/) || [""])[0].length)/2)),
+level:Math.max(0,Math.floor(((line.match(/^\s*/)||[""])[0].length)/2)),
 text:escapeHtml(line.trim())
 }));
 
-let html = "";
-const stack = [];
+if(!nodes.length) return `<div class="mindmap-fallback-root">Mind Map</div>`;
 
-nodes.forEach((node,index)=>{
-if(index === 0){
-html += `<div class="mindmap-fallback-root">${node.text}</div>`;
-return;
+const minLevel = Math.min(...nodes.map(n=>n.level));
+nodes.forEach(n=>n.level-=minLevel);
+
+let html = `<div class="mindmap-fallback-root">${escapeHtml(nodes[0].text)}</div>`;
+let stack = [];
+
+for(let i=1;i<nodes.length;i++){
+const n=nodes[i];
+while(stack.length && stack[stack.length-1] >= n.level){ html+=`</div>`; stack.pop(); }
+html+=`<div class="mindmap-fallback-branch"><div class="mindmap-fallback-node">${n.text}</div>`;
+stack.push(n.level);
 }
-
-while(stack.length && stack[stack.length-1] >= node.level){
-html += `</div>`;
-stack.pop();
-}
-
-html += `<div class="mindmap-fallback-branch"><div class="mindmap-fallback-node">${node.text}</div>`;
-stack.push(node.level);
-});
-
-while(stack.length){
-html += `</div>`;
-stack.pop();
-}
+while(stack.length){ html+=`</div>`; stack.pop(); }
 
 return `<div class="mindmap-fallback">${html}</div>`;
 }
@@ -7317,8 +7314,7 @@ const mmPromise = generateDetailedMindMap(topic, topic + (extractedText ? "\n" +
 
 // Show notes immediately, mind map loads when ready
 (async function(){
-setStatus("Building notes...", 60);
-let fullHtml = (preview || "") + buildVisualNotesHTML(data, topic);
+let fullHtml = `<div id="genStatus"></div>` + (preview || "") + buildVisualNotesHTML(data, topic);
 notesOutput.innerHTML = fullHtml;
 setStatus("✅ Notes ready! Loading mind map...", 80);
 })();
