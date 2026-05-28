@@ -4724,9 +4724,107 @@ async function askGemini(prompt, systemMsg, maxTok, signal){
   }
 }
 
+async function askDeepSeek(prompt, systemMsg, maxTok, signal){
+  if(!maxTok) maxTok = 8192;
+  const messages = systemMsg ? [
+    {role:"system",content:systemMsg},
+    {role:"user",content:prompt}
+  ] : [
+    {role:"user",content:prompt}
+  ];
+  const maxRetries = 2;
+  for(let attempt = 1; attempt <= maxRetries; attempt++){
+    try{
+      const resp = await fetch(WORKER_URL + "/deepseek/chat/completions", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({model:"deepseek-chat",messages,temperature:0.3,max_tokens:maxTok}),
+        signal
+      });
+      if(resp.ok){
+        const data = await resp.json();
+        if(data?.choices?.[0]?.message?.content){
+          return data.choices[0].message.content;
+        }
+      }
+      if(attempt < maxRetries && !signal?.aborted){
+        await new Promise(r => setTimeout(r, 2000));
+        continue;
+      }
+      console.log("DeepSeek failed with status:", resp.status);
+      return null;
+    }catch(e){
+      if(e.name === "AbortError") throw e;
+      if(attempt < maxRetries && !signal?.aborted){
+        await new Promise(r => setTimeout(r, 2000));
+        continue;
+      }
+      console.log("DeepSeek error:", e.message);
+      return null;
+    }
+  }
+  return null;
+}
+
+async function askDeepSeekStream(prompt, systemMsg, maxTok, signal, onChunk){
+  if(!maxTok) maxTok = 8192;
+  const messages = systemMsg ? [
+    {role:"system",content:systemMsg},
+    {role:"user",content:prompt}
+  ] : [
+    {role:"user",content:prompt}
+  ];
+  const maxRetries = 2;
+  for(let attempt = 1; attempt <= maxRetries; attempt++){
+    try{
+      const resp = await fetch(WORKER_URL + "/deepseek/chat/completions", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({model:"deepseek-chat",messages,temperature:0.3,max_tokens:maxTok,stream:true}),
+        signal
+      });
+      if(!resp.ok || !resp.body){
+        if(attempt < maxRetries && !signal?.aborted){
+          await new Promise(r => setTimeout(r, 2000));
+          continue;
+        }
+        return null;
+      }
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let fullText = "";
+      while(true){
+        const {done,value} = await reader.read();
+        if(done) break;
+        buffer += decoder.decode(value,{stream:true});
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+        for(const line of lines){
+          if(!line.startsWith("data: ") || line === "data: [DONE]") continue;
+          try{
+            const parsed = JSON.parse(line.slice(6));
+            const delta = parsed?.choices?.[0]?.delta?.content || "";
+            if(delta){ fullText += delta; onChunk(delta, fullText); }
+          }catch(e){}
+        }
+      }
+      return fullText;
+    }catch(e){
+      if(e.name === "AbortError") throw e;
+      if(attempt < maxRetries && !signal?.aborted){
+        await new Promise(r => setTimeout(r, 2000));
+        continue;
+      }
+      return null;
+    }
+  }
+  return null;
+}
+
 async function askGroqStream(prompt, systemMsg, maxTok, modelName, signal, onChunk){
   if(!maxTok) maxTok = 8192;
-  if(!modelName) modelName = "llama-3.3-70b-versatile";
+  if(!modelName) modelName = "llama-3.1-8b-instant";
   const messages = systemMsg ? [
     {role:"system",content:systemMsg},
     {role:"user",content:prompt}
@@ -4783,7 +4881,7 @@ async function askGroqStream(prompt, systemMsg, maxTok, modelName, signal, onChu
 
 async function askGroq(prompt, systemMsg, maxTok, modelName, signal){
   if(!maxTok) maxTok = 8192;
-  if(!modelName) modelName = "llama-3.3-70b-versatile";
+  if(!modelName) modelName = "llama-3.1-8b-instant";
   const messages = systemMsg ? [
     {role:"system",content:systemMsg},
     {role:"user",content:prompt}
@@ -4833,7 +4931,7 @@ let __lastApiSource = "none";
 
 async function askAI(prompt, systemMsg, maxTok, modelName){
   if(!maxTok) maxTok = 8192;
-  if(!modelName) modelName = "llama-3.3-70b-versatile";
+  if(!modelName) modelName = "llama-3.1-8b-instant";
   
   const messages = systemMsg ? [
     {role:"system",content:systemMsg},
@@ -4871,7 +4969,7 @@ async function askAI(prompt, systemMsg, maxTok, modelName){
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({
-        model:modelName || "llama-3.3-70b-versatile",
+        model:modelName || "llama-3.1-8b-instant",
         messages,
         temperature:0.3,
         max_tokens:maxTok,
@@ -6875,12 +6973,17 @@ let notesData;
 let aiResult = await (async function(){
 const ac = new AbortController();
 const t = setTimeout(() => { try{ac.abort()}catch(e){} }, 40000);
+let r;
 try{
-  const r = await askGemini(notesPrompt, "You are an expert teacher. Return ONLY valid JSON.", 8192, ac.signal);
+  r = await askGemini(notesPrompt, "You are an expert teacher. Return ONLY valid JSON.", 8192, ac.signal);
   clearTimeout(t);
   if(r) return r;
 }catch(e){ clearTimeout(t); }
-return await askGroq(notesPrompt, "You are an expert teacher. Return ONLY valid JSON.", 8192, "llama-3.3-70b-versatile");
+try{
+  r = await askDeepSeek(notesPrompt, "You are an expert teacher. Return ONLY valid JSON.", 8192, ac.signal);
+  if(r) return r;
+}catch(e){}
+return await askGroq(notesPrompt, "You are an expert teacher. Return ONLY valid JSON.", 8192, "llama-3.1-8b-instant");
 })();
 try{
   const cleaned = extractJsonFromText(String(aiResult ?? ""));
@@ -6891,12 +6994,17 @@ try{
   aiResult = await (async function(){
   const ac = new AbortController();
   const t = setTimeout(() => { try{ac.abort()}catch(e){} }, 40000);
+  let r;
   try{
-    const r = await askGemini(notesPrompt, "You are an expert teacher. Return ONLY valid JSON.", 8192, ac.signal);
+    r = await askGemini(notesPrompt, "You are an expert teacher. Return ONLY valid JSON.", 8192, ac.signal);
     clearTimeout(t);
     if(r) return r;
   }catch(e){ clearTimeout(t); }
-  return await askGroq(notesPrompt, "You are an expert teacher. Return ONLY valid JSON.", 8192, "llama-3.3-70b-versatile");
+  try{
+    r = await askDeepSeek(notesPrompt, "You are an expert teacher. Return ONLY valid JSON.", 8192, ac.signal);
+    if(r) return r;
+  }catch(e){}
+  return await askGroq(notesPrompt, "You are an expert teacher. Return ONLY valid JSON.", 8192, "llama-3.1-8b-instant");
   })();
   try{
     const cleaned = extractJsonFromText(String(aiResult ?? ""));
@@ -7392,23 +7500,23 @@ REMEMBER: Write ENTIRE story in ${langUpper}.${forbidEnglish}`;
 
 window.__storyTimer = null;
   try{
-let storyCountdown = 40;
+let storyCountdown = 60;
 window.__storyTimer = setInterval(function(){
 storyCountdown--;
 if(status) status.textContent = "⏳ " + Math.max(0, storyCountdown) + "s...";
 if(storyCountdown < -30){ clearInterval(window.__storyTimer); }
 }, 1000);
-if(status) status.textContent = "⏳ 40s...";
+if(status) status.textContent = "⏳ 60s...";
 window.__storyPlayTimeout = null;
-// Race Gemini with 22s timeout
+// Race Gemini with 60s timeout
 let storyTimeoutSig = null;
-const storyTimId = setTimeout(() => { storyTimeoutSig = "done"; }, 40000);
+const storyTimId = setTimeout(() => { storyTimeoutSig = "done"; }, 60000);
 let storyText = await Promise.race([
 askGemini(prompt, "You are a fun storyteller for kids. Be cheerful. " + langInstr, 4096, sig).catch(e => {
 if(e?.name === "AbortError") return "__ABORTED__";
 throw e;
 }),
-new Promise(r => setTimeout(() => r("__TIMEOUT__"), 40000))
+new Promise(r => setTimeout(() => r("__TIMEOUT__"), 60000))
 ]);
 clearTimeout(storyTimId);
 if(sig.aborted || storyText === "__ABORTED__") return;
@@ -7418,6 +7526,19 @@ clearInterval(window.__storyTimer);
 __lastApiSource = "gemini";
 __storyContentLang = lang;
  }else{
+// Try DeepSeek first, fall back to Groq
+clearInterval(window.__storyTimer);
+if(status) status.textContent = "⏳ DeepSeek...";
+storyText = await askDeepSeekStream(prompt, "You are a fun storyteller for kids. Be cheerful. " + langInstr, 4096, sig, function(chunk, full){
+if(content && !sig.aborted){
+content.innerHTML = full.replace(/\n/g, "<br>");
+}
+});
+if(sig.aborted) return;
+if(storyText){
+__lastApiSource = "deepseek";
+__storyContentLang = lang;
+}else{
 const groqPrompt = `CRITICAL LANGUAGE RULE: You MUST write the ENTIRE story in ${langUpper}.${forbidEnglish}
 
 The user typed topic as "${topic}". If this has a small spelling mistake, auto-correct it to the intended topic.
@@ -7446,9 +7567,8 @@ RULES:
 - STRICT: If the story doesn't teach ${topic}, rewrite it. The story IS the lesson.
 
 REMEMBER: Write ENTIRE story in ${langUpper}.${forbidEnglish}`;
-clearInterval(window.__storyTimer);
-if(status) status.textContent = "⏳ Streaming...";
-storyText = await askGroqStream(groqPrompt, "You are a fun storyteller for kids. Be cheerful. " + langInstr, 4096, "llama-3.3-70b-versatile", sig, function(chunk, full){
+if(status) status.textContent = "⏳ Groq...";
+storyText = await askGroqStream(groqPrompt, "You are a fun storyteller for kids. Be cheerful. " + langInstr, 4096, "llama-3.1-8b-instant", sig, function(chunk, full){
 if(content && !sig.aborted){
 content.innerHTML = full.replace(/\n/g, "<br>");
 }
@@ -8355,7 +8475,7 @@ let aiResult;
 try{
   const groqCtrl = new AbortController();
   const groqTim = setTimeout(() => { try{groqCtrl.abort()}catch(e){} }, 25000);
-  aiResult = await askGroq(prompt,"You are a quiz generator.", Math.min(chunkCount * 400 + 1000, 16000), "llama-3.3-70b-versatile", groqCtrl.signal);
+  aiResult = await askGroq(prompt,"You are a quiz generator.", Math.min(chunkCount * 400 + 1000, 16000), "llama-3.1-8b-instant", groqCtrl.signal);
   clearTimeout(groqTim);
 }catch(e){
   aiResult = null;

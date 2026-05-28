@@ -216,6 +216,23 @@ export default {
         return new Response(JSON.stringify({ text: resultText, success: true }), { status: 200, headers: { "Content-Type": "application/json", ...cors } });
       }
 
+      // === DEEPSEEK ENDPOINT ===
+      if (url.pathname.includes("/deepseek/chat/completions")) {
+        if (!env.DEEPSEEK_API_KEY) return new Response(JSON.stringify({ error: "DEEPSEEK_API_KEY missing" }), { status: 500, headers: { "Content-Type": "application/json", ...cors } });
+        const isStream = body.stream === true;
+        const ds = await fetch("https://api.deepseek.com/v1/chat/completions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: "Bearer " + env.DEEPSEEK_API_KEY },
+          body: JSON.stringify(body)
+        });
+        if(isStream && ds.ok && ds.body){
+          return new Response(ds.body, { status: 200, headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive", ...cors } });
+        }
+        let data;
+        try { data = await ds.json(); } catch (e) { data = { error: "DeepSeek error" }; }
+        return new Response(JSON.stringify(data), { status: ds.ok ? 200 : 500, headers: { "Content-Type": "application/json", ...cors } });
+      }
+
       if (!env.GROQ_API_KEY) return new Response(JSON.stringify({ error: "GROQ_API_KEY missing" }), { status: 500, headers: { "Content-Type": "application/json", ...cors } });
       const isStream = body.stream === true;
       const gr = await fetch("https://api.groq.com" + url.pathname + url.search, {
