@@ -7228,17 +7228,24 @@ return null;
 
 let aiResult = await callGroqForNotes(notesPrompt);
 try{
-const cleaned = extractJsonFromText(String(aiResult ?? ""));
-data = JSON.parse(cleaned);
-isJson = true;
+  const cleaned = extractJsonFromText(String(aiResult ?? ""));
+  data = JSON.parse(cleaned);
+  if(data && typeof data === "object") isJson = true;
 }catch(parseError){
-console.log("Groq JSON parse failed, retrying once", parseError);
-aiResult = await callGroqForNotes(notesPrompt);
-try{
-const cleaned = extractJsonFromText(String(aiResult ?? ""));
-data = JSON.parse(cleaned);
-isJson = true;
-}catch(e2){}
+  console.log("Groq JSON parse failed, retrying once", parseError);
+  aiResult = await callGroqForNotes(notesPrompt);
+  try{
+    const cleaned = extractJsonFromText(String(aiResult ?? ""));
+    data = JSON.parse(cleaned);
+    if(data && typeof data === "object") isJson = true;
+  }catch(e2){}
+}
+
+if(!isJson || !data){
+  const fallback = generateSmartFallbackNotes(topic);
+  notesOutput.innerHTML = marked.parse(fallback);
+  stopLoadingCountdown();
+  return;
 }
 
 if(isJson && data){
@@ -7272,13 +7279,6 @@ notesOutput.innerHTML = marked.parse(fallback);
 stopLoadingCountdown();
 return;
 }
-}
-
-if(!isJson){
-  const fallback = generateSmartFallbackNotes(topic);
-  notesOutput.innerHTML = marked.parse(fallback);
-  stopLoadingCountdown();
-  return;
 }
 
 let preview = "";
