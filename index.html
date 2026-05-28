@@ -262,17 +262,6 @@ font-weight:600;
 .light-mode .weak-topics{color:#2d2a24;}
 .light-mode .weak-topics span{background:#ede8df;padding:4px 12px;border-radius:20px;font-size:13px;color:#5c5548;display:inline-block;margin:4px 4px 0 0;}
 
-.light-mode .mindmap-fallback{
-background:#f3eee7;
-border:1px solid #d8d0c4;
-border-radius:16px;
-}
-.light-mode .mindmap-fallback-node{
-background:#ebe4da;
-border:1px solid #d8d0c4;
-border-radius:12px;
-padding:10px 16px;
-}
 
 .light-mode .loader{
 border-color:#d8d0c4;
@@ -1602,38 +1591,6 @@ padding:16px 18px;
 border-radius:22px;
 background:rgba(255,255,255,0.05);
 border:1px solid rgba(255,255,255,0.08);
-}
-
-.mindmap-fallback{
-padding:24px;
-border-radius:24px;
-background:linear-gradient(145deg,rgba(15,23,42,0.96),rgba(30,41,59,0.88));
-border:1px solid rgba(255,255,255,0.08);
-}
-
-.mindmap-fallback-root{
-display:inline-block;
-padding:14px 20px;
-border-radius:999px;
-background:linear-gradient(135deg,#8b5cf6,#3b82f6);
-font-weight:800;
-margin-bottom:18px;
-}
-
-.mindmap-fallback-branch{
-margin:14px 0 0 18px;
-padding-left:16px;
-border-left:2px solid rgba(139,92,246,0.35);
-}
-
-.mindmap-fallback-node{
-display:inline-block;
-padding:10px 14px;
-border-radius:16px;
-background:rgba(255,255,255,0.06);
-border:1px solid rgba(255,255,255,0.08);
-margin:10px 0 0;
-line-height:1.5;
 }
 
 </style>
@@ -3484,341 +3441,9 @@ currentInterviewTopic,
 )[fallbackIndex];
 }
 
-function buildFallbackMindMap(topic,sourceText = ""){
-const normalizedTopic =
-String(topic || "Topic").trim() || "Topic";
-const topicKey =
-normalizedTopic.toLowerCase();
 
-if(topicKey === "array" || topicKey === "arrays"){
-return [
-"mindmap",
-"  root((Array))",
-"    Definition",
-"      Ordered collection",
-"      Index based access",
-"      Same-type elements in many languages",
-"    Operations",
-"      Traversal",
-"      Insertion",
-"      Deletion",
-"      Updating values",
-"    Types",
-"      One dimensional array",
-"      Two dimensional array",
-"      Dynamic array",
-"    Complexity",
-"      Access O(1)",
-"      Search O(n)",
-"      Insert at end efficient",
-"      Middle insertion costly",
-"    Applications",
-"      Storing lists",
-"      Matrix representation",
-"      Lookup tables",
-"      Basis of other data structures"
-].join("\n");
-}
 
-const stopWords = new Set([
-"about","after","also","among","because","before","being","between","could","every","first","from","have","into","its","many","more","most","other","over","such","than","that","their","there","these","they","this","those","through","under","very","what","when","where","which","while","with","would","your","topic","important"
-]);
 
-function cleanNodeText(value,maxWords = 5){
-return String(value || "")
-.replace(/[#*`>_]/g," ")
-.replace(/[{}[\]"'\\]/g,"")
-.replace(/\s+/g," ")
-.trim()
-.split(/\s+/)
-.slice(0,maxWords)
-.join(" ");
-}
-
-const sourceLines = String(sourceText || "")
-.split("\n")
-.map(line=>line.trim())
-.filter(Boolean);
-
-const headingGroups = [];
-let activeGroup = null;
-
-sourceLines.forEach(line=>{
-if(/^#{1,6}\s+/.test(line)){
-const title = line.replace(/^#{1,6}\s+/,"").trim();
-if(title && title.toLowerCase() !== normalizedTopic.toLowerCase()){
-activeGroup = {
-title:title.replace(/[()]/g,""),
-items:[]
-};
-headingGroups.push(activeGroup);
-}
-return;
-}
-
-if(/^[-*]\s+/.test(line) && activeGroup){
-const item = line.replace(/^[-*]\s+/,"").trim();
-if(item){
-activeGroup.items.push(item.replace(/[()]/g,""));
-}
-}
-});
-
-const usefulHeadingGroups =
-headingGroups
-.map(group=>({
-title:cleanNodeText(group.title,4),
-items:Array.from(new Set(group.items))
-.map(item=>cleanNodeText(item,5))
-.filter(Boolean)
-.slice(0,4)
-}))
-.filter(group=>group.title)
-.slice(0,4);
-
-if(usefulHeadingGroups.length >= 1){
-return [
-"mindmap",
-`  root((${normalizedTopic.replace(/[()]/g,"")}))`,
-...usefulHeadingGroups.flatMap(group=>[
-`    ${group.title}`,
-...(group.items.length
-? group.items.map(item=>`      ${item}`)
-: [`      ${group.title} details`])
-])
-].join("\n");
-}
-
-const topicWords = normalizedTopic.split(/\s+/).filter(Boolean);
-const keywords = Array.from(new Set([
-...topicWords,
-...(String(sourceText || "")
-.toLowerCase()
-.match(/[a-zA-Z]{4,}/g) || [])
-])).slice(0,20);
-
-const genericBranches = [
-{
-title:"Definition",
-items:topicWords.length ? [`What is ${normalizedTopic}`] : ["Core concept"]
-},
-{
-title:"Key Features",
-items:keywords.slice(0,4).map(k=>k.charAt(0).toUpperCase()+k.slice(1))
-},
-{
-title:"How It Works",
-items:keywords.slice(4,8).map(k=>k.charAt(0).toUpperCase()+k.slice(1))
-},
-{
-title:"Applications",
-items:keywords.slice(8,12).map(k=>k.charAt(0).toUpperCase()+k.slice(1))
-}
-].filter(b=>b.items.length);
-
-if(genericBranches.length >= 2){
-return [
-"mindmap",
-`  root((${normalizedTopic.replace(/[()]/g,"")}))`,
-...genericBranches.flatMap(group=>[
-`    ${group.title}`,
-...group.items.map(item=>`      ${item}`)
-])
-].join("\n");
-}
-
-const sentences = String(sourceText || "")
-.replace(/\r/g," ")
-.split(/[.!?]\s+/)
-.map(sentence=>sentence.trim())
-.filter(sentence=>sentence.split(/\s+/).length >= 4);
-
-const fallbackKeywords = Array.from(
-new Set(
-String(sourceText || "")
-.replace(/[^a-zA-Z0-9\s]/g," ")
-.toLowerCase()
-.split(/\s+/)
-.map(word=>word.trim())
-.filter(word=>word.length > 4 && !stopWords.has(word))
-)
-).slice(0,20);
-
-const fallbackBranches = [
-{
-title:"Overview",
-items:sentences.slice(0,2).map(item=>cleanNodeText(item,6))
-},
-{
-title:"Key Concepts",
-items:fallbackKeywords.slice(0,4).map(item=>cleanNodeText(item,3))
-},
-{
-title:"Structure or Types",
-items:[...fallbackKeywords.slice(4,8), ...sentences.slice(2,3)]
-.map(item=>cleanNodeText(item,5))
-.filter(Boolean)
-},
-{
-title:"Uses and Importance",
-items:[...fallbackKeywords.slice(8,12), ...sentences.slice(3,4)]
-.map(item=>cleanNodeText(item,5))
-.filter(Boolean)
-}
-].map(group=>({
-title:group.title,
-items:Array.from(new Set(group.items)).filter(Boolean).slice(0,4)
-}));
-
-return [
-"mindmap",
-`  root((${normalizedTopic.replace(/[()]/g,"")}))`,
-...fallbackBranches.flatMap(group=>[
-`    ${group.title}`,
-...(group.items.length
-? group.items.map(item=>`      ${item.replace(/[()]/g,"")}`)
-: [
-`      ${normalizedTopic} basics`,
-`      ${group.title.toLowerCase()} details`
-])
-])
-].join("\n");
-}
-
-function normalizeMindMapCode(rawCode,topic,sourceText = ""){
-let code =
-String(rawCode || "")
-.replace(/```mermaid/gi,"")
-.replace(/```/g,"")
-.replace(/```/g,"")
-.trim();
-
-if(!code){
-return buildFallbackMindMap(topic,sourceText);
-}
-
-let lines = code
-.split("\n")
-.map(line=>line.replace(/\t/g,"  ").trimEnd())
-.filter(line=>line.trim());
-
-if(!lines.length){
-return buildFallbackMindMap(topic,sourceText);
-}
-
-const mindmapIdx = lines.findIndex(l => /^mindmap\b/i.test(l.trim()));
-if(mindmapIdx < 0){
-return buildFallbackMindMap(topic,sourceText);
-}
-
-lines = lines.slice(mindmapIdx);
-
-const cleaned = lines.map((line,index)=>{
-if(index === 0){
-return "mindmap";
-}
-
-const leadingSpaces =
-(line.match(/^\s*/) || [""])[0];
-
-const content =
-line
-.trim()
-.replace(/[""'']/g,"")
-.replace(/[{}\[\]]/g,"")
-.replace(/\s+/g," ");
-
-return `${leadingSpaces}${content}`.trimEnd();
-});
-
-if(!cleaned.some(line=>line.includes("root("))){
-cleaned.splice(1,0,`  root((${String(topic || "Topic").replace(/[()]/g,"")}))`);
-}
-
-return cleaned.join("\n");
-}
-
-async function generateDetailedMindMap(topic,sourceText = ""){
-const prompt = `
-Create a CHEAT SHEET style MIND MAP for "${topic}".
-
-Topic: ${topic}
-Source: ${sourceText}
-
-CRITICAL: Each node = 1-3 words max. Must cover topic fully in compact form. Follow a LOGICAL FLOW from basic to advanced.
-
-LOGICAL FLOW STRUCTURE — 8-10 branches with 3-5 sub-points each, 2 levels deep:
-1. Definition — what it is (simple, one-line)
-2. Core Idea — how it fundamentally works (key principle)
-3. Key Features — 4-5 distinguishing traits
-4. Types / Categories — main kinds with 1 example each
-5. How It Works — step-by-step process (3-4 ordered steps)
-6. Real Applications — 3-4 practical uses with context
-7. Pros — 3 advantages
-8. Cons — 3 limitations
-9. Key Terms — 4-5 important terms with short meaning
-10. Quick Summary — main takeaway
-
-RULES:
-- Labels: 1-3 words per node (real cheat sheet style)
-- Specific: use real examples, not generic placeholders
-- No empty branches — every node must have content
-- First line: mindmap | Valid Mermaid syntax | No markdown fences
-- English only
-- GOAL: 5 minutes of looking = full topic understanding
-- STRICT: Follow the exact order above — Definition → Core Idea → Features → Types → How It Works → Applications → Pros → Cons → Terms → Summary. This order teaches from basic to advanced.
-`;
-
-let result = await (async function(){
-const ac = new AbortController();
-const t = setTimeout(() => { try{ac.abort()}catch(e){} }, 12000);
-try{
-  const r = await askGemini(prompt, "You are a mindmap generator. Write in English.", 4096, ac.signal);
-  clearTimeout(t);
-  if(r) return r;
-}catch(e){ clearTimeout(t); }
-return await askGroq(prompt, "You are a mindmap generator. Write in English.", 4096, "llama-3.3-70b-versatile");
-})();
-
-return normalizeMindMapCode(result, topic, sourceText);
-}
-
-function renderFallbackMindMapHtml(code){
-const lines = String(code || "")
-.split("\n")
-.map(l=>{
-let t=l.trim();
-t=t.replace(/^root\s*[\[({][\[({]\s*/i,"").replace(/\s*[\]})][\]})]\s*$/,"");
-t=t.replace(/^[\[({]/,"").replace(/[\]})]$/,"");
-return t;
-})
-.filter(l=>l && l.toLowerCase()!=="mindmap" && !/^root/i.test(l));
-
-if(!lines.length) return `<div class="mindmap-fallback-root">Mind Map</div>`;
-
-const nodes = lines.map(line=>({
-level:Math.max(0,Math.floor(((line.match(/^\s*/)||[""])[0].length)/2)),
-text:escapeHtml(line.trim())
-}));
-
-if(!nodes.length) return `<div class="mindmap-fallback-root">Mind Map</div>`;
-
-const minLevel = Math.min(...nodes.map(n=>n.level));
-nodes.forEach(n=>n.level-=minLevel);
-
-let html = `<div class="mindmap-fallback-root">${escapeHtml(nodes[0].text)}</div>`;
-let stack = [];
-
-for(let i=1;i<nodes.length;i++){
-const n=nodes[i];
-while(stack.length && stack[stack.length-1] >= n.level){ html+=`</div>`; stack.pop(); }
-html+=`<div class="mindmap-fallback-branch"><div class="mindmap-fallback-node">${n.text}</div>`;
-stack.push(n.level);
-}
-while(stack.length){ html+=`</div>`; stack.pop(); }
-
-return `<div class="mindmap-fallback">${html}</div>`;
-}
 
 async function generateGeminiImage(promptText){
   try{
@@ -5100,38 +4725,52 @@ async function askGroqStream(prompt, systemMsg, maxTok, modelName, signal, onChu
   ] : [
     {role:"user",content:prompt}
   ];
-  try{
-    const resp = await fetch(WORKER_URL + "/openai/v1/chat/completions", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({model:modelName,messages,temperature:0.3,max_tokens:maxTok,stream:true}),
-      signal
-    });
-    if(!resp.ok || !resp.body) return null;
-    const reader = resp.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-    let fullText = "";
-    while(true){
-      const {done,value} = await reader.read();
-      if(done) break;
-      buffer += decoder.decode(value,{stream:true});
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
-      for(const line of lines){
-        if(!line.startsWith("data: ") || line === "data: [DONE]") continue;
-        try{
-          const parsed = JSON.parse(line.slice(6));
-          const delta = parsed?.choices?.[0]?.delta?.content || "";
-          if(delta){ fullText += delta; onChunk(delta, fullText); }
-        }catch(e){}
+  const maxRetries = 3;
+  for(let attempt = 1; attempt <= maxRetries; attempt++){
+    try{
+      const resp = await fetch(WORKER_URL + "/openai/v1/chat/completions", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({model:modelName,messages,temperature:0.3,max_tokens:maxTok,stream:true}),
+        signal
+      });
+      if(!resp.ok || !resp.body){
+        if(attempt < maxRetries && (resp.status === 429 || resp.status >= 500) && !signal?.aborted){
+          await new Promise(r => setTimeout(r, 2000));
+          continue;
+        }
+        return null;
       }
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let fullText = "";
+      while(true){
+        const {done,value} = await reader.read();
+        if(done) break;
+        buffer += decoder.decode(value,{stream:true});
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+        for(const line of lines){
+          if(!line.startsWith("data: ") || line === "data: [DONE]") continue;
+          try{
+            const parsed = JSON.parse(line.slice(6));
+            const delta = parsed?.choices?.[0]?.delta?.content || "";
+            if(delta){ fullText += delta; onChunk(delta, fullText); }
+          }catch(e){}
+        }
+      }
+      return fullText;
+    }catch(e){
+      if(e.name === "AbortError") throw e;
+      if(attempt < maxRetries && !signal?.aborted){
+        await new Promise(r => setTimeout(r, 2000));
+        continue;
+      }
+      return null;
     }
-    return fullText;
-  }catch(e){
-    if(e.name === "AbortError") throw e;
-    return null;
   }
+  return null;
 }
 
 async function askGroq(prompt, systemMsg, maxTok, modelName, signal){
@@ -5143,31 +4782,43 @@ async function askGroq(prompt, systemMsg, maxTok, modelName, signal){
   ] : [
     {role:"user",content:prompt}
   ];
-  try{
-    const response = await fetch(WORKER_URL + "/openai/v1/chat/completions",{
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({
-        model:modelName,
-        messages,
-        temperature:0.3,
-        max_tokens:maxTok,
-      }),
-      signal
-    });
-    if(response.ok){
-      const data = await response.json();
-      if(data?.choices?.[0]?.message?.content){
-        return data.choices[0].message.content;
+  const maxRetries = 3;
+  for(let attempt = 1; attempt <= maxRetries; attempt++){
+    try{
+      const response = await fetch(WORKER_URL + "/openai/v1/chat/completions",{
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({
+          model:modelName,
+          messages,
+          temperature:0.3,
+          max_tokens:maxTok,
+        }),
+        signal
+      });
+      if(response.ok){
+        const data = await response.json();
+        if(data?.choices?.[0]?.message?.content){
+          return data.choices[0].message.content;
+        }
       }
+      if(attempt < maxRetries && !signal?.aborted && (response.status === 429 || response.status >= 500)){
+        await new Promise(r => setTimeout(r, 2000));
+        continue;
+      }
+      console.log("   ❌ Groq failed with status:", response.status);
+      return null;
+    }catch(e){
+      if(e.name === "AbortError") throw e;
+      if(attempt < maxRetries && !signal?.aborted){
+        await new Promise(r => setTimeout(r, 2000));
+        continue;
+      }
+      console.log("   ❌ Groq error:", e.message);
+      return null;
     }
-    console.log("   âŒ Groq failed with status:", response.status);
-    return null;
-  }catch(e){
-    if(e.name === "AbortError") throw e;
-    console.log("   âŒ Groq error:", e.message);
-    return null;
   }
+  return null;
 }
 
 let __lastApiSource = "none";
@@ -7215,7 +6866,7 @@ let notesData;
 
 let aiResult = await (async function(){
 const ac = new AbortController();
-const t = setTimeout(() => { try{ac.abort()}catch(e){} }, 12000);
+const t = setTimeout(() => { try{ac.abort()}catch(e){} }, 40000);
 try{
   const r = await askGemini(notesPrompt, "You are an expert teacher. Return ONLY valid JSON.", 8192, ac.signal);
   clearTimeout(t);
@@ -7231,7 +6882,7 @@ try{
   console.log("Gemini JSON parse failed, retrying once", parseError);
   aiResult = await (async function(){
   const ac = new AbortController();
-  const t = setTimeout(() => { try{ac.abort()}catch(e){} }, 12000);
+  const t = setTimeout(() => { try{ac.abort()}catch(e){} }, 40000);
   try{
     const r = await askGemini(notesPrompt, "You are an expert teacher. Return ONLY valid JSON.", 8192, ac.signal);
     clearTimeout(t);
@@ -7266,6 +6917,43 @@ if(!data.examples) data.examples = [];
 if(!data.advantages) data.advantages = [];
 if(!data.disadvantages) data.disadvantages = [];
 if(!data.important_points) data.important_points = [];
+if(!data.types_or_variants) data.types_or_variants = [];
+if(!data.comparison_table && data.types_or_variants && data.types_or_variants.length >= 2){
+  const headers = ["Feature", ...data.types_or_variants.map(t => t.name || "Type")];
+  const rows = [];
+  const features = ["Definition", "Use Case", "Example", "Performance"];
+  for(const f of features){
+    const row = [f];
+    for(const t of data.types_or_variants){
+      row.push(t.explanation ? t.explanation.split(".")[0] : (t.characteristics?.[0] || t.name));
+    }
+    rows.push(row);
+  }
+  data.comparison_table = {headers, rows};
+}
+if(!data.comparison_table && data.advantages && data.disadvantages && data.advantages.length && data.disadvantages.length){
+  const rows = [["Advantages", ...data.advantages.slice(0,4).map(a => a.point || a.explanation || "")]];
+  rows.push(["Disadvantages", ...data.disadvantages.slice(0,4).map(d => d.point || d.explanation || "")]);
+  data.comparison_table = {headers:["Aspect", "Details"], rows};
+}
+if(!data.cheat_sheet){
+  const keyPoints = data.important_points?.length ? data.important_points.slice(0,5) : [];
+  const keyFormulas = data.key_concepts?.slice(0,3).map(k => `${k.concept}: ${k.simple_explanation || k.detailed_explanation || ""}`) || [];
+  const memoryTricks = data.key_concepts?.slice(0,4).map((k, i) => ({
+    hint: k.concept || `Key Point ${i+1}`,
+    for: k.simple_explanation || k.detailed_explanation || "",
+    type: i % 2 === 0 ? "story" : "acronym",
+    story: k.simple_explanation ? `Think of ${k.concept} as ${k.simple_explanation}` : (k.detailed_explanation ? k.detailed_explanation.split(".").slice(0,2).join(". ") : ""),
+    visual_clue: `Imagine ${k.concept || "this concept"} in action`
+  })) || [];
+  data.cheat_sheet = {
+    definition_line: data.introduction?.simple_explanation || data.introduction?.definition || `${topic} - Core Concept`,
+    key_formulas: keyFormulas,
+    critical_points: keyPoints,
+    quick_recall: data.sections?.slice(0,3).map(s => s.title || "") || [],
+    memory_tricks: memoryTricks
+  };
+}
 }
 
 let visualHtml = "";
@@ -7317,28 +7005,10 @@ ${pct ? `<div style="font-size:12px;color:#64748b;margin-top:4px;">${pct}% compl
 </div>`;
 }
 
-// Start mind map generation in parallel
-const mmPromise = generateDetailedMindMap(topic, topic + (extractedText ? "\n" + extractedText.substring(0,500) : ""));
-
-// Show notes immediately, mind map loads when ready
-(async function(){
 let fullHtml = `<div id="genStatus"></div>` + (preview || "") + buildVisualNotesHTML(data, topic);
 notesOutput.innerHTML = fullHtml;
-setStatus("✅ Notes ready! Loading mind map...", 80);
-})();
-
-// Load mind map after notes are displayed
-(async function(){
-try{
-const mmCode = await mmPromise;
-if(!mmCode) return;
-const treeHtml = renderFallbackMindMapHtml(mmCode);
-const mmHtml = `\n<div class="row" style="display:flex;gap:20px;margin-bottom:30px;"><div class="ai-diagram-card" style="flex:1;position:relative;" id="mindMapCard"><div class="ai-diagram-title">Mind Map</div><div id="notesMindMap">${treeHtml}</div></div></div>\n`;
-notesOutput.innerHTML = mmHtml + notesOutput.innerHTML;
-setStatus("✅ All done! Notes ready", 100);
-setTimeout(() => { const el = document.getElementById("genStatus"); if(el) el.style.display = "none"; }, 3000);
-}catch(e){ console.log("Mind map error:",e); }
-})();
+setStatus("✅ Notes ready!", 100);
+setTimeout(() => { const el = document.getElementById("genStatus"); if(el) el.style.display = "none"; }, 2000);
 
 setTimeout(function(){
   if(window.__visStoryScenes && document.getElementById("visStoryContainer")){
@@ -7696,17 +7366,17 @@ storyCountdown--;
 if(status) status.textContent = "⏳ " + Math.max(0, storyCountdown) + "s...";
 if(storyCountdown < -60){ clearInterval(window.__storyTimer); }
 }, 1000);
-if(status) status.textContent = "⏳ 20s...";
+if(status) status.textContent = "⏳ 40s...";
 window.__storyPlayTimeout = null;
 // Race Gemini with 22s timeout
 let storyTimeoutSig = null;
-const storyTimId = setTimeout(() => { storyTimeoutSig = "done"; }, 22000);
+const storyTimId = setTimeout(() => { storyTimeoutSig = "done"; }, 40000);
 let storyText = await Promise.race([
 askGemini(prompt, "You are a fun storyteller for kids. Be cheerful. " + langInstr, 4096, sig).catch(e => {
 if(e?.name === "AbortError") return "__ABORTED__";
 throw e;
 }),
-new Promise(r => setTimeout(() => r("__TIMEOUT__"), 22000))
+new Promise(r => setTimeout(() => r("__TIMEOUT__"), 40000))
 ]);
 clearTimeout(storyTimId);
 if(sig.aborted || storyText === "__ABORTED__") return;
@@ -7754,7 +7424,7 @@ content.innerHTML = full.replace(/\n/g, "<br>");
 if(sig.aborted) return;
 if(storyText){
 __lastApiSource = "groq";
-__storyContentLang = "english";
+__storyContentLang = lang;
 }
 }
 
@@ -7766,9 +7436,7 @@ if(finalStory && !finalStory.startsWith("🔴") && finalStory.length > 10){
 if(sig.aborted) return;
 clearInterval(window.__storyTimer);
 if(content && !__lastApiSource?.includes("groq")) content.innerHTML = finalStory.replace(/\n/g, "<br>");
-if(__lastApiSource === "groq" && lang !== "english"){
-if(content) content.innerHTML += '<div style="margin-top:12px;padding:10px 14px;border-radius:12px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.2);color:#fde68a;font-size:13px;">🌐 English mein story generate hui (Groq Hindi support nahi karta)</div>';
-}
+
 
 if(status) status.textContent = "🔊 Playing... 🎵";
 window.__storyPlayTimeout = setTimeout(function(){ playStoryAudio(); }, 500);
