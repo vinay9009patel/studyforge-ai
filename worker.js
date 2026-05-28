@@ -217,11 +217,15 @@ export default {
       }
 
       if (!env.GROQ_API_KEY) return new Response(JSON.stringify({ error: "GROQ_API_KEY missing" }), { status: 500, headers: { "Content-Type": "application/json", ...cors } });
+      const isStream = body.stream === true;
       const gr = await fetch("https://api.groq.com" + url.pathname + url.search, {
         method: "POST", 
         headers: { "Content-Type": "application/json", Authorization: "Bearer " + env.GROQ_API_KEY },
         body: JSON.stringify(body)
       });
+      if(isStream && gr.ok && gr.body){
+        return new Response(gr.body, { status: 200, headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive", ...cors } });
+      }
       let data;
       try { data = await gr.json(); } catch (e) { data = { error: "Groq error" }; }
       return new Response(JSON.stringify(data), { status: gr.ok ? 200 : 500, headers: { "Content-Type": "application/json", ...cors } });

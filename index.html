@@ -5091,6 +5091,49 @@ async function askGemini(prompt, systemMsg, maxTok, signal){
   }
 }
 
+async function askGroqStream(prompt, systemMsg, maxTok, modelName, signal, onChunk){
+  if(!maxTok) maxTok = 8192;
+  if(!modelName) modelName = "llama-3.3-70b-versatile";
+  const messages = systemMsg ? [
+    {role:"system",content:systemMsg},
+    {role:"user",content:prompt}
+  ] : [
+    {role:"user",content:prompt}
+  ];
+  try{
+    const resp = await fetch(WORKER_URL + "/openai/v1/chat/completions", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:modelName,messages,temperature:0.3,max_tokens:maxTok,stream:true}),
+      signal
+    });
+    if(!resp.ok || !resp.body) return null;
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let fullText = "";
+    while(true){
+      const {done,value} = await reader.read();
+      if(done) break;
+      buffer += decoder.decode(value,{stream:true});
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+      for(const line of lines){
+        if(!line.startsWith("data: ") || line === "data: [DONE]") continue;
+        try{
+          const parsed = JSON.parse(line.slice(6));
+          const delta = parsed?.choices?.[0]?.delta?.content || "";
+          if(delta){ fullText += delta; onChunk(delta, fullText); }
+        }catch(e){}
+      }
+    }
+    return fullText;
+  }catch(e){
+    if(e.name === "AbortError") throw e;
+    return null;
+  }
+}
+
 async function askGroq(prompt, systemMsg, maxTok, modelName, signal){
   if(!maxTok) maxTok = 8192;
   if(!modelName) modelName = "llama-3.3-70b-versatile";
@@ -7269,31 +7312,33 @@ ${pct ? `<div style="font-size:12px;color:#64748b;margin-top:4px;">${pct}% compl
 </div>`;
 }
 
-// Start mind map generation in parallel with notes API
+// Start mind map generation in parallel
 const mmPromise = generateDetailedMindMap(topic, topic + (extractedText ? "\n" + extractedText.substring(0,500) : ""));
 
-// Render everything at once from GROQ data (no progressive delays)
+// Show notes immediately, mind map loads when ready
+(async function(){
+setStatus("Building notes...", 60);
+let fullHtml = (preview || "") + buildVisualNotesHTML(data, topic);
+notesOutput.innerHTML = fullHtml;
+setStatus("✅ Notes ready! Loading mind map...", 80);
+})();
+
+// Load mind map after notes are displayed
 (async function(){
 try{
-setStatus("Generating mind map...", 30);
-mmCode = await mmPromise;
-} catch(e){ console.log("Mind map error:",e); }
-setStatus("Building notes...", 60);
-let fullHtml = preview || "";
-if(mmCode){
-fullHtml += `\n<div class="row" style="display:flex;gap:20px;margin-bottom:30px;"><div class="ai-diagram-card" style="flex:1;position:relative;cursor:pointer;transition:all 0.3s;" id="mindMapCard" onclick="toggleMindMapExpand('mindMapCard')"><button onclick="event.stopPropagation();toggleMindMapExpand('mindMapCard')" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.08);border:none;color:#94a3b8;font-size:16px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10;font-weight:700;">⛶</button><div class="ai-diagram-title">Mind Map</div><div class="mermaid" id="notesMindMap">${mmCode}</div></div></div>\n`;
-}
-fullHtml += buildVisualNotesHTML(data, topic);
-notesOutput.innerHTML = fullHtml;
-try{
-if(mmCode){ mermaid.initialize({startOnLoad:false,securityLevel:"loose",theme:"dark",mindmap:{}}); await mermaid.run({querySelector:"#notesMindMap"}); }
-}catch(err){
+const mmCode = await mmPromise;
+if(!mmCode) return;
+const mmHtml = `\n<div class="row" style="display:flex;gap:20px;margin-bottom:30px;"><div class="ai-diagram-card" style="flex:1;position:relative;cursor:pointer;transition:all 0.3s;" id="mindMapCard" onclick="toggleMindMapExpand('mindMapCard')"><button onclick="event.stopPropagation();toggleMindMapExpand('mindMapCard')" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.08);border:none;color:#94a3b8;font-size:16px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10;font-weight:700;">⛶</button><div class="ai-diagram-title">Mind Map</div><div class="mermaid" id="notesMindMap">${mmCode}</div></div></div>\n`;
+notesOutput.innerHTML = mmHtml + notesOutput.innerHTML;
+try{ mermaid.initialize({startOnLoad:false,securityLevel:"loose",theme:"dark",mindmap:{}}); await mermaid.run({querySelector:"#notesMindMap"}); }
+catch(err){
 console.log("Mermaid error:",err);
-const mmEl = document.getElementById("notesMindMap");
-if(mmEl) mmEl.innerHTML = renderFallbackMindMapHtml(mmCode);
+const el = document.getElementById("notesMindMap");
+if(el) el.innerHTML = renderFallbackMindMapHtml(mmCode);
 }
 setStatus("✅ All done! Notes ready", 100);
 setTimeout(() => { const el = document.getElementById("genStatus"); if(el) el.style.display = "none"; }, 3000);
+}catch(e){ console.log("Mind map error:",e); }
 })();
 
 setTimeout(function(){
@@ -7700,7 +7745,13 @@ RULES:
 - STRICT: If the story doesn't teach ${topic}, rewrite it. The story IS the lesson.
 
 REMEMBER: Write ENTIRE story in ${langUpper}.${forbidEnglish}`;
-storyText = await askGroq(groqPrompt, "You are a fun storyteller for kids. Be cheerful. " + langInstr, 4096, "llama-3.3-70b-versatile", sig);
+clearInterval(window.__storyTimer);
+if(status) status.textContent = "⏳ Streaming...";
+storyText = await askGroqStream(groqPrompt, "You are a fun storyteller for kids. Be cheerful. " + langInstr, 4096, "llama-3.3-70b-versatile", sig, function(chunk, full){
+if(content && !sig.aborted){
+content.innerHTML = full.replace(/\n/g, "<br>");
+}
+});
 if(sig.aborted) return;
 if(storyText){
 __lastApiSource = "groq";
@@ -7715,7 +7766,7 @@ if(storyText && !storyText.startsWith("🔴")){
 if(finalStory && !finalStory.startsWith("🔴") && finalStory.length > 10){
 if(sig.aborted) return;
 clearInterval(window.__storyTimer);
-if(content) content.innerHTML = finalStory.replace(/\n/g, "<br>");
+if(content && !__lastApiSource?.includes("groq")) content.innerHTML = finalStory.replace(/\n/g, "<br>");
 if(__lastApiSource === "groq" && lang !== "english"){
 if(content) content.innerHTML += '<div style="margin-top:12px;padding:10px 14px;border-radius:12px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.2);color:#fde68a;font-size:13px;">🌐 English mein story generate hui (Groq Hindi support nahi karta)</div>';
 }
