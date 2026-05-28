@@ -3769,7 +3769,7 @@ RULES:
 - STRICT: Follow the exact order above — Definition → Core Idea → Features → Types → How It Works → Applications → Pros → Cons → Terms → Summary. This order teaches from basic to advanced.
 `;
 
-let result = await askAI(prompt, "You are a mindmap generator. Write in English.", 4096, "llama-3.3-70b-versatile");
+let result = await askGemini(prompt, "You are a mindmap generator. Write in English.", 4096);
 if(!result) result = await askGroq(prompt, "You are a mindmap generator. Write in English.", 4096, "llama-3.3-70b-versatile");
 
 return normalizeMindMapCode(result, topic, sourceText);
@@ -7205,25 +7205,16 @@ let data;
 let isJson = false;
 let notesData;
 
-const callApiForNotes = async (prompt) => {
-const gc = new AbortController();
-const gt = setTimeout(() => { try{gc.abort()}catch(e){} }, 15000);
-try{
-  const r = await askGemini(prompt, "You are an expert teacher. Return ONLY valid JSON.", 8192, gc.signal);
-  clearTimeout(gt);
-  if(r) return r;
-}catch(e){ clearTimeout(gt); }
-return await askGroq(prompt, "You are an expert teacher. Return ONLY valid JSON.", 8192, "llama-3.3-70b-versatile");
-}
-
-let aiResult = await callApiForNotes(notesPrompt);
+let aiResult = await askGemini(notesPrompt, "You are an expert teacher. Return ONLY valid JSON.", 8192);
+if(!aiResult) aiResult = await askGroq(notesPrompt, "You are an expert teacher. Return ONLY valid JSON.", 8192, "llama-3.3-70b-versatile");
 try{
   const cleaned = extractJsonFromText(String(aiResult ?? ""));
   data = JSON.parse(cleaned);
   if(data && typeof data === "object") isJson = true;
 }catch(parseError){
-  console.log("Groq JSON parse failed, retrying once", parseError);
-  aiResult = await callApiForNotes(notesPrompt);
+  console.log("Gemini JSON parse failed, retrying once", parseError);
+  aiResult = await askGemini(notesPrompt, "You are an expert teacher. Return ONLY valid JSON.", 8192);
+  if(!aiResult) aiResult = await askGroq(notesPrompt, "You are an expert teacher. Return ONLY valid JSON.", 8192, "llama-3.3-70b-versatile");
   try{
     const cleaned = extractJsonFromText(String(aiResult ?? ""));
     data = JSON.parse(cleaned);
