@@ -4708,6 +4708,14 @@ async function askGemini(prompt, systemMsg, maxTok, signal){
       signal
     });
     const data = await resp.json();
+    if(data.success === false){
+      console.log("Gemini API error:", data.error, "(code:", data.code, ")");
+      return null;
+    }
+    if(!data || typeof data !== "object"){
+      console.log("Gemini: invalid response", data);
+      return null;
+    }
     return data.text || null;
   }catch(e){
     if(e.name === "AbortError") throw e;
@@ -6918,6 +6926,30 @@ if(!data.advantages) data.advantages = [];
 if(!data.disadvantages) data.disadvantages = [];
 if(!data.important_points) data.important_points = [];
 if(!data.types_or_variants) data.types_or_variants = [];
+if(data.operations) data.operations.forEach(op => {
+  if(op.algorithm_steps && typeof op.algorithm_steps === "string") op.algorithm_steps = op.algorithm_steps.split("\n").filter(Boolean);
+  if(!Array.isArray(op.algorithm_steps)) op.algorithm_steps = [];
+  if(op.characteristics && typeof op.characteristics === "string") op.characteristics = [op.characteristics];
+});
+if(data.interview_questions) data.interview_questions.forEach(iq => {
+  if(iq.follow_up && typeof iq.follow_up === "string") iq.follow_up = [iq.follow_up];
+  if(!Array.isArray(iq.follow_up)) iq.follow_up = [];
+});
+if(data.types_or_variants) data.types_or_variants.forEach(t => {
+  if(t.characteristics && typeof t.characteristics === "string") t.characteristics = [t.characteristics];
+  if(!Array.isArray(t.characteristics)) t.characteristics = [];
+});
+if(data.cheat_sheet){
+  const cs = data.cheat_sheet;
+  if(cs.key_formulas && typeof cs.key_formulas === "string") cs.key_formulas = [cs.key_formulas];
+  if(!Array.isArray(cs.key_formulas)) cs.key_formulas = [];
+  if(cs.critical_points && typeof cs.critical_points === "string") cs.critical_points = [cs.critical_points];
+  if(!Array.isArray(cs.critical_points)) cs.critical_points = [];
+  if(cs.quick_recall && typeof cs.quick_recall === "string") cs.quick_recall = [cs.quick_recall];
+  if(!Array.isArray(cs.quick_recall)) cs.quick_recall = [];
+  if(cs.memory_tricks && typeof cs.memory_tricks === "string") cs.memory_tricks = [cs.memory_tricks];
+  if(!Array.isArray(cs.memory_tricks)) cs.memory_tricks = [];
+}
 if(!data.comparison_table && data.types_or_variants && data.types_or_variants.length >= 2){
   const headers = ["Feature", ...data.types_or_variants.map(t => t.name || "Type")];
   const rows = [];
@@ -7360,11 +7392,11 @@ REMEMBER: Write ENTIRE story in ${langUpper}.${forbidEnglish}`;
 
 window.__storyTimer = null;
   try{
-let storyCountdown = 10;
+let storyCountdown = 40;
 window.__storyTimer = setInterval(function(){
 storyCountdown--;
 if(status) status.textContent = "⏳ " + Math.max(0, storyCountdown) + "s...";
-if(storyCountdown < -60){ clearInterval(window.__storyTimer); }
+if(storyCountdown < -30){ clearInterval(window.__storyTimer); }
 }, 1000);
 if(status) status.textContent = "⏳ 40s...";
 window.__storyPlayTimeout = null;
@@ -7436,6 +7468,9 @@ if(finalStory && !finalStory.startsWith("🔴") && finalStory.length > 10){
 if(sig.aborted) return;
 clearInterval(window.__storyTimer);
 if(content && !__lastApiSource?.includes("groq")) content.innerHTML = finalStory.replace(/\n/g, "<br>");
+if(__lastApiSource === "groq" && lang !== "english"){
+if(content) content.innerHTML += '<div style="margin-top:12px;padding:10px 14px;border-radius:12px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.2);color:#fde68a;font-size:13px;">🌐 English mein story generate hui (Groq multilingual support limited)</div>';
+}
 
 
 if(status) status.textContent = "🔊 Playing... 🎵";
