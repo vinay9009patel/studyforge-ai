@@ -4045,9 +4045,8 @@ function retryOwnCamera(){
     ownCamStream?.getTracks().forEach(t=>t.stop());
     ownCamStream = null;
     stopVoiceInput();
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const constraints = {video:{width:320,height:240,facingMode:"user"},audio:false};
-    navigator.mediaDevices.getUserMedia(constraints)
+            const constraints = {video:{width:{ideal:320},height:{ideal:240},facingMode:"user"},audio:true};
+            navigator.mediaDevices.getUserMedia(constraints)
     .then(stream=>{
         ownCamStream = stream;
         if(video){
@@ -4136,8 +4135,7 @@ renderInterviewScreen();
                 camMsg.innerHTML = `<div style="text-align:center;padding:30px;"><div style="font-size:60px;margin-bottom:14px;">📷</div><div style="font-size:20px;font-weight:800;margin-bottom:10px;color:#f87171;">Camera Not Available</div><div style="color:#94a3b8;font-size:14px;line-height:1.7;">Camera requires HTTPS. Use a local server (Live Server) instead of opening file directly.</div></div>`;
             }
         }else{
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            const constraints = {video:{width:320,height:240,facingMode:"user"},audio:false};
+            const constraints = {video:{width:{ideal:320},height:{ideal:240},facingMode:"user"},audio:true};
             navigator.mediaDevices.getUserMedia(constraints)
             .then(stream=>{
                 ownCamStream = stream;
@@ -4195,6 +4193,7 @@ renderInterviewScreen();
 }
 
 async function submitInterviewAnswer(){
+voiceCommittedText = "";
 if(interviewerGender === "own"){
 isListening = false;
 if(voiceRecognition){
@@ -4417,6 +4416,9 @@ function startVoiceRecognition(){
         voiceRecognition = null;
     }
     
+    // Sync committed text with current textarea to avoid duplicates across restarts
+    voiceCommittedText = textarea.value;
+    
     console.log("🎤 Starting Voice Recognition...");
     showMicStatus("🎤 Listening... Speak now!", "active");
     
@@ -4434,12 +4436,12 @@ function startVoiceRecognition(){
         console.log("🎤 Voice result received");
         
         let interim = "";
-        let final = "";
+        let newFinal = "";
         
         for(let i = event.resultIndex; i < event.results.length; i++){
             const transcript = event.results[i][0].transcript;
             if(event.results[i].isFinal){
-                final += transcript + " ";
+                newFinal += transcript + " ";
                 console.log("   📝 Final:", transcript);
             } else {
                 interim += transcript;
@@ -4447,11 +4449,15 @@ function startVoiceRecognition(){
             }
         }
         
-        if(final){
-            voiceCommittedText += final.charAt(0).toUpperCase() + final.slice(1);
+        if(newFinal){
+            const trimmed = newFinal.trim();
+            // Dedup: only append if not already at end of committed text
+            if(!voiceCommittedText.trim().endsWith(trimmed)) {
+                voiceCommittedText += trimmed.charAt(0).toUpperCase() + trimmed.slice(1) + " ";
+            }
         }
         
-        const displayText = voiceCommittedText + (interim ? interim.charAt(0).toUpperCase() + interim.slice(1) : "");
+        const displayText = voiceCommittedText + (interim ? " " + interim.charAt(0).toUpperCase() + interim.slice(1) : "");
         textarea.value = displayText;
         textarea.scrollTop = textarea.scrollHeight;
     };
@@ -9158,7 +9164,7 @@ chatHistory.innerHTML += `
 `;
 chatHistory.scrollTop =
 chatHistory.scrollHeight;
-startLoadingCountdown("mentorCountdown", 8);
+startLoadingCountdown("mentorCountdown", 60);
 
 const response =
 await askAI(input,`You are a helpful AI study mentor. Always respond in English. Format your answer clearly: use **bold** for key terms, bullet points for lists, short paragraphs, and code blocks with \`\`\` where relevant. Start with a brief direct answer, then explain step by step.`);
