@@ -4998,10 +4998,10 @@ async function askAI(prompt, systemMsg, maxTok, modelName){
   
   console.log("🤖 === askAI called ===");
   
-  // Gemini with 12s timeout
-  console.log("   🌐 Trying Gemini (12s timeout)...");
+  // 1. Gemini with 30s timeout
+  console.log("   🌐 Trying Gemini (30s timeout)...");
   const geminiController = new AbortController();
-  const geminiTimer = setTimeout(() => { try{geminiController.abort()}catch(e){} }, 12000);
+  const geminiTimer = setTimeout(() => { try{geminiController.abort()}catch(e){} }, 30000);
   try{
     const geminiResult = await askGemini(prompt, systemMsg, maxTok, geminiController.signal);
     clearTimeout(geminiTimer);
@@ -5013,10 +5013,23 @@ async function askAI(prompt, systemMsg, maxTok, modelName){
   }catch(gemErr){
     clearTimeout(geminiTimer);
     if(gemErr.name !== "AbortError") console.log("   ❌ Gemini error:", gemErr.message);
-    else console.log("   ⏱ Gemini timed out, switching to Groq...");
+    else console.log("   ⏱ Gemini timed out, switching...");
   }
   
-  // Groq fallback with 25s timeout
+  // 2. DeepSeek fallback
+  console.log("   🔄 Trying DeepSeek...");
+  try{
+    const deepseekResult = await askDeepSeek(prompt, systemMsg, maxTok);
+    if(deepseekResult){
+      console.log("   ✅ DeepSeek success!");
+      __lastApiSource = "deepseek";
+      return deepseekResult;
+    }
+  }catch(dsErr){
+    console.log("   ❌ DeepSeek error:", dsErr.message);
+  }
+  
+  // 3. Groq fallback with 25s timeout
   console.log("   🔄 Trying Groq fallback (25s timeout)...");
   const groqController = new AbortController();
   const groqTimer = setTimeout(() => { try{groqController.abort()}catch(e){} }, 25000);
@@ -5042,9 +5055,7 @@ async function askAI(prompt, systemMsg, maxTok, modelName){
         return data.choices[0].message.content;
       }
     }
-    
     console.log("   ❌ Groq failed with status:", response.status);
-    
   }catch(workerErr){
     clearTimeout(groqTimer);
     console.log("   ❌ Groq error:", workerErr.message);
@@ -7564,76 +7575,61 @@ if(storyCountdown < -30){ clearInterval(window.__storyTimer); }
 }, 1000);
 if(status) status.textContent = "⏳ 60s...";
 window.__storyPlayTimeout = null;
-// Race Gemini with 60s timeout
-let storyTimeoutSig = null;
-const storyTimId = setTimeout(() => { storyTimeoutSig = "done"; }, 60000);
-let storyText = await Promise.race([
-askGemini(prompt, "You are a fun storyteller for kids. Be cheerful. " + langInstr, 4096, sig).catch(e => {
-if(e?.name === "AbortError") return "__ABORTED__";
-throw e;
-}),
-new Promise(r => setTimeout(() => r("__TIMEOUT__"), 60000))
-]);
-clearTimeout(storyTimId);
-if(sig.aborted || storyText === "__ABORTED__") return;
-if(storyText === "__TIMEOUT__") storyText = null;
-if(storyText){
-clearInterval(window.__storyTimer);
-__lastApiSource = "gemini";
-__storyContentLang = lang;
- }else{
-// Try DeepSeek first, fall back to OpenRouter
-clearInterval(window.__storyTimer);
-if(status) status.textContent = "⏳ DeepSeek...";
-storyText = await askDeepSeekStream(prompt, "You are a fun storyteller for kids. Be cheerful. " + langInstr, 4096, sig, function(chunk, full){
-if(content && !sig.aborted){
-content.innerHTML = full.replace(/\n/g, "<br>");
-}
-});
+
+// === PARALLEL: Fire all 3 APIs at once, same rich prompt ===
+let geminiStory = null, deepseekStory = null, openrouterStory = null;
+let geminiWorking = false, deepseekWorking = false, openrouterWorking = false;
+const sysMsg = "You are a fun storyteller for kids. Be cheerful. " + langInstr;
+
+const geminiP = (async () => {
+  try {
+    const result = await Promise.race([
+      askGemini(prompt, sysMsg, 4096, sig),
+      new Promise(r => setTimeout(() => r(null), 60000))
+    ]);
+    if(result && !sig.aborted){ geminiStory = result; geminiWorking = true; }
+  } catch(e) { if(e?.name === "AbortError") return; }
+})();
+
+const deepseekP = (async () => {
+  try {
+    const result = await askDeepSeekStream(prompt, sysMsg, 4096, sig, function(chunk, full){
+      if(content && !sig.aborted && !geminiStory){
+        content.innerHTML = full.replace(/\n/g, "<br>");
+      }
+    });
+    if(result && !sig.aborted){ deepseekStory = result; deepseekWorking = true; }
+  } catch(e) {}
+})();
+
+const openrouterP = (async () => {
+  try {
+    const result = await askOpenRouterStream(prompt, sysMsg, 4096, sig, function(chunk, full){
+      if(content && !sig.aborted && !geminiStory && !deepseekStory){
+        content.innerHTML = full.replace(/\n/g, "<br>");
+      }
+    });
+    if(result && !sig.aborted){ openrouterStory = result; openrouterWorking = true; }
+  } catch(e) {}
+})();
+
+await Promise.allSettled([geminiP, deepseekP, openrouterP]);
 if(sig.aborted) return;
-if(storyText){
-__lastApiSource = "deepseek";
-__storyContentLang = lang;
-}else{
-const openRouterPrompt = `CRITICAL LANGUAGE RULE: You MUST write the ENTIRE story in ${langUpper}.${forbidEnglish}
 
-The user typed topic as "${topic}". If this has a small spelling mistake, auto-correct it to the intended topic.
-
-You are a FUN STORYTELLER TEACHER. Teach the corrected topic to a 10-year-old child through a story in ${langUpper}.
-
-${langInstr}
-
-CRITICAL: The story MUST teach what "${topic}" actually IS. Every part of the story must explain a real concept of "${topic}". Do NOT write a generic fairy tale - the story itself IS the lesson.
-
-STRUCTURE:
-1. Introduce the main concept of ${topic} in a fun way
-2. Show how it works through the story events (the characters' journey = the actual process of ${topic})
-3. Have characters face problems that demonstrate real aspects of ${topic}
-4. End with the characters succeeding because they understood ${topic}
-
-RULES:
-- Child knows NOTHING about this topic. Explain from zero.
-- Every paragraph must teach something real about ${topic}
-- Use simple words, fun characters, magical places
-- Use fun sounds and expressions in ${langUpper}
-- Short paragraphs (2-3 lines) for easy listening
-- End with a fun conclusion in ${langUpper}
-- 150-300 words only (short but covers the FULL topic)
-- CRITICAL: Keep it short but make sure the ENTIRE topic is explained clearly
-- STRICT: If the story doesn't teach ${topic}, rewrite it. The story IS the lesson.
-
-REMEMBER: Write ENTIRE story in ${langUpper}.${forbidEnglish}`;
-if(status) status.textContent = "⏳ OpenRouter...";
-storyText = await askOpenRouterStream(openRouterPrompt, "You are a fun storyteller for kids. Be cheerful. " + langInstr, 4096, sig, function(chunk, full){
-if(content && !sig.aborted){
-content.innerHTML = full.replace(/\n/g, "<br>");
-}
-});
-if(sig.aborted) return;
-if(storyText){
-__lastApiSource = "openrouter";
-__storyContentLang = lang;
-}
+// Priority: Gemini → DeepSeek → OpenRouter
+let storyText = null;
+if(geminiWorking && geminiStory){
+  storyText = geminiStory;
+  __lastApiSource = "gemini";
+  __storyContentLang = lang;
+} else if(deepseekWorking && deepseekStory){
+  storyText = deepseekStory;
+  __lastApiSource = "deepseek";
+  __storyContentLang = lang;
+} else if(openrouterWorking && openrouterStory){
+  storyText = openrouterStory;
+  __lastApiSource = "openrouter";
+  __storyContentLang = lang;
 }
 
 let finalStory = storyText;
@@ -8532,12 +8528,30 @@ IMPORTANT: Generate exactly ${chunkCount} unique questions.`;
 
 let aiResult;
 try{
-  const groqCtrl = new AbortController();
-  const groqTim = setTimeout(() => { try{groqCtrl.abort()}catch(e){} }, 25000);
-  aiResult = await askGroq(prompt,"You are a quiz generator.", Math.min(chunkCount * 400 + 1000, 16000), "llama-3.1-8b-instant", groqCtrl.signal);
-  clearTimeout(groqTim);
+  // 1. Gemini with 30s
+  const gemCtrl = new AbortController();
+  const gemTim = setTimeout(() => { try{gemCtrl.abort()}catch(e){} }, 30000);
+  aiResult = await askGemini(prompt, "You are a quiz generator.", Math.min(chunkCount * 400 + 1000, 16000), gemCtrl.signal);
+  clearTimeout(gemTim);
 }catch(e){
   aiResult = null;
+}
+if(!aiResult){
+  // 2. DeepSeek
+  try{
+    aiResult = await askDeepSeek(prompt, "You are a quiz generator.", Math.min(chunkCount * 400 + 1000, 16000));
+  }catch(e){ aiResult = null; }
+}
+if(!aiResult){
+  // 3. Groq with 25s
+  try{
+    const groqCtrl = new AbortController();
+    const groqTim = setTimeout(() => { try{groqCtrl.abort()}catch(e){} }, 25000);
+    aiResult = await askGroq(prompt, "You are a quiz generator.", Math.min(chunkCount * 400 + 1000, 16000), "llama-3.1-8b-instant", groqCtrl.signal);
+    clearTimeout(groqTim);
+  }catch(e){
+    aiResult = null;
+  }
 }
 
 let chunk;
