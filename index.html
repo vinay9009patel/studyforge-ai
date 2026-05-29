@@ -9165,29 +9165,23 @@ chatHistory.scrollTop =
 chatHistory.scrollHeight;
 startLoadingCountdown("mentorCountdown", 60);
 
-const response =
-await askAI(input,`You are a helpful AI study mentor. Always respond in English. Format your answer clearly: use **bold** for key terms, bullet points for lists, short paragraphs, and code blocks with \`\`\` where relevant. Start with a brief direct answer, then explain step by step.`);
+const sysMsg = `You are a helpful AI study mentor. Always respond in English. Format your answer clearly: use **bold** for key terms, bullet points for lists, short paragraphs, and code blocks with \`\`\` where relevant. Start with a brief direct answer, then explain step by step.`;
 
-let mentorResponse = response;
-if(!mentorResponse || mentorResponse.startsWith("🔴")){
-    mentorResponse = "❌ Sorry, the AI service is temporarily unavailable. Please try again in a moment.";
-}
-
+let mentorResponse = await (async function(){
+const ac = new AbortController();
+const t = setTimeout(() => { try{ac.abort()}catch(e){} }, 30000);
+let r;
 try{
-if(response && !response.startsWith("🔴")){
-const geminiCheckPrompt = `As a professor, fact-check and improve this mentor response about "${input}".
+r = await askGemini(input, sysMsg, 4096, ac.signal);
+clearTimeout(t);
+if(r && !r.startsWith("🔴")){ console.log("mentor gemini"); __lastApiSource="gemini"; return r; }
+}catch(e){ clearTimeout(t); }
+return await askGroq(input, sysMsg, 4096, "llama-3.1-8b-instant");
+})();
 
-Mentor response:
-${response}
-
-Fix any errors, add missing key points, improve clarity. Return ONLY the improved response.`;
-
-const geminiResult = await askAI(geminiCheckPrompt, "You are a strict professor fact-checker.");
-if(geminiResult && !geminiResult.startsWith("🔴") && geminiResult.length > 50){
-mentorResponse = geminiResult;
+if(!mentorResponse){
+  mentorResponse = "❌ Sorry, the AI service is temporarily unavailable. Please try again in a moment.";
 }
-}
-}catch(e){console.log("Gemini mentor check skipped:",e.message)}
 
 stopLoadingCountdown();
 const mentorLoadingCard = document.getElementById("mentorLoadingCard");
