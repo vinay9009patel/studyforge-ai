@@ -7313,9 +7313,9 @@ if(storyCountdown < -30){ clearInterval(window.__storyTimer); }
 if(status) status.textContent = "⏳ 60s...";
 window.__storyPlayTimeout = null;
 
-// === PARALLEL: Fire Gemini + OpenRouter at once ===
-let geminiStory = null, openrouterStory = null;
-let geminiWorking = false, openrouterWorking = false;
+// === PARALLEL: Fire Gemini + OpenRouter + Groq at once ===
+let geminiStory = null, openrouterStory = null, groqStory = null;
+let geminiWorking = false, openrouterWorking = false, groqWorking = false;
 const sysMsg = "You are a fun storyteller for kids. Be cheerful. " + langInstr;
 
 const geminiP = (async () => {
@@ -7328,10 +7328,21 @@ const geminiP = (async () => {
   } catch(e) { if(e?.name === "AbortError") return; }
 })();
 
+const groqP = (async () => {
+  try {
+    const result = await askGroqStream(prompt, sysMsg, 4096, "llama-3.1-8b-instant", sig, function(chunk, full){
+      if(content && !sig.aborted && !geminiStory){
+        content.innerHTML = full.replace(/\n/g, "<br>");
+      }
+    });
+    if(result && !sig.aborted){ groqStory = result; groqWorking = true; }
+  } catch(e) {}
+})();
+
 const openrouterP = (async () => {
   try {
     const result = await askOpenRouterStream(prompt, sysMsg, 4096, sig, function(chunk, full){
-      if(content && !sig.aborted && !geminiStory){
+      if(content && !sig.aborted && !geminiStory && !groqStory){
         content.innerHTML = full.replace(/\n/g, "<br>");
       }
     });
@@ -7339,14 +7350,18 @@ const openrouterP = (async () => {
   } catch(e) {}
 })();
 
-await Promise.allSettled([geminiP, openrouterP]);
+await Promise.allSettled([geminiP, groqP, openrouterP]);
 if(sig.aborted) return;
 
-// Priority: Gemini → OpenRouter
+// Priority: Gemini → Groq → OpenRouter
 let storyText = null;
 if(geminiWorking && geminiStory){
   storyText = geminiStory;
   __lastApiSource = "gemini";
+  __storyContentLang = lang;
+} else if(groqWorking && groqStory){
+  storyText = groqStory;
+  __lastApiSource = "groq";
   __storyContentLang = lang;
 } else if(openrouterWorking && openrouterStory){
   storyText = openrouterStory;
