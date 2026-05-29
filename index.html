@@ -3646,6 +3646,18 @@ if(transcriptBox){
 transcriptBox.scrollTop =
 transcriptBox.scrollHeight;
 }
+
+// Reassign camera stream to new video element after re-render
+if(interviewerGender === "own" && ownCamStream){
+const video = document.getElementById("ownCamVideo");
+if(video){
+video.srcObject = ownCamStream;
+video.muted = true;
+video.style.display = "block";
+}
+const camMsg = document.getElementById("ownCamMessage");
+if(camMsg) camMsg.style.display = "none";
+}
 }
 
 async function askCurrentInterviewQuestion(){
@@ -4149,7 +4161,9 @@ renderInterviewScreen();
                 if(camMsg) camMsg.style.display = "none";
                 const retryBtn = document.getElementById("ownCamRetry");
                 if(retryBtn) retryBtn.style.display = "none";
-                startOwnAutoMic(stream);
+                // Try starting mic after camera ready (textarea might exist if question rendered)
+                const ta = document.getElementById("interviewAnswer");
+                if(ta && !isListening) startOwnAutoMic(stream);
             })
             .catch(err=>{
                 console.log("Camera error:",err);
@@ -4173,6 +4187,10 @@ renderInterviewScreen();
     }
 
     await askCurrentInterviewQuestion();
+
+    if(interviewerGender === "own" && ownCamStream && !isListening){
+        startOwnAutoMic();
+    }
 
     interviewTimer = setInterval(()=>{
     interviewTimeLeft--;
@@ -9170,6 +9188,9 @@ const response =
 await askAI(input,`You are a helpful AI study mentor. Always respond in English. Format your answer clearly: use **bold** for key terms, bullet points for lists, short paragraphs, and code blocks with \`\`\` where relevant. Start with a brief direct answer, then explain step by step.`);
 
 let mentorResponse = response;
+if(!mentorResponse || mentorResponse.startsWith("🔴")){
+    mentorResponse = "❌ Sorry, the AI service is temporarily unavailable. Please try again in a moment.";
+}
 
 try{
 if(response && !response.startsWith("🔴")){
