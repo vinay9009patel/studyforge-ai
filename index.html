@@ -4617,104 +4617,6 @@ async function askGemini(prompt, systemMsg, maxTok, signal){
   }
 }
 
-async function askDeepSeek(prompt, systemMsg, maxTok, signal){
-  if(!maxTok) maxTok = 8192;
-  const messages = systemMsg ? [
-    {role:"system",content:systemMsg},
-    {role:"user",content:prompt}
-  ] : [
-    {role:"user",content:prompt}
-  ];
-  const maxRetries = 2;
-  for(let attempt = 1; attempt <= maxRetries; attempt++){
-    try{
-      const resp = await fetch(WORKER_URL + "/deepseek/chat/completions", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({model:"deepseek-chat",messages,temperature:0.3,max_tokens:maxTok}),
-        signal
-      });
-      if(resp.ok){
-        const data = await resp.json();
-        if(data?.choices?.[0]?.message?.content){
-          return data.choices[0].message.content;
-        }
-      }
-      if(attempt < maxRetries && !signal?.aborted){
-        await new Promise(r => setTimeout(r, 2000));
-        continue;
-      }
-      console.log("DeepSeek failed with status:", resp.status);
-      return null;
-    }catch(e){
-      if(e.name === "AbortError") throw e;
-      if(attempt < maxRetries && !signal?.aborted){
-        await new Promise(r => setTimeout(r, 2000));
-        continue;
-      }
-      console.log("DeepSeek error:", e.message);
-      return null;
-    }
-  }
-  return null;
-}
-
-async function askDeepSeekStream(prompt, systemMsg, maxTok, signal, onChunk){
-  if(!maxTok) maxTok = 8192;
-  const messages = systemMsg ? [
-    {role:"system",content:systemMsg},
-    {role:"user",content:prompt}
-  ] : [
-    {role:"user",content:prompt}
-  ];
-  const maxRetries = 2;
-  for(let attempt = 1; attempt <= maxRetries; attempt++){
-    try{
-      const resp = await fetch(WORKER_URL + "/deepseek/chat/completions", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({model:"deepseek-chat",messages,temperature:0.3,max_tokens:maxTok,stream:true}),
-        signal
-      });
-      if(!resp.ok || !resp.body){
-        if(attempt < maxRetries && !signal?.aborted){
-          await new Promise(r => setTimeout(r, 2000));
-          continue;
-        }
-        return null;
-      }
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let fullText = "";
-      while(true){
-        const {done,value} = await reader.read();
-        if(done) break;
-        buffer += decoder.decode(value,{stream:true});
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-        for(const line of lines){
-          if(!line.startsWith("data: ") || line === "data: [DONE]") continue;
-          try{
-            const parsed = JSON.parse(line.slice(6));
-            const delta = parsed?.choices?.[0]?.delta?.content || "";
-            if(delta){ fullText += delta; onChunk(delta, fullText); }
-          }catch(e){}
-        }
-      }
-      return fullText;
-    }catch(e){
-      if(e.name === "AbortError") throw e;
-      if(attempt < maxRetries && !signal?.aborted){
-        await new Promise(r => setTimeout(r, 2000));
-        continue;
-      }
-      return null;
-    }
-  }
-  return null;
-}
-
 async function askGroqStream(prompt, systemMsg, maxTok, modelName, signal, onChunk){
   if(!maxTok) maxTok = 8192;
   if(!modelName) modelName = "llama-3.1-8b-instant";
@@ -4909,20 +4811,7 @@ async function askAI(prompt, systemMsg, maxTok, modelName){
     else console.log("   ⏱ Gemini timed out, switching...");
   }
   
-  // 2. DeepSeek fallback
-  console.log("   🔄 Trying DeepSeek...");
-  try{
-    const deepseekResult = await askDeepSeek(prompt, systemMsg, maxTok);
-    if(deepseekResult){
-      console.log("   ✅ DeepSeek success!");
-      __lastApiSource = "deepseek";
-      return deepseekResult;
-    }
-  }catch(dsErr){
-    console.log("   ❌ DeepSeek error:", dsErr.message);
-  }
-  
-  // 3. Groq fallback with 25s timeout
+  // 2. Groq fallback with 25s timeout
   console.log("   🔄 Trying Groq fallback (25s timeout)...");
   const groqController = new AbortController();
   const groqTimer = setTimeout(() => { try{groqController.abort()}catch(e){} }, 25000);
@@ -6902,10 +6791,6 @@ try{
   clearTimeout(t);
   if(r) return r;
 }catch(e){ clearTimeout(t); }
-try{
-  r = await askDeepSeek(notesPrompt, "You are an expert teacher. Return ONLY valid JSON.", 8192, ac.signal);
-  if(r) return r;
-}catch(e){}
 return await askGroq(notesPrompt, "You are an expert teacher. Return ONLY valid JSON.", 8192, "llama-3.1-8b-instant");
 })();
 try{
@@ -6923,10 +6808,6 @@ try{
     clearTimeout(t);
     if(r) return r;
   }catch(e){ clearTimeout(t); }
-  try{
-    r = await askDeepSeek(notesPrompt, "You are an expert teacher. Return ONLY valid JSON.", 8192, ac.signal);
-    if(r) return r;
-  }catch(e){}
   return await askGroq(notesPrompt, "You are an expert teacher. Return ONLY valid JSON.", 8192, "llama-3.1-8b-instant");
   })();
   try{
@@ -7432,9 +7313,9 @@ if(storyCountdown < -30){ clearInterval(window.__storyTimer); }
 if(status) status.textContent = "⏳ 60s...";
 window.__storyPlayTimeout = null;
 
-// === PARALLEL: Fire all 3 APIs at once, same rich prompt ===
-let geminiStory = null, deepseekStory = null, openrouterStory = null;
-let geminiWorking = false, deepseekWorking = false, openrouterWorking = false;
+// === PARALLEL: Fire Gemini + OpenRouter at once ===
+let geminiStory = null, openrouterStory = null;
+let geminiWorking = false, openrouterWorking = false;
 const sysMsg = "You are a fun storyteller for kids. Be cheerful. " + langInstr;
 
 const geminiP = (async () => {
@@ -7447,21 +7328,10 @@ const geminiP = (async () => {
   } catch(e) { if(e?.name === "AbortError") return; }
 })();
 
-const deepseekP = (async () => {
-  try {
-    const result = await askDeepSeekStream(prompt, sysMsg, 4096, sig, function(chunk, full){
-      if(content && !sig.aborted && !geminiStory){
-        content.innerHTML = full.replace(/\n/g, "<br>");
-      }
-    });
-    if(result && !sig.aborted){ deepseekStory = result; deepseekWorking = true; }
-  } catch(e) {}
-})();
-
 const openrouterP = (async () => {
   try {
     const result = await askOpenRouterStream(prompt, sysMsg, 4096, sig, function(chunk, full){
-      if(content && !sig.aborted && !geminiStory && !deepseekStory){
+      if(content && !sig.aborted && !geminiStory){
         content.innerHTML = full.replace(/\n/g, "<br>");
       }
     });
@@ -7469,18 +7339,14 @@ const openrouterP = (async () => {
   } catch(e) {}
 })();
 
-await Promise.allSettled([geminiP, deepseekP, openrouterP]);
+await Promise.allSettled([geminiP, openrouterP]);
 if(sig.aborted) return;
 
-// Priority: Gemini → DeepSeek → OpenRouter
+// Priority: Gemini → OpenRouter
 let storyText = null;
 if(geminiWorking && geminiStory){
   storyText = geminiStory;
   __lastApiSource = "gemini";
-  __storyContentLang = lang;
-} else if(deepseekWorking && deepseekStory){
-  storyText = deepseekStory;
-  __lastApiSource = "deepseek";
   __storyContentLang = lang;
 } else if(openrouterWorking && openrouterStory){
   storyText = openrouterStory;
@@ -8393,13 +8259,7 @@ try{
   aiResult = null;
 }
 if(!aiResult){
-  // 2. DeepSeek
-  try{
-    aiResult = await askDeepSeek(prompt, "You are a quiz generator.", Math.min(chunkCount * 400 + 1000, 16000));
-  }catch(e){ aiResult = null; }
-}
-if(!aiResult){
-  // 3. Groq with 25s
+  // 2. Groq with 25s
   try{
     const groqCtrl = new AbortController();
     const groqTim = setTimeout(() => { try{groqCtrl.abort()}catch(e){} }, 25000);
