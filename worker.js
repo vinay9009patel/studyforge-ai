@@ -233,6 +233,23 @@ export default {
         return new Response(JSON.stringify(data), { status: ds.ok ? 200 : 500, headers: { "Content-Type": "application/json", ...cors } });
       }
 
+      // === OPENROUTER ENDPOINT (story only) ===
+      if (url.pathname.includes("/openrouter/chat/completions")) {
+        if (!env.OPENROUTER_API_KEY) return new Response(JSON.stringify({ error: "OPENROUTER_API_KEY missing" }), { status: 500, headers: { "Content-Type": "application/json", ...cors } });
+        const isStream = body.stream === true;
+        const or = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: "Bearer " + env.OPENROUTER_API_KEY, "HTTP-Referer": "https://studyforge-ai.vinaypatel975562.workers.dev", "X-Title": "StudyForge AI" },
+          body: JSON.stringify(body)
+        });
+        if(isStream && or.ok && or.body){
+          return new Response(or.body, { status: 200, headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive", ...cors } });
+        }
+        let data;
+        try { data = await or.json(); } catch (e) { data = { error: "OpenRouter error" }; }
+        return new Response(JSON.stringify(data), { status: or.ok ? 200 : 500, headers: { "Content-Type": "application/json", ...cors } });
+      }
+
       if (!env.GROQ_API_KEY) return new Response(JSON.stringify({ error: "GROQ_API_KEY missing" }), { status: 500, headers: { "Content-Type": "application/json", ...cors } });
       const isStream = body.stream === true;
       const gr = await fetch("https://api.groq.com" + url.pathname + url.search, {
