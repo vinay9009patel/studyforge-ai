@@ -7378,10 +7378,10 @@ if(sig.aborted) return;
 clearInterval(window.__storyTimer);
 if(content && !__lastApiSource?.includes("groq") && !__lastApiSource?.includes("openrouter")) content.innerHTML = finalStory.replace(/\n/g, "<br>");
 if(__lastApiSource === "groq" && lang !== "english"){
-if(content) content.innerHTML += '<div style="margin-top:12px;padding:10px 14px;border-radius:12px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.2);color:#fde68a;font-size:13px;">⚠️ ' + lang.charAt(0).toUpperCase() + lang.slice(1) + ' story abhi available nahi hai. Yahan English mein story di gayi hai.</div>';
+if(content) content.innerHTML += '<div style="margin-top:12px;padding:10px 14px;border-radius:12px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.2);color:#fca5a5;font-size:13px;">😕 Sorry! ' + lang.charAt(0).toUpperCase() + lang.slice(1) + ' story currently not available. Here is the story in English.</div>';
 }
 if(__lastApiSource === "openrouter" && lang !== "english"){
-if(content) content.innerHTML += '<div style="margin-top:12px;padding:10px 14px;border-radius:12px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.2);color:#fde68a;font-size:13px;">⚠️ ' + lang.charAt(0).toUpperCase() + lang.slice(1) + ' story abhi available nahi hai. Yahan English mein story di gayi hai.</div>';
+if(content) content.innerHTML += '<div style="margin-top:12px;padding:10px 14px;border-radius:12px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.2);color:#fca5a5;font-size:13px;">😕 Sorry! ' + lang.charAt(0).toUpperCase() + lang.slice(1) + ' story currently not available. Here is the story in English.</div>';
 }
 
 
