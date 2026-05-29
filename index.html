@@ -7313,7 +7313,7 @@ if(storyCountdown < -30){ clearInterval(window.__storyTimer); }
 if(status) status.textContent = "⏳ 60s...";
 window.__storyPlayTimeout = null;
 
-// === PARALLEL: Fire Gemini + OpenRouter + Groq(English only) ===
+// === PARALLEL: Fire Gemini(30s) + OpenRouter + Groq ===
 let geminiStory = null, openrouterStory = null, groqStory = null;
 let geminiWorking = false, openrouterWorking = false, groqWorking = false;
 const sysMsg = "You are a fun storyteller for kids. Be cheerful. " + langInstr;
@@ -7322,7 +7322,7 @@ const geminiP = (async () => {
   try {
     const result = await Promise.race([
       askGemini(prompt, sysMsg, 4096, sig),
-      new Promise(r => setTimeout(() => r(null), 60000))
+      new Promise(r => setTimeout(() => r(null), 30000))
     ]);
     if(result && !sig.aborted){ geminiStory = result; geminiWorking = true; }
   } catch(e) { if(e?.name === "AbortError") return; }
@@ -7340,7 +7340,6 @@ const openrouterP = (async () => {
 })();
 
 const groqP = (async () => {
-  if(lang !== "english") return;
   try {
     const result = await askGroqStream(prompt, sysMsg, 4096, "llama-3.1-8b-instant", sig, function(chunk, full){
       if(content && !sig.aborted && !geminiStory && !openrouterStory){
@@ -7379,10 +7378,10 @@ if(sig.aborted) return;
 clearInterval(window.__storyTimer);
 if(content && !__lastApiSource?.includes("groq") && !__lastApiSource?.includes("openrouter")) content.innerHTML = finalStory.replace(/\n/g, "<br>");
 if(__lastApiSource === "groq" && lang !== "english"){
-if(content) content.innerHTML += '<div style="margin-top:12px;padding:10px 14px;border-radius:12px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.2);color:#fde68a;font-size:13px;">🌐 English mein story generate hui (Groq multilingual support limited)</div>';
+if(content) content.innerHTML += '<div style="margin-top:12px;padding:10px 14px;border-radius:12px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.2);color:#fde68a;font-size:13px;">⚠️ ' + lang.charAt(0).toUpperCase() + lang.slice(1) + ' story abhi available nahi hai. Yahan English mein story di gayi hai.</div>';
 }
 if(__lastApiSource === "openrouter" && lang !== "english"){
-if(content) content.innerHTML += '<div style="margin-top:12px;padding:10px 14px;border-radius:12px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.2);color:#fde68a;font-size:13px;">🌐 English mein story generate hui (OpenRouter multilingual support limited)</div>';
+if(content) content.innerHTML += '<div style="margin-top:12px;padding:10px 14px;border-radius:12px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.2);color:#fde68a;font-size:13px;">⚠️ ' + lang.charAt(0).toUpperCase() + lang.slice(1) + ' story abhi available nahi hai. Yahan English mein story di gayi hai.</div>';
 }
 
 
