@@ -9126,6 +9126,7 @@ ${score}%
 }
 
 async function askMentor(){
+try{
 
 const chk = await checkLimitAndTrack("mentor");
 if(!chk.allowed){
@@ -9202,6 +9203,13 @@ mentorInput.value = "";
 chatHistory.scrollTop =
 chatHistory.scrollHeight;
 
+}catch(err){
+  console.error("Mentor error:", err);
+  stopLoadingCountdown();
+  const mc = document.getElementById("mentorLoadingCard");
+  if(mc) mc.remove();
+  chatHistory.innerHTML += `<div class="card" style="color:#f87171;"><b>❌ Error:</b> ${err.message || err}</div>`;
+}
 }
 
 function toggleTheme(){
