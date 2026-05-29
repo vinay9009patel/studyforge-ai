@@ -4712,7 +4712,7 @@ async function askOpenRouterStream(prompt, systemMsg, maxTok, signal, onChunk){
       const resp = await fetch(WORKER_URL + "/openrouter/chat/completions", {
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({model:"meta-llama/llama-3.1-8b-instruct",messages,temperature:0.3,max_tokens:maxTok,stream:true}),
+        body:JSON.stringify({model:"gryphe/mythomax-l2-13b",messages,temperature:0.3,max_tokens:maxTok,stream:true}),
         signal
       });
       if(!resp.ok || !resp.body){
@@ -4835,37 +4835,15 @@ async function askAI(prompt, systemMsg, maxTok, modelName){
     else console.log("   ⏱ Gemini timed out, switching...");
   }
   
-  // 2. Groq fallback with 25s timeout
-  console.log("   🔄 Trying Groq fallback (25s timeout)...");
-  const groqController = new AbortController();
-  const groqTimer = setTimeout(() => { try{groqController.abort()}catch(e){} }, 25000);
-  try{
-    const response = await fetch(WORKER_URL + "/openai/v1/chat/completions",{
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({
-        model:modelName || "llama-3.1-8b-instant",
-        messages,
-        temperature:0.3,
-        max_tokens:maxTok,
-      }),
-      signal: groqController.signal
-    });
-    clearTimeout(groqTimer);
-    
-    if(response.ok){
-      const data = await response.json();
-      if(data?.choices?.[0]){
-        console.log("   ✅ Groq success!");
-        __lastApiSource = "groq";
-        return data.choices[0].message.content;
-      }
-    }
-    console.log("   ❌ Groq failed with status:", response.status);
-  }catch(workerErr){
-    clearTimeout(groqTimer);
-    console.log("   ❌ Groq error:", workerErr.message);
+  // 2. Groq fallback with retries
+  console.log("   🔄 Trying Groq fallback...");
+  const groqResult = await askGroq(prompt, systemMsg, maxTok, modelName || "llama-3.1-8b-instant");
+  if(groqResult){
+    console.log("   ✅ Groq success!");
+    __lastApiSource = "groq";
+    return groqResult;
   }
+  console.log("   ❌ Groq failed.");
   
   console.log("   🧠 All APIs failed.");
   __lastApiSource = "none";
@@ -7382,13 +7360,9 @@ if(finalStory && !finalStory.startsWith("🔴") && finalStory.length > 10){
 if(sig.aborted) return;
 clearInterval(window.__storyTimer);
 if(content && !__lastApiSource?.includes("groq") && !__lastApiSource?.includes("openrouter")) content.innerHTML = finalStory.replace(/\n/g, "<br>");
-if(__lastApiSource === "groq" && lang !== "english"){
+if(__lastApiSource !== "gemini" && lang !== "english"){
 if(content) content.innerHTML += '<div style="margin-top:12px;padding:10px 14px;border-radius:12px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.2);color:#fca5a5;font-size:13px;">😕 Sorry! ' + lang.charAt(0).toUpperCase() + lang.slice(1) + ' story currently not available. Here is the story in English.</div>';
 }
-if(__lastApiSource === "openrouter" && lang !== "english"){
-if(content) content.innerHTML += '<div style="margin-top:12px;padding:10px 14px;border-radius:12px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.2);color:#fca5a5;font-size:13px;">😕 Sorry! ' + lang.charAt(0).toUpperCase() + lang.slice(1) + ' story currently not available. Here is the story in English.</div>';
-}
-
 
 if(status) status.textContent = "🔊 Playing... 🎵";
 window.__storyPlayTimeout = setTimeout(function(){ playStoryAudio(); }, 500);
