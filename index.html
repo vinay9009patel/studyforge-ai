@@ -6768,10 +6768,10 @@ notesOutput.innerHTML = `<div style="text-align:center;padding:50px 20px;">
 <div class="loader" style="margin:0 auto 24px;"></div>
 <div style="font-size:22px;font-weight:800;color:#c4b5fd;margin-bottom:6px;">⏳ Generating Notes...</div>
 <div style="color:#94a3b8;font-size:14px;">AI is preparing <span id="notesTopicDisplay">${escapeHtml(topic)}</span> notes for you</div>
-<div id="notesCountdown" style="margin-top:16px;font-size:40px;font-weight:900;background:linear-gradient(to right,#a78bfa,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">5</div>
+<div id="notesCountdown" style="margin-top:16px;font-size:40px;font-weight:900;background:linear-gradient(to right,#a78bfa,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">20</div>
 <div style="color:#64748b;font-size:12px;">Estimated time remaining</div>
 </div>`;
-startLoadingCountdown("notesCountdown", 10);
+startLoadingCountdown("notesCountdown", 20);
 
 const extractedText =
 await extractFileText(file);
@@ -6784,7 +6784,7 @@ let notesData;
 
 let aiResult = await (async function(){
 const ac = new AbortController();
-const t = setTimeout(() => { try{ac.abort()}catch(e){} }, 40000);
+const t = setTimeout(() => { try{ac.abort()}catch(e){} }, 30000);
 let r;
 try{
   r = await askGemini(notesPrompt, "You are an expert teacher. Return ONLY valid JSON.", 8192, ac.signal);
@@ -6801,7 +6801,7 @@ try{
   console.log("Gemini JSON parse failed, retrying once", parseError);
   aiResult = await (async function(){
   const ac = new AbortController();
-  const t = setTimeout(() => { try{ac.abort()}catch(e){} }, 40000);
+  const t = setTimeout(() => { try{ac.abort()}catch(e){} }, 30000);
   let r;
   try{
     r = await askGemini(notesPrompt, "You are an expert teacher. Return ONLY valid JSON.", 8192, ac.signal);
@@ -7269,7 +7269,7 @@ if(__storyAbortController) __storyAbortController.abort();
 __storyAbortController = new AbortController();
 const sig = __storyAbortController.signal;
 
-const langInstr = lang === "hindi" ? "सिर्फ सरल हिंदी में लिखो - बिल्कुल साधारण बोलचाल की भाषा में। शुद्ध या फॉर्मल हिंदी बिल्कुल नहीं। ऐसे लिखो जैसे कोई दोस्त समझा रहा हो। हर शब्द आम आदमी को समझ आना चाहिए।" : lang === "hinglish" ? "Write in simple, easy Hinglish — aajkal ki common bolchal wali Hindi. Shudh ya formal Hindi mat likho. Jahan natural lage wahan English words mix karo (jaise log actually bolte hain). Technical words apne aap English mein aa jayenge. Story aisi likho jaise koi friend samjha raha ho. Har word simple ho, jisse koi bhi relate kar paye." : "Write in very simple, easy English — like a friend explaining. No hard words. Every sentence should feel natural and relatable.";
+const langInstr = lang === "hindi" ? "बिल्कुल सरल आम बोलचाल वाली हिंदी में लिखो। शुद्ध या फॉर्मल हिंदी बिल्कुल मत लिखो। ऐसे लिखो जैसे कोई दोस्त कहानी सुना रहा हो — आसान शब्द, छोटे वाक्य। कोई मुश्किल हिंदी शब्द नहीं। हर शब्द आम आदमी को समझ आना चाहिए।" : lang === "hinglish" ? "Write in simple, easy Hinglish — aajkal ki common bolchal wali bhasha. Shudh ya formal Hindi mat likho. Jahan natural lage wahan English words mix karo (jaise log actually bolte hain). Simple words use karo, easy sentences. Story aisi likho jaise koi friend suna raha ho. Har word simple ho." : "Write in very simple, easy English — like a friend telling a story. Only use everyday simple words. Short sentences. No hard or formal words. Every sentence should feel natural and relatable.";
 
 const langUpper = lang === "hinglish" ? "HINGLISH (Mix Hindi + English)" : lang.toUpperCase();
 const forbidEnglish = lang === "hindi" ? " ZERO English words. ONLY Hindi." : "";
@@ -7313,7 +7313,7 @@ if(storyCountdown < -30){ clearInterval(window.__storyTimer); }
 if(status) status.textContent = "⏳ 60s...";
 window.__storyPlayTimeout = null;
 
-// === PARALLEL: Fire Gemini + OpenRouter + Groq at once ===
+// === PARALLEL: Fire Gemini + OpenRouter + Groq(English only) ===
 let geminiStory = null, openrouterStory = null, groqStory = null;
 let geminiWorking = false, openrouterWorking = false, groqWorking = false;
 const sysMsg = "You are a fun storyteller for kids. Be cheerful. " + langInstr;
@@ -7328,21 +7328,10 @@ const geminiP = (async () => {
   } catch(e) { if(e?.name === "AbortError") return; }
 })();
 
-const groqP = (async () => {
-  try {
-    const result = await askGroqStream(prompt, sysMsg, 4096, "llama-3.1-8b-instant", sig, function(chunk, full){
-      if(content && !sig.aborted && !geminiStory){
-        content.innerHTML = full.replace(/\n/g, "<br>");
-      }
-    });
-    if(result && !sig.aborted){ groqStory = result; groqWorking = true; }
-  } catch(e) {}
-})();
-
 const openrouterP = (async () => {
   try {
     const result = await askOpenRouterStream(prompt, sysMsg, 4096, sig, function(chunk, full){
-      if(content && !sig.aborted && !geminiStory && !groqStory){
+      if(content && !sig.aborted && !geminiStory){
         content.innerHTML = full.replace(/\n/g, "<br>");
       }
     });
@@ -7350,22 +7339,34 @@ const openrouterP = (async () => {
   } catch(e) {}
 })();
 
-await Promise.allSettled([geminiP, groqP, openrouterP]);
+const groqP = (async () => {
+  if(lang !== "english") return;
+  try {
+    const result = await askGroqStream(prompt, sysMsg, 4096, "llama-3.1-8b-instant", sig, function(chunk, full){
+      if(content && !sig.aborted && !geminiStory && !openrouterStory){
+        content.innerHTML = full.replace(/\n/g, "<br>");
+      }
+    });
+    if(result && !sig.aborted){ groqStory = result; groqWorking = true; }
+  } catch(e) {}
+})();
+
+await Promise.allSettled([geminiP, openrouterP, groqP]);
 if(sig.aborted) return;
 
-// Priority: Gemini → Groq → OpenRouter
+// Priority: Gemini → OpenRouter → Groq
 let storyText = null;
 if(geminiWorking && geminiStory){
   storyText = geminiStory;
   __lastApiSource = "gemini";
   __storyContentLang = lang;
-} else if(groqWorking && groqStory){
-  storyText = groqStory;
-  __lastApiSource = "groq";
-  __storyContentLang = lang;
 } else if(openrouterWorking && openrouterStory){
   storyText = openrouterStory;
   __lastApiSource = "openrouter";
+  __storyContentLang = lang;
+} else if(groqWorking && groqStory){
+  storyText = groqStory;
+  __lastApiSource = "groq";
   __storyContentLang = lang;
 }
 
