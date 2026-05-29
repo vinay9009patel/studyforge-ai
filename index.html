@@ -4057,7 +4057,7 @@ function retryOwnCamera(){
     ownCamStream?.getTracks().forEach(t=>t.stop());
     ownCamStream = null;
     stopVoiceInput();
-            const constraints = {video:{width:{ideal:320},height:{ideal:240},facingMode:"user"},audio:true};
+const constraints = {video:{width:{ideal:320},height:{ideal:240},facingMode:"user"},audio:false};
             navigator.mediaDevices.getUserMedia(constraints)
     .then(stream=>{
         ownCamStream = stream;
@@ -4147,7 +4147,7 @@ renderInterviewScreen();
                 camMsg.innerHTML = `<div style="text-align:center;padding:30px;"><div style="font-size:60px;margin-bottom:14px;">📷</div><div style="font-size:20px;font-weight:800;margin-bottom:10px;color:#f87171;">Camera Not Available</div><div style="color:#94a3b8;font-size:14px;line-height:1.7;">Camera requires HTTPS. Use a local server (Live Server) instead of opening file directly.</div></div>`;
             }
         }else{
-            const constraints = {video:{width:{ideal:320},height:{ideal:240},facingMode:"user"},audio:true};
+            const constraints = {video:{width:{ideal:320},height:{ideal:240},facingMode:"user"},audio:false};
             navigator.mediaDevices.getUserMedia(constraints)
             .then(stream=>{
                 ownCamStream = stream;
