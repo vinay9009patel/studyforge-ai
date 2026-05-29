@@ -2640,13 +2640,7 @@ function renderVisStoryScene(){
   if(prevBtn){ prevBtn.disabled = visStoryCurrentScene === 0; prevBtn.style.opacity = visStoryCurrentScene === 0 ? "0.5" : "1"; }
   if(nextBtn){ nextBtn.textContent = visStoryCurrentScene === total - 1 ? "✅ Complete" : "Next ▶"; }
   var sc = scene;
-  var hasCachedImage = window.__visStoryImages && window.__visStoryImages[visStoryCurrentScene];
-  var html = '';
-  if(hasCachedImage){
-    html += '<img src="' + window.__visStoryImages[visStoryCurrentScene] + '" style="width:100%;height:auto;border-radius:16px;display:block;border:1px solid rgba(255,255,255,0.06);margin-bottom:16px;" alt="Scene visual" class="scene-gemini-image">';
-  } else {
-    html += '<canvas id="visStoryCanvas" width="700" height="380" style="width:100%;height:auto;border-radius:16px;display:block;background:#0f172a;border:1px solid rgba(255,255,255,0.06);margin-bottom:16px;"></canvas>';
-  }
+  var html = '<canvas id="visStoryCanvas" width="700" height="380" style="width:100%;height:auto;border-radius:16px;display:block;background:#0f172a;border:1px solid rgba(255,255,255,0.06);margin-bottom:16px;"></canvas>';
   html += '<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">';
   html += '<div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#8b5cf6,#3b82f6);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;">' + (visStoryCurrentScene + 1) + '</div>';
   html += '<h3 style="font-size:24px;font-weight:800;margin:0;color:white;">' + escapeHtml(sc.title || "") + '</h3></div>';
@@ -2659,37 +2653,11 @@ function renderVisStoryScene(){
   container.style.opacity = "1";
   container.style.transform = "translateY(0)";
   container.style.transition = "all 0.4s ease";
-  if(!hasCachedImage){
-    var canvas = document.getElementById("visStoryCanvas");
-    if(canvas) startSceneAnim(canvas, scene);
-  }
+  var canvas = document.getElementById("visStoryCanvas");
+  if(canvas) startSceneAnim(canvas, scene);
 }
 
 function startSceneAnim(canvas, scene){
-  var ctx = canvas.getContext("2d"), w = canvas.width, h = canvas.height, start = Date.now(), CYCLE = 6;
-  var title = scene.title || "", num = visStoryCurrentScene + 1;
-  var tc = [["#8b5cf6","#a78bfa","#1e1b4b","#312e81"],["#ef4444","#fca5a5","#1c1917","#292524"],["#3b82f6","#93c5fd","#0f172a","#1e293b"],["#10b981","#6ee7b7","#052e16","#065f46"],["#a855f7","#c084fc","#1a0a2e","#2d1b69"],["#06b6d4","#67e8f9","#083344","#155e75"]][(num-1)%6];
-  var fallbackTimeout = setTimeout(function(){ showFallbackVisual(scene); }, 20000);
-  function anim(){
-    var t = ((Date.now()-start)%(CYCLE*1000))/1000;
-    ctx.clearRect(0,0,w,h);
-    var bg = ctx.createRadialGradient(w/2,h/2,0,w/2,h/2,w*0.7);
-    bg.addColorStop(0,tc[0]+"33"); bg.addColorStop(1,tc[3]);
-    ctx.fillStyle = bg; ctx.fillRect(0,0,w,h);
-    ctx.fillStyle="rgba(255,255,255,0.04)"; ctx.font="bold 16px sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle";
-    ctx.fillText("🖼️ Generating photorealistic scene...", w/2, h/2-20);
-    ctx.fillStyle="rgba(255,255,255,0.12)"; ctx.font="13px sans-serif";
-    ctx.fillText(title, w/2, h/2+10);
-    visStoryAnimFrame = requestAnimationFrame(anim);
-  }
-  anim();
-  generateSceneImage(scene, visStoryCurrentScene, function(){ clearTimeout(fallbackTimeout); });
-}
-
-function showFallbackVisual(scene){
-  if(visStoryAnimFrame){ cancelAnimationFrame(visStoryAnimFrame); visStoryAnimFrame = null; }
-  var canvas = document.getElementById("visStoryCanvas");
-  if(!canvas) return;
   var ctx = canvas.getContext("2d"), w = canvas.width, h = canvas.height;
   ctx.clearRect(0,0,w,h);
   var bg = ctx.createRadialGradient(w/2,h/2,0,w/2,h/2,w*0.7);
@@ -2705,63 +2673,7 @@ function showFallbackVisual(scene){
   for(var li=0;li<lines.length;li++) ctx.fillText(lines[li], w/2, h/2+li*18);
 }
 
-async function generateSceneImage(scene, index, onSuccess){
-  var promptText = scene.video_prompt || scene.image_prompt || scene.visual || scene.title || "Educational scene " + (index+1);
-  var lowerTxt = (scene.title + " " + promptText).toLowerCase();
-  var isMedical = lowerTxt.indexOf("digest")!==-1||lowerTxt.indexOf("heart")!==-1||lowerTxt.indexOf("brain")!==-1||lowerTxt.indexOf("cell")!==-1||lowerTxt.indexOf("body")!==-1||lowerTxt.indexOf("organ")!==-1||lowerTxt.indexOf("human")!==-1||lowerTxt.indexOf("anatomy")!==-1;
-  var isTechnical = lowerTxt.indexOf("code")!==-1||lowerTxt.indexOf("algorithm")!==-1||lowerTxt.indexOf("program")!==-1||lowerTxt.indexOf("array")!==-1||lowerTxt.indexOf("data")!==-1||lowerTxt.indexOf("blockchain")!==-1;
-  var styleDesc = isMedical ? "Medical documentary quality, ultra realistic human anatomy photograph, real tissue textures, surgical lighting, medical textbook quality."
-    : isTechnical ? "Clean technical diagram, infographic style, modern flat design, detailed labeled diagram, educational illustration."
-    : "Ultra realistic, photorealistic, cinematic, real world photograph, National Geographic style, real textures, real lighting. No cartoon, no illustration.";
-  var fullPrompt = promptText;
-  try{
-    console.log("🎨 Generating image for:", promptText.substring(0, 50));
-    var resp = await fetch(WORKER_URL + "/gemini-image", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: fullPrompt })
-    });
-    var result = await resp.json();
-    console.log("📸 Image response:", result.success ? "SUCCESS" : "FAILED", result.source || "");
-    
-    var imgSrc = null;
-    
-    if(result.success){
-      if(result.imageBase64){
-        imgSrc = "data:image/png;base64," + result.imageBase64;
-      } else if(result.imageUrl){
-        imgSrc = result.imageUrl;
-      }
-    }
-    
-    if(imgSrc){
-      var images = window.__visStoryImages || [];
-      images[index] = imgSrc;
-      window.__visStoryImages = images;
-      console.log("✅ Image cached at index:", index);
-      if(onSuccess) onSuccess();
-      if(visStoryCurrentScene === index){
-        replaceCanvasWithImage(imgSrc);
-      }
-      return;
-    }
-    
-    console.log("⚠️ No image generated:", result.error);
-  }catch(e){ console.log("❌ Scene image error:", e); }
-}
 
-function replaceCanvasWithImage(imgSrc){
-  if(visStoryAnimFrame){ cancelAnimationFrame(visStoryAnimFrame); visStoryAnimFrame = null; }
-  var canvas = document.getElementById("visStoryCanvas");
-  if(!canvas) return;
-  var parent = canvas.parentNode;
-  var img = document.createElement("img");
-  img.src = imgSrc;
-  img.style.cssText = "width:100%;height:auto;border-radius:16px;display:block;border:1px solid rgba(255,255,255,0.06);margin-bottom:16px;";
-  img.alt = "Scene visual";
-  img.className = "scene-gemini-image";
-  parent.insertBefore(img, canvas);
-  canvas.style.display = "none";
-}
 
 function visStoryNext(){
   var scenes = window.__visStoryScenes || [];
@@ -3444,19 +3356,6 @@ currentInterviewTopic,
 
 
 
-
-async function generateGeminiImage(promptText){
-  try{
-    const resp = await fetch(WORKER_URL + "/gemini-image", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: promptText })
-    });
-    return await resp.json();
-  }catch(e){
-    console.log("Gemini image error:", e);
-    return {success: false};
-  }
-}
 
 async function drawCanvasDiagram(topic, concepts){
   const canvas = document.createElement("canvas");
@@ -4334,13 +4233,7 @@ ideal_answer:current?.ideal_answer || ""
 });
 
 if(interviewerGender === "own"){
-const frame = captureFrame();
-let expression = "neutral";
-if(frame){
-expression = await askAIWithImage(frame,`Analyze this person's facial expression during an interview answer. Respond with ONLY one word: "confident", "nervous", "neutral", or "mixed". Base it on their expression, eye contact, smile, tension etc.`);
-expression = expression || "neutral";
-}
-facialScores.push(expression);
+facialScores.push("neutral");
 
 const qText = current?.question || "";
 const idealText = current?.ideal_answer || "";
@@ -6536,43 +6429,6 @@ function generateSmartFallbackNotes(prompt){
     }
     
     return md;
-}
-
-function captureFrame(){
-const video = document.getElementById("ownCamVideo");
-if(!video || !video.videoWidth) return null;
-const canvas = document.createElement("canvas");
-canvas.width = 320;
-canvas.height = 240;
-const ctx = canvas.getContext("2d");
-ctx.drawImage(video,0,0,320,240);
-return canvas.toDataURL("image/jpeg",0.5);
-}
-
-async function askAIWithImage(imageBase64,promptText){
-try{
-const response = await fetch(WORKER_URL + "/openai/v1/chat/completions",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({
-model:"meta-llama/llama-4-scout-17b-16e-instruct",
-messages:[
-{role:"user",content:[
-{type:"text",text:promptText},
-{type:"image_url",image_url:{url:imageBase64}}
-]}
-],
-temperature:0.3,
-max_tokens:256
-})
-});
-if(!response.ok) return null;
-const data = await response.json();
-return data.choices?.[0]?.message?.content || null;
-}catch(e){
-console.log(e);
-return null;
-}
 }
 
 function buildVisualNotesHTML(data, topic){
