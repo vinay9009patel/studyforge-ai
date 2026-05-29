@@ -6792,10 +6792,10 @@ notesOutput.innerHTML = `<div style="text-align:center;padding:50px 20px;">
 <div class="loader" style="margin:0 auto 24px;"></div>
 <div style="font-size:22px;font-weight:800;color:#c4b5fd;margin-bottom:6px;">⏳ Generating Notes...</div>
 <div style="color:#94a3b8;font-size:14px;">AI is preparing <span id="notesTopicDisplay">${escapeHtml(topic)}</span> notes for you</div>
-<div id="notesCountdown" style="margin-top:16px;font-size:40px;font-weight:900;background:linear-gradient(to right,#a78bfa,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">20</div>
+<div id="notesCountdown" style="margin-top:16px;font-size:40px;font-weight:900;background:linear-gradient(to right,#a78bfa,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">60</div>
 <div style="color:#64748b;font-size:12px;">Estimated time remaining</div>
 </div>`;
-startLoadingCountdown("notesCountdown", 20);
+startLoadingCountdown("notesCountdown", 60);
 
 const extractedText =
 await extractFileText(file);
@@ -8362,10 +8362,10 @@ quizOutput.innerHTML = `<div style="text-align:center;padding:50px 20px;">
 <div class="loader" style="margin:0 auto 24px;"></div>
 <div style="font-size:22px;font-weight:800;color:#c4b5fd;margin-bottom:6px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px;"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Generating Quiz...</div>
 <div style="color:#94a3b8;font-size:14px;">AI is preparing ${count} questions on <span style="color:#c4b5fd;">${escapeHtml(topic)}</span></div>
-<div id="quizCountdown" style="margin-top:16px;font-size:40px;font-weight:900;background:linear-gradient(to right,#a78bfa,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">10</div>
+<div id="quizCountdown" style="margin-top:16px;font-size:40px;font-weight:900;background:linear-gradient(to right,#a78bfa,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">60</div>
 <div style="color:#64748b;font-size:12px;">Estimated time remaining</div>
 </div>`;
-startLoadingCountdown("quizCountdown", 10);
+startLoadingCountdown("quizCountdown", 60);
 
 const extractedText =
 await extractFileText(file);
