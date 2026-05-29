@@ -7337,61 +7337,42 @@ if(storyCountdown < -30){ clearInterval(window.__storyTimer); }
 if(status) status.textContent = "⏳ 60s...";
 window.__storyPlayTimeout = null;
 
-// === PARALLEL: Fire Gemini(30s) + OpenRouter + Groq ===
-let geminiStory = null, openrouterStory = null, groqStory = null;
-let geminiWorking = false, openrouterWorking = false, groqWorking = false;
+// === SEQUENTIAL: Gemini → OpenRouter → Groq ===
+let storyText = null;
 const sysMsg = "You are a fun storyteller for kids. Be cheerful. " + langInstr;
 
-const geminiP = (async () => {
+// 1. Try Gemini with 30s timeout
+if(!sig.aborted){
   try {
     const result = await Promise.race([
       askGemini(prompt, sysMsg, 4096, sig),
       new Promise(r => setTimeout(() => r(null), 30000))
     ]);
-    if(result && !sig.aborted){ geminiStory = result; geminiWorking = true; }
+    if(result && !sig.aborted){ storyText = result; __lastApiSource = "gemini"; __storyContentLang = lang; }
   } catch(e) { if(e?.name === "AbortError") return; }
-})();
+}
 
-const openrouterP = (async () => {
+// 2. Fallback: OpenRouter if Gemini failed
+if(!storyText && !sig.aborted){
   try {
     const result = await askOpenRouterStream(prompt, sysMsg, 4096, sig, function(chunk, full){
-      if(content && !sig.aborted && !geminiStory){
-        content.innerHTML = full.replace(/\n/g, "<br>");
-      }
+      if(content && !sig.aborted) content.innerHTML = full.replace(/\n/g, "<br>");
     });
-    if(result && !sig.aborted){ openrouterStory = result; openrouterWorking = true; }
+    if(result && !sig.aborted){ storyText = result; __lastApiSource = "openrouter"; __storyContentLang = lang; }
   } catch(e) {}
-})();
+}
 
-const groqP = (async () => {
+// 3. Final fallback: Groq if both failed
+if(!storyText && !sig.aborted){
   try {
     const result = await askGroqStream(prompt, sysMsg, 4096, "llama-3.1-8b-instant", sig, function(chunk, full){
-      if(content && !sig.aborted && !geminiStory && !openrouterStory){
-        content.innerHTML = full.replace(/\n/g, "<br>");
-      }
+      if(content && !sig.aborted) content.innerHTML = full.replace(/\n/g, "<br>");
     });
-    if(result && !sig.aborted){ groqStory = result; groqWorking = true; }
+    if(result && !sig.aborted){ storyText = result; __lastApiSource = "groq"; __storyContentLang = lang; }
   } catch(e) {}
-})();
-
-await Promise.allSettled([geminiP, openrouterP, groqP]);
-if(sig.aborted) return;
-
-// Priority: Gemini → OpenRouter → Groq
-let storyText = null;
-if(geminiWorking && geminiStory){
-  storyText = geminiStory;
-  __lastApiSource = "gemini";
-  __storyContentLang = lang;
-} else if(openrouterWorking && openrouterStory){
-  storyText = openrouterStory;
-  __lastApiSource = "openrouter";
-  __storyContentLang = lang;
-} else if(groqWorking && groqStory){
-  storyText = groqStory;
-  __lastApiSource = "groq";
-  __storyContentLang = lang;
 }
+
+if(sig.aborted) return;
 
 let finalStory = storyText;
 
