@@ -2416,6 +2416,8 @@ lastActiveDate:""
 
 };
 
+let dataSaveTimer = null;
+
 (async function(){
   const authBtn = document.querySelector("#authScreen .btn.primary");
   if(authBtn) authBtn.textContent = "⏳ Loading...";
@@ -2513,7 +2515,6 @@ async function checkLimitAndTrack(type){
 }
 
 let signingKey = null;
-let dataSaveTimer = null;
 
 function b64url(buf){
     return btoa(String.fromCharCode(...new Uint8Array(buf)))
