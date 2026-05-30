@@ -4662,7 +4662,7 @@ async function askGroqStream(prompt, systemMsg, maxTok, modelName, signal, onChu
       });
       if(!resp.ok || !resp.body){
         if(attempt < maxRetries && (resp.status === 429 || resp.status >= 500) && !signal?.aborted){
-          await new Promise(r => setTimeout(r, 2000));
+          await new Promise(r => setTimeout(r, 5000));
           continue;
         }
         return null;
