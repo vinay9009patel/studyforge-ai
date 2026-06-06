@@ -537,14 +537,7 @@ background:#0f172a;
 color:white;
 }
 
-.google{
-background:white;
-color:black;
-display:flex;
-align-items:center;
-justify-content:center;
-gap:12px;
-}
+
 
 .input{
 width:100%;
@@ -2393,7 +2386,7 @@ function isAdmin(){
   return getCurrentUserEmail() === ADMIN_EMAIL;
 }
 
-["login","signup","googleLogin","logout","resetPassword"].forEach(function(fn){
+["login","signup","logout","resetPassword"].forEach(function(fn){
   window[fn] = function(){
     var s = document.getElementById("authStatus");
     if(s) { s.style.display = "block"; s.textContent = "⏳ Initializing... Please wait."; }
@@ -2431,7 +2424,7 @@ let dataSaveTimer = null;
       if(u.email === ADMIN_EMAIL){
         document.getElementById("welcomeText").innerHTML = "Welcome Back, " + u.name + " — Admin";
         document.getElementById("adminBadge").style.display = "inline-block";
-        document.getElementById("profileAdminBadge").style.display = "inline";
+        const pab = document.getElementById("profileAdminBadge"); if(pab) pab.style.display = "inline";
       }
     }
     if(u.name) document.getElementById("profileName").innerText = u.name;
@@ -3190,23 +3183,23 @@ speech.speak(utterance);
 
 function getFallbackInterviewQuestions(topic,count){
 const base = [
-`Can you explain what ${topic} is and why it matters in real-world development?`,
-`Walk me through the core principles of ${topic} and how they work together.`,
-`How would you teach ${topic} to a junior developer who has never used it?`,
-`Give me a practical example where ${topic} solves a problem that would be hard without it.`,
-`What are the most common mistakes developers make with ${topic} and how do you avoid them?`,
-`Here's a scenario: we need to build X using ${topic}. How would you approach designing the solution?`,
-`What are the trade-offs of using ${topic} compared to alternative approaches?`,
-`How does ${topic} integrate with other tools or technologies in a production environment?`,
-`If you were to improve ${topic}, what would you change and why?`,
-`How would you troubleshoot a performance issue caused by ${topic} in a live system?`,
-`Describe a real interview-level problem where you'd apply ${topic} to reach an optimal solution.`,
-`What advanced concept in ${topic} separates junior from senior developers?`
+`What is ${topic}? Explain its definition and core purpose.`,
+`What are the key characteristics or properties of ${topic}?`,
+`How does ${topic} work internally? Explain its basic mechanism.`,
+`What are the main components or parts of ${topic}?`,
+`Compare ${topic} with similar concepts — what makes it unique?`,
+`What are the advantages and disadvantages of ${topic}?`,
+`Explain how ${topic} is used in a typical academic or textbook context.`,
+`What are the fundamental rules or principles that ${topic} follows?`,
+`Trace through a simple example of ${topic} step by step.`,
+`What important points should everyone remember about ${topic}?`,
+`What are common misconceptions people have about ${topic}?`,
+`How would you summarize ${topic} in one paragraph for a beginner?`
 ];
 
 return base.slice(0,count).map(question=>({
 question,
-ideal_answer:`A strong answer should clearly define ${topic}, explain core ideas with a concrete example, discuss trade-offs or limitations, and demonstrate practical understanding. Focus on clarity, accuracy, and real-world relevance.`
+ideal_answer:`A good answer should define ${topic}, explain its core concepts clearly, mention key characteristics, and provide a simple illustrative example. Focus on theoretical and conceptual understanding.`
 }));
 }
 
@@ -3254,11 +3247,9 @@ const responseHistory = interviewResponses.length
 const prompt = `
 CRITICAL INSTRUCTION: You are interviewing for the topic "${currentInterviewTopic}". EVERY question you ask MUST be directly and specifically about "${currentInterviewTopic}". If the candidate mentions anything else, bring them back to "${currentInterviewTopic}". Never ask about anything else.
 
-You are a senior technical interviewer at a top product-based company.
-
 Topic (you must ONLY ask about this): ${currentInterviewTopic}
 
-Interview Stage: ${interviewResponses.length === 0 ? "Opening/Greeting" : interviewResponses.length === 1 ? "Fundamental concepts" : interviewResponses.length <= 3 ? "Intermediate depth" : interviewResponses.length <= 6 ? "Advanced topics" : "Problem-solving & System design"}
+Interview Stage: ${interviewResponses.length === 0 ? "Opening/Greeting" : interviewResponses.length <= 2 ? "Fundamental concepts" : interviewResponses.length <= 5 ? "Intermediate depth" : "Advanced topic concepts"}
 
 Progress: ${interviewResponses.length} questions answered so far.
 
@@ -3276,21 +3267,18 @@ Format:
 Rules:
 1. Start with a brief professional greeting if first question, then ask directly about ${currentInterviewTopic}.
 2. Ask exactly one question at a time — no bullet points or multiple questions.
-3. Every single question must be specifically about ${currentInterviewTopic}. NOTHING ELSE.
-4. Questions must progress from basic → intermediate → advanced based on interview stage.
+3. 70% questions should be theoretical/conceptual about ${currentInterviewTopic} (definitions, explanations, comparisons). 30% can be simple application-based questions related to ${currentInterviewTopic}.
+4. Questions must progress from basic definitions → core concepts → advanced aspects of ${currentInterviewTopic}.
 5. Adapt the next question based on candidate's previous answer quality (if they answered well, go deeper; if weak, clarify fundamentals).
-6. Sound like a real human interviewer — use natural conversational tone, not robotic.
-7. Each question should test genuine understanding of ${currentInterviewTopic}, not just memorization.
-8. Include scenario-based or application-based questions at intermediate/advanced stages.
-9. ideal_answer should be concise (2-3 sentences max) and technically accurate about ${currentInterviewTopic}.
-10. NEVER repeat a question.
-11. No markdown, no extra text, pure JSON only.
-12. STRICT: If the question does not specifically mention or relate to ${currentInterviewTopic}, it is WRONG. Stay on topic.
-13. Write questions and ideal_answer in English only.`;
+6. Sound like a real human interviewer — use natural conversational tone.
+7. ideal_answer should be concise (2-3 sentences max) and technically accurate about ${currentInterviewTopic}.
+8. NEVER repeat a question.
+9. No markdown, no extra text, pure JSON only.
+10. Every question must relate to ${currentInterviewTopic}. Stay on topic.`;
 
 try{
 const raw =
-await askAI(prompt,`You are a strict technical interviewer. Your ONLY job is to ask questions about "${currentInterviewTopic}". Never deviate to other topics. Every question must directly test knowledge of ${currentInterviewTopic}. Stay focused. Conduct the entire interview in English.`);
+await askAI(prompt,`You are a technical interviewer testing knowledge of "${currentInterviewTopic}". Ask mostly theoretical/conceptual questions (70%) with some simple application questions (30%) related to the topic. Keep questions focused on "${currentInterviewTopic}". Conduct in English.`);
 
 const cleaned = String(raw ?? "")
 .replace(/```json/g,"")
@@ -4470,8 +4458,9 @@ function startVoiceRecognition(){
         
         if(newFinal){
             const trimmed = newFinal.trim();
-            // Dedup: only append if not already at end of committed text
-            if(!voiceCommittedText.trim().endsWith(trimmed)) {
+            const existing = voiceCommittedText.trim();
+            // Dedup: skip if already at end (case-insensitive)
+            if(!existing.toLowerCase().endsWith(trimmed.toLowerCase())) {
                 voiceCommittedText += trimmed.charAt(0).toUpperCase() + trimmed.slice(1) + " ";
             }
         }
@@ -9318,7 +9307,6 @@ localStorage.getItem("profilePic");
   var s = document.getElementById("authStatus");
   window.signup = window.signup || function(){ if(s){ s.textContent="⏳ Firebase loading... Please wait a moment."; s.style.display="block"; } };
   window.login = window.login || function(){ if(s){ s.textContent="⏳ Firebase loading... Please wait a moment."; s.style.display="block"; } };
-  window.googleLogin = window.googleLogin || function(){ if(s){ s.textContent="⏳ Firebase loading... Please wait a moment."; s.style.display="block"; } };
   window.resetPassword = window.resetPassword || function(){ if(s){ s.textContent="⏳ Firebase loading... Please wait a moment."; s.style.display="block"; } };
   window.logout = window.logout || function(){};
   setTimeout(function(){
@@ -9337,8 +9325,6 @@ from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
 
 getAuth,
-
-GoogleAuthProvider,
 
 signInWithPopup,
 
@@ -9391,13 +9377,14 @@ appId:
 
 };
 
-const app =
-initializeApp(firebaseConfig);
-
-const auth =
-getAuth(app);
-
-setPersistence(auth, browserLocalPersistence).catch(e=>console.warn("Persistence:",e));
+let app, auth;
+try {
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  setPersistence(auth, browserLocalPersistence).catch(e=>console.warn("Persistence:",e));
+} catch(e) {
+  console.warn("Firebase init failed (tracking prevention?):", e);
+}
 
 function isValidEmailFormat(email){
 return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || "").trim());
@@ -9439,51 +9426,6 @@ s.style.border = "1px solid " + ui.border;
 s.style.color = ui.color;
 s.textContent = message;
 }
-
-const provider =
-new GoogleAuthProvider();
-
-window.googleLogin =
-  async function(){
-
-  try {
-    const result =
-    await signInWithPopup(
-      auth,
-      provider
-    );
-
-    const user =
-    result.user;
-
-    localStorage.setItem(
-      "user",
-      JSON.stringify({
-
-        name:user.displayName,
-        email:user.email,
-        photo:user.photoURL
-
-      })
-    );
-
-    location.reload();
-  } catch(error) {
-    console.error("Google login error:", error);
-    let msg = "Google login failed.";
-    if(error.code === "auth/popup-blocked") {
-      msg = "Popup was blocked. Please allow popups for this site and try again.";
-    } else if(error.code === "auth/unauthorized-domain") {
-      msg = "This domain is not authorized in Firebase Console. Add 'vinay9009patel.github.io' in Authentication > Settings > Authorized domains.";
-    } else if(error.code === "auth/popup-closed-by-user") {
-      msg = "Login popup was closed. Please try again and complete the sign-in.";
-    } else {
-      msg = `Error: ${error.message || error.code || error}`;
-    }
-    alert(msg);
-  }
-
-};
 
 window.resetPassword =
 async function(){
@@ -9634,13 +9576,13 @@ localStorage.removeItem(
 "user"
 );
 
-await signOut(auth);
+if(auth) await signOut(auth).catch(()=>{});
 
 location.reload();
 
 };
 
-onAuthStateChanged(
+if(auth) onAuthStateChanged(
 auth,
 (user)=>{
 
@@ -9674,7 +9616,7 @@ user.email;
 if(user.email === window.ADMIN_EMAIL){
 document.getElementById("welcomeText").innerHTML = `Welcome Back, ${user.displayName || user.email.split("@")[0]} — Admin`;
 document.getElementById("adminBadge").style.display = "inline-block";
-document.getElementById("profileAdminBadge").style.display = "inline";
+const pab2 = document.getElementById("profileAdminBadge"); if(pab2) pab2.style.display = "inline";
 }
 
 if(user.photoURL){
