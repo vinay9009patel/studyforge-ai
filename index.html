@@ -2607,6 +2607,7 @@ let currentInterviewAvatarFallbacks = [];
 let interviewerGender = "male";
 let facialScores = [];
 let evalResults = [];
+let isAiThinking = false;
 
 // ===== Visual Story Player =====
 var visStoryCurrentScene = 0;
@@ -3167,14 +3168,17 @@ photoEl.style.opacity = "1";
     utterance.pitch = interviewerGender === "female" ? 1.15 : 0.6;
 
 utterance.onstart = ()=>{
+isAiThinking = true;
 if(interviewerGender !== "own") setInterviewerTalking(true);
 };
 
 utterance.onend = ()=>{
+isAiThinking = false;
 if(interviewerGender !== "own") setInterviewerTalking(false);
 };
 
 utterance.onerror = ()=>{
+isAiThinking = false;
 if(interviewerGender !== "own") setInterviewerTalking(false);
 };
 
@@ -4440,33 +4444,22 @@ function startVoiceRecognition(){
     };
     
     rec.onresult = function(event){
-        console.log("🎤 Voice result received");
+        console.log("🎤 Voice result received. isAiThinking:", isAiThinking);
         
-        let interim = "";
-        let newFinal = "";
+        if(isAiThinking) return;
         
-        for(let i = event.resultIndex; i < event.results.length; i++){
-            const transcript = event.results[i][0].transcript;
-            if(event.results[i].isFinal){
-                newFinal += transcript + " ";
-                console.log("   📝 Final:", transcript);
-            } else {
-                interim += transcript;
-                console.log("   ⏳ Interim:", transcript);
-            }
+        const lastIndex = event.results.length - 1;
+        const lastResult = event.results[lastIndex];
+        const transcript = lastResult[0].transcript;
+        
+        if(lastResult.isFinal){
+            const capped = transcript.charAt(0).toUpperCase() + transcript.slice(1);
+            voiceCommittedText = capped;
+            textarea.value = voiceCommittedText;
+        } else {
+            const interimText = transcript.charAt(0).toUpperCase() + transcript.slice(1);
+            textarea.value = interimText;
         }
-        
-        if(newFinal){
-            const trimmed = newFinal.trim();
-            const existing = voiceCommittedText.trim();
-            // Dedup: skip if already at end (case-insensitive)
-            if(!existing.toLowerCase().endsWith(trimmed.toLowerCase())) {
-                voiceCommittedText += trimmed.charAt(0).toUpperCase() + trimmed.slice(1) + " ";
-            }
-        }
-        
-        const displayText = voiceCommittedText + (interim ? " " + interim.charAt(0).toUpperCase() + interim.slice(1) : "");
-        textarea.value = displayText;
         textarea.scrollTop = textarea.scrollHeight;
     };
     
